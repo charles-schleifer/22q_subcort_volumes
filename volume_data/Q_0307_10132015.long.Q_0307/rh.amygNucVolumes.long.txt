@@ -1,0 +1,10 @@
+Lateral-nucleus 643.114549
+Basal-nucleus 481.411553
+Accessory-Basal-nucleus 277.533847
+Anterior-amygdaloid-area-AAA 59.848626
+Central-nucleus 57.054535
+Medial-nucleus 21.098226
+Cortical-nucleus 21.992054
+Corticoamygdaloid-transitio 176.157935
+Paralaminar-nucleus 53.453199
+Whole_amygdala 1791.664525
