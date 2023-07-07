@@ -45,8 +45,8 @@ print(paste("Project directory:", project))
 ## read data
 ```{r}
 # path to data (organized with subject directories containing only the relevant files)
-# TODO: put data in a shared location
-dpath <- "~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/"
+#dpath <- "~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/"
+dpath <- file.path(project,"volume_data")
 
 # get files
 sessions_all <- list.files(path=dpath, pattern="Q_[0-9]")
