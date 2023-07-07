@@ -13,6 +13,10 @@ This script is for analysis of those results in 22qDel, 22qDup, and HCS
 # clear workspace
 rm(list = ls(all.names = TRUE))
 
+# install longCombat for first time
+#install.packages("devtools")
+#devtools::install_github("jcbeer/longCombat")
+
 # install limma
 #install.packages("BiocManager")
 #BiocManager::install("limma")
