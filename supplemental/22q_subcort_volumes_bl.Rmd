@@ -1,0 +1,416 @@
+---
+title: "22q_subcort_volumes"
+author: "charlie schleifer"
+date: "2/8/23"
+output: html_document
+---
+## Overview
+Subcortical nuclei volumes for Thalamus, Hippocampus, and Amygdala were generated with FreeSurfer 7.3.2 segment_structures
+This script is for analysis of those results in 22qDel, 22qDup, and HCS
+
+## set up workspace
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# clear workspace
+rm(list = ls(all.names = TRUE))
+
+# list packages to load
+# ciftiTools dependency rgl may need XQuartz installed in order to visualize surfaces
+#packages <- c("conflicted", "here", "magrittr", "mgcv", "gratia", "lme4", "lmerTest", "invgamma", "longCombat", "ciftiTools", "readxl", "dplyr", "data.table", "DescTools","tableone", "tibble", "reshape2", "viridis", "scico", "ggplot2", "gridExtra", "ggpubr","stringr")
+
+packages <- c("conflicted", "here", "magrittr", "dplyr", "data.table", "readxl", "tableone","ggplot2", "viridis", "longCombat")
+
+# install packages if not yet installed
+all_packages <- rownames(installed.packages())
+installed_packages <- packages %in% all_packages
+if (any(installed_packages == FALSE)){install.packages(packages[!installed_packages])}
+
+# load packages
+invisible(lapply(packages, library, character.only = TRUE))
+
+# use the filter function from dplyr, not stats
+conflict_prefer("filter", "dplyr")
+
+# get path to project repo directory
+project <- here()
+print(paste("Project directory:", project))
+
+```
+
+## read data
+```{r}
+# path to data (organized with subject directories containing only the relevant files)
+# TODO: put data in a shared location
+dpath <- "~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/"
+
+# get files
+sessions_all <- list.files(path=dpath, pattern="Q_[0-9]")
+
+# function to read text file and change rows to columns
+read_fssubcort <- function(path, sesh, name){
+  file <- file.path(dpath,sesh,name)
+  orig <- read.table(file)
+  out <- as.data.frame(t(orig$V2))
+  names(out) <- orig$V1
+  #out$MRI_S_ID <- sesh
+  # for longitudinal 
+  out$MRI_S_ID <- gsub(".long.*","", sesh)
+  return(out)
+}
+
+read_fssubcort_long <- function(path, sesh, name){
+  file <- file.path(dpath,sesh,name)
+  orig <- read.table(file)
+  out <- as.data.frame(t(orig$V2))
+  names(out) <- orig$V1
+  #out$MRI_S_ID <- sesh
+  # for longitudinal need to remove end of folder name to get MRI_S_ID
+  out$MRI_S_ID <- gsub(".long.*","", sesh)
+  return(out)
+}
+
+# read data
+thal_lr <- lapply(sessions_all, function(s) read_fssubcort_long(path=dpath,sesh=s,name="ThalamicNuclei.long.volumes.txt")) %>% do.call(rbind,.)
+names(thal_lr)[which(!names(thal_lr)=="MRI_S_ID")] <- paste0("Thal_",names(thal_lr)[which(!names(thal_lr)=="MRI_S_ID")])
+amy_l <- lapply(sessions_all, function(s) read_fssubcort_long(path=dpath,sesh=s,name="lh.amygNucVolumes.long.txt")) %>% do.call(rbind,.)
+names(amy_l)[which(!names(amy_l)=="MRI_S_ID")] <- paste0("Amy_Left_",names(amy_l)[which(!names(amy_l)=="MRI_S_ID")])
+amy_r <- lapply(sessions_all, function(s) read_fssubcort_long(path=dpath,sesh=s,name="rh.amygNucVolumes.long.txt")) %>% do.call(rbind,.)
+names(amy_r)[which(!names(amy_r)=="MRI_S_ID")] <- paste0("Amy_Right_",names(amy_r)[which(!names(amy_r)=="MRI_S_ID")])
+hip_l <- lapply(sessions_all, function(s) read_fssubcort_long(path=dpath,sesh=s,name="lh.hippoSfVolumes.long.txt")) %>% do.call(rbind,.)
+names(hip_l)[which(!names(hip_l)=="MRI_S_ID")] <- paste0("Hip_Left_",names(hip_l)[which(!names(hip_l)=="MRI_S_ID")])
+hip_r <- lapply(sessions_all, function(s) read_fssubcort_long(path=dpath,sesh=s,name="rh.hippoSfVolumes.long.txt")) %>% do.call(rbind,.)
+names(hip_r)[which(!names(hip_r)=="MRI_S_ID")] <- paste0("Hip_Right_",names(hip_r)[which(!names(hip_r)=="MRI_S_ID")])
+
+# merge data
+subcort_all <- merge(x=thal_lr, y=amy_l, by="MRI_S_ID")
+subcort_all <- merge(x=subcort_all, y=amy_r, by="MRI_S_ID")
+subcort_all <- merge(x=subcort_all, y=hip_l, by="MRI_S_ID")
+subcort_all <- merge(x=subcort_all, y=hip_r, by="MRI_S_ID")
+
+# replate problematic characters with underscores in column names
+colnames(subcort_all) <- gsub("-","_",colnames(subcort_all))
+colnames(subcort_all) <- gsub("\\(","_",colnames(subcort_all))
+colnames(subcort_all) <- gsub("\\)","_",colnames(subcort_all))
+
+# read eTIV
+etiv <- read.csv(file.path(dpath,"etiv_cross_sectional.txt"), header=TRUE)
+
+```
+
+## load sistat data and get lists of scans to use
+all sistat tables should be exported as CSVs into a single directory
+the next several chunks deal with reading, cleaning and annotating the data exported from sistat, and then age matching
+the hcs sample is younger than del due to a large amount of very young hcs subjects. plan is to match samples by using followup timepoints rather than baseline for some younger participants, and dropping several older del subjects, and younger hcs subjects (prioritizing dropping subjects with worse motion stats when possible)
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# set location of directory with ucla sistat CSVs
+csvdir_ucla <- file.path(project,"demographics/ucla_sistat")
+
+# get list of files_ucla in directory
+files_ucla <- list.files(csvdir_ucla)
+fpaths <- lapply(files_ucla, function(file) paste(csvdir_ucla,file,sep="/"))
+
+# clean names
+fnames <- gsub(".csv","",files_ucla)
+fnames <- gsub("Re22Q_","",fnames)
+fnames <- gsub("Form_","",fnames)
+fnames <- gsub("Qry_","",fnames)
+
+# read all, set to na: "-9999", "-9998","." 
+input_all_ucla <- lapply(fpaths, read.csv, header=T, na.strings=c(".","-9999","-9998"), strip.white=T, sep=",")
+names(input_all_ucla) <- fnames
+df_all_ucla <- lapply(input_all_ucla, function(x) data.frame(x))
+
+# get demo_mri 
+ucla_demo <- df_all_ucla$demo_mri
+
+# remove "FAMILY MEMBER" designation from subject identity
+ucla_demo$SUBJECT_IDENTITY <- ucla_demo$SUBJECT_IDENTITY %>% sub("FAMILY MEMBER","",.) %>% sub(",","",.) %>% trimws(which="both") %>% as.factor
+# change sex coding from 0/1 to F/M and set to factor
+ucla_demo$SEX <- factor(ucla_demo$SEX,levels=c(0,1),labels=c("F","M"))
+```
+
+# TEMPORARY
+read temporary csv with several subjects not yet in sistat
+```{r}
+# TODO: this chunk is temporary until sistat is updated 
+# TODO: note: q_0526 sex was "na" in original sheet, changed to M because combat can't have NAs
+# read new data
+temp_demo <- read_xlsx(file.path(project,"demographics/temporary/sMRI_demo_info_forCharlie.xlsx"), col_names=TRUE,na="",trim_ws = TRUE)
+
+# make empty demographics data frame to add new data to
+demo_add <- ucla_demo[1:nrow(temp_demo),]
+demo_add[,] <- NA
+demo_add$SUBJECTID <- temp_demo$`Subject ID`
+demo_add$SUBJECT_IDENTITY <- temp_demo$Diagnosis
+demo_add$MRI_S_ID <- temp_demo$`MRI ID`
+demo_add$SEX <- as.factor(temp_demo$Sex)
+demo_add$AGE <- temp_demo$Age
+demo_add$AGEMONTH <- temp_demo$Age*12
+demo_add$CONVERTEDVISITNUM <- 2
+
+# append to ucla demo
+ucla_demo <- rbind(ucla_demo,demo_add)
+```
+ 
+continue regular steps
+```{r}
+# manually fix missing sex for Q_0381_09102019
+# TODO: fix in sistat and re-export
+ucla_demo[which(ucla_demo$MRI_S_ID == "Q_0381_09102019"),"SEX"] <- "F"
+
+# set race=NA to 7 (unknown)
+ucla_demo$RACE[is.na(ucla_demo$RACE)] <- 7
+# set race as factor 1=American Indian/Alaska Native; 2=Asian; 3=Native Hawaiian/Pacific Islander; 4=Black or African American; 5=White; 6=Multiple; 7=Unknown
+ucla_demo$RACE <- factor(ucla_demo$RACE,levels=c(1:7),labels=c("1_Native_American","2_Asian","3_Pacific_Island","4_Black","5_White","6_Multiple","7_Unknown"))
+# ethnicity as factor with 0=N 1=Y
+ucla_demo$HISPANIC[is.na(ucla_demo$HISPANIC)] <- "Unknown"
+ucla_demo$HISPANIC <- factor(ucla_demo$HISPANIC,levels=c(0,1,"Unknown"),labels=c("N","Y","Unknown"))
+# get more accurate age with AGEMONTH/12
+ucla_demo$AGE <- as.numeric(ucla_demo$AGEMONTH)/12 
+
+# subset to used scans
+ucla_demo <- filter(ucla_demo, MRI_S_ID %in% subcort_all$MRI_S_ID)
+
+# function to add column to code timepoints relative to sample used (i.e. if visit 1 and 1.12 missing, then 1.24 is baseline)
+# trio/prisma coded as T/P-visit_n where T-1 would be the subject's first trio scan and P-1 the first prisma, P-2 the second...
+# function should be applied to the indicies of rows (r) in a subset of demo_mri
+gettp <- function(r, df){
+  sub <- df$SUBJECTID[[r]]
+  visit <- df$CONVERTEDVISITNUM[[r]]
+  all_visits <- df$CONVERTEDVISITNUM[which(df$SUBJECTID == sub)] %>% sort
+  n_visits <- length(all_visits)
+  nt_visits <-length(which(all_visits < 2))
+  np_visits <- length(which(all_visits >= 2))
+  visit_index <- which(all_visits == visit)
+  if (visit < 2){
+    label=paste("T-",visit_index,sep="")
+  }else if (visit >= 2){
+    p_visits <- all_visits[which(all_visits >= 2)] %>% sort
+    p_visit_index <- which(p_visits == visit)
+    label=paste("P-",p_visit_index,sep="")
+  }
+  return(c(sub,visit,label,n_visits,nt_visits,np_visits,visit_index))
+}
+
+# get timepoints
+timepoints <- lapply(1:nrow(ucla_demo),function(r) gettp(r,ucla_demo)) %>% do.call(rbind,.) %>% as.data.frame
+colnames(timepoints) <- c("SUBJECTID","CONVERTEDVISITNUM","converted_timepoint","n_timepoints","n_trio","n_prisma","visit_index")
+ucla_demo_tp <- cbind(ucla_demo,timepoints[,3:7])
+ucla_demo_tp$visit_index %<>% as.factor
+
+# subset to BASELINE under max age limit (45 years old)
+ucla_demo_tp_agelim <- filter(ucla_demo_tp, ucla_demo_tp$AGE < 50 & visit_index ==1)
+
+# subset to hcs del
+#ucla_demo_hcs_del <- ucla_demo_tp_agelim %>% filter(SUBJECT_IDENTITY=="CONTROL" | SUBJECT_IDENTITY =="PATIENT-DEL")
+
+# remove unused factor levels
+ucla_demo_tp_agelim %<>% droplevels
+```
+
+All timepoints, pre-matching demographics summary
+```{r}
+demo_summary <- CreateTableOne(data=ucla_demo_tp_agelim,vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
+print(demo_summary, showAllLevels=T)
+```
+
+Baseline pre-matching summary
+```{r}
+demo_summary_bl <- CreateTableOne(data=filter(ucla_demo_tp_agelim, visit_index == 1),vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
+print(demo_summary_bl)
+```
+## Harmonize sites
+longCombat for subcortical structures 
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# add site column
+#ucla_demo_tp_agelim$site <- gsub("*-[0-9]","",ucla_demo_tp_agelim$converted_timepoint)
+#
+## get feature names
+#sc_names <- names(subcort_all)[which(names(subcort_all) != "MRI_S_ID")]
+#
+## merge subcort_all with demo
+#demo_sc <- merge(x=ucla_demo_tp_agelim, y=subcort_all, by="MRI_S_ID", all.x=TRUE)
+#
+## merge with eTIV
+#demo_sc <- merge(x=demo_sc, y=etiv, by="MRI_S_ID")
+#
+## make numeric gene dosage column from SUBJECT_IDENTITY
+#demo_sc$gene_dosage <- demo_sc$SUBJECT_IDENTITY %>% gsub("PATIENT-DEL","1",.) %>% gsub("CONTROL","2",.) %>% gsub("PATIENT-DUP","3",.) %>% as.numeric
+#
+## set up longCombat variables
+## formula should match fixed effects in your subsequent analysis
+## subject id coded as random effect by (1|subject id variable)
+#demovars <- c("MRI_S_ID","SUBJECTID","site","gene_dosage","AGE","SEX","eTIV","visit_index")
+#features <- sc_names
+#idvar <- 'MRI_S_ID'
+#batchvar <- 'site'
+#timevar <- 'visit_index'
+#formula <- 'gene_dosage + AGE + SEX + eTIV'
+#ranef <- '(1|SUBJECTID)'
+#
+## make data frame with columns for each variable in the model
+## one column for each variable in your formula as well as one column for each neuroimaging feature
+## input df should not have any unused columns or package will error
+## one row per unique scan
+#combat_input<- demo_sc[,c(demovars,features)]
+#
+## run longCombat
+#sc_vol_combat <- longCombat(data=combat_input, idvar=idvar, timevar=timevar, batchvar=batchvar, features=features, formula=formula, ranef=ranef)
+#
+## get the harmonized data
+#sc_vol_combat_data <- sc_vol_combat$data_combat
+#
+## merge combat back with original
+#demo_combat <- merge(x=demo_sc, y=sc_vol_combat_data, by=c("MRI_S_ID","visit_index","site"))
+```
+
+LME to test effect of 22q11.2 CNV dosage on combat adjusted features
+```{r warning=FALSE}
+# add site column
+ucla_demo_tp_agelim$site <- gsub("*-[0-9]","",ucla_demo_tp_agelim$converted_timepoint)
+
+# get feature names
+sc_names <- names(subcort_all)[which(names(subcort_all) != "MRI_S_ID")]
+
+# merge subcort_all with demo
+demo_sc <- merge(x=ucla_demo_tp_agelim, y=subcort_all, by="MRI_S_ID", all.x=TRUE)
+
+# merge with eTIV
+demo_sc <- merge(x=demo_sc, y=etiv, by="MRI_S_ID")
+
+# make numeric gene dosage column from SUBJECT_IDENTITY
+demo_sc$gene_dosage <- demo_sc$SUBJECT_IDENTITY %>% gsub("PATIENT-DEL","1",.) %>% gsub("CONTROL","2",.) %>% gsub("PATIENT-DUP","3",.) %>% as.numeric
+
+
+# test random intercept model at each region
+lm_nocombat <- lapply(sc_names, function(r) lm(formula=reformulate(c("gene_dosage","AGE","SEX","eTIV","site"), response=r),data=demo_sc))
+
+# get p-val for gene dosage effect
+gene_dosage_effect <- lapply(lm_nocombat, function(l) summary(l)$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_dosage_effect) <- c("gene_dosage_beta","gene_dosage_p")
+gene_dosage_effect$gene_dosage_fdr_q <- p.adjust(gene_dosage_effect$gene_dosage_p, method="fdr")
+gene_dosage_effect$Region <- sc_names
+gene_dosage_effect$fdr_sig <- gene_dosage_effect$gene_dosage_fdr_q < 0.05
+
+# get only significant effects
+gene_dosage_effect_sig <- filter(gene_dosage_effect,fdr_sig==TRUE)
+gene_dosage_effect_sig <- gene_dosage_effect_sig[order(gene_dosage_effect_sig$gene_dosage_beta),]
+
+#write.table(gene_dosage_effect_sig, file="~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/gene_dosage_lme_significant.csv", sep=",", col.names = TRUE, row.names = FALSE)
+```
+
+volume barplots by gene dosage for select regions
+```{r}
+ggplot(data=demo_combat, aes(x=gene_dosage, y=Thal_Left_MDm.combat, group=gene_dosage, fill=gene_dosage))+
+  geom_boxplot()+
+  scale_fill_viridis()+
+  xlab("22q11.2 CNV dosage")+
+  ylab("L Thal MDm volume")+
+  ggtitle("Left Thal MDm volume")+
+  theme_classic()
+
+
+ggplot(data=demo_combat, aes(x=gene_dosage, y=Thal_Right_MDm.combat, group=gene_dosage, fill=gene_dosage))+
+  geom_boxplot()+
+  scale_fill_viridis()+
+  xlab("22q11.2 CNV dosage")+
+  ylab("R Thal MDm volume")+
+  ggtitle("Right Thal MDm volume")+
+  theme_classic()
+
+ggplot(data=demo_combat, aes(x=gene_dosage, y=Hip_Right_Whole_hippocampus.combat, group=gene_dosage, fill=gene_dosage))+
+  geom_boxplot()+
+  scale_fill_viridis()+
+  xlab("22q11.2 CNV dosage")+
+  ylab("R Whole Hipp volume")+
+  ggtitle("Right whole Hipp volume")+
+  theme_classic()
+
+
+```
+To test for group differences, not just gene dosage effects (e.g. Dup and Del both decreased), use a model with a binary variable for each group? or two separate case/control models? 
+
+```{r warning=FALSE}
+# test random intercept model at each region separately in Del and Dup
+lme_combat_del <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","SEX","eTIV","site","(1|SUBJECTID)"), response=r),data=filter(demo_combat, gene_dosage %in% c(1,2)), REML=TRUE))
+
+lme_combat_dup <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","SEX","eTIV","site","(1|SUBJECTID)"), response=r),data=filter(demo_combat, gene_dosage %in% c(2,3)), REML=TRUE))
+
+# get p-val for gene dosage effect
+gene_dosage_effect_del <- lapply(lme_combat_del, function(l) summary(l)$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_dosage_effect_del) <- c("gene_dosage_beta","gene_dosage_p")
+gene_dosage_effect_del$Region <- sc_names_combat
+gene_dosage_effect_del$model <- "Del"
+
+gene_dosage_effect_dup <- lapply(lme_combat_dup, function(l) summary(l)$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_dosage_effect_dup) <- c("gene_dosage_beta","gene_dosage_p")
+gene_dosage_effect_dup$Region <- sc_names_combat
+gene_dosage_effect_dup$model <- "Dup"
+
+del_dup_vs_hc <- rbind(gene_dosage_effect_del,gene_dosage_effect_dup)
+del_dup_vs_hc$gene_dosage_fdr_q <- p.adjust(del_dup_vs_hc$gene_dosage_p, method="fdr")
+del_dup_vs_hc$fdr_sig <- del_dup_vs_hc$gene_dosage_fdr_q < 0.05
+
+del_dup_vs_hc_merged <- merge(x=filter(del_dup_vs_hc, model=="Del"), y=filter(del_dup_vs_hc, model=="Dup"), by="Region")
+
+# get only effects that are significant in both models
+del_dup_vs_hc_merged_sig <- filter(del_dup_vs_hc_merged,fdr_sig.x==TRUE,fdr_sig.y==TRUE)
+#del_dup_vs_hc_sig <- del_dup_vs_hc_sig[order(del_dup_vs_hc_sig$gene_dosage_beta),]
+```
+
+LME for gene_dosage * Age linear interaction
+```{r warning=FALSE}
+# test random intercept model for group*age interaction at each region
+lme_combat_agegene <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*AGE","SEX","eTIV","site","(1|SUBJECTID)"), response=r),data=demo_combat, REML=TRUE))
+
+# get p-val for gene dosage effect
+gene_by_age_effect <- lapply(lme_combat_agegene, function(l) summary(l)$coefficients["gene_dosage:AGE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_by_age_effect) <- c("gene_by_age_beta","gene_by_age_p")
+gene_by_age_effect$gene_by_age_fdr_q <- p.adjust(gene_by_age_effect$gene_by_age_p, method="fdr")
+gene_by_age_effect$Region <- sc_names_combat
+gene_by_age_effect$fdr_sig <- gene_by_age_effect$gene_by_age_fdr_q < 0.05
+
+# get only significant effects
+gene_by_age_effect_sig <- filter(gene_by_age_effect,fdr_sig==TRUE)
+#gene_by_age_effect_sig <- gene_by_age_effect_sig[order(gene_by_age_effect_sig$gene_dosage_beta),]
+
+#write.table(gene_dosage_effect_sig, file="~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/gene_dosage_lme_significant.csv", sep=",", col.names = TRUE, row.names = FALSE)
+```
+
+LME for separate group*age interaction in each group 
+```{r warning=FALSE}
+
+# test random intercept model for group*age interaction at each region
+lme_combat_agegene_del <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*AGE","SEX","eTIV","site","(1|SUBJECTID)"), response=r),data=filter(demo_combat, gene_dosage %in% c(1,2)), REML=TRUE))
+
+lme_combat_agegene_dup <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*AGE","SEX","eTIV","site","(1|SUBJECTID)"), response=r),data=filter(demo_combat, gene_dosage %in% c(2,3)), REML=TRUE))
+
+# get p-val for gene dosage effect
+gene_by_age_effect_del <- lapply(lme_combat_agegene_del, function(l) summary(l)$coefficients["gene_dosage:AGE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_by_age_effect_del) <- c("gene_by_age_beta","gene_by_age_p")
+gene_by_age_effect_del$Region <- sc_names_combat
+gene_by_age_effect_del$model <- "Del"
+
+gene_by_age_effect_dup <- lapply(lme_combat_agegene_dup, function(l) summary(l)$coefficients["gene_dosage:AGE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_by_age_effect_dup) <- c("gene_by_age_beta","gene_by_age_p")
+gene_by_age_effect_dup$Region <- sc_names_combat
+gene_by_age_effect_dup$model <- "Dup"
+
+gene_by_age_del_dup_vs_hc <- rbind(gene_by_age_effect_del,gene_by_age_effect_dup)
+gene_by_age_del_dup_vs_hc$gene_by_age_fdr_q <- p.adjust(gene_by_age_del_dup_vs_hc$gene_by_age_p, method="fdr")
+#gene_by_age_del_dup_vs_hc$fdr_sig <- gene_by_age_del_dup_vs_hc$gene_dosage_fdr_q < 0.05
+
+#gene_by_age_del_dup_vs_hc_merged <- merge(x=filter(gene_by_age_del_dup_vs_hc, model=="Del"), y=filter(gene_by_age_del_dup_vs_hc, model=="Dup"), by="Region")
+
+# get only effects that are significant in both models
+#del_dup_vs_hc_merged_sig <- filter(del_dup_vs_hc_merged,fdr_sig.x==TRUE,fdr_sig.y==TRUE)
+
+
+
+```
+
+
+
+
+
+
+

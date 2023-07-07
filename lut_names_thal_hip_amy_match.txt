@@ -1,0 +1,85 @@
+Structure,Name,region,number,region_alt,R,G,B,A
+thalamus,lateral geniculate,Left-LGN,8109,Left-LGN,0,0,127,0
+thalamus,lateral geniculate,Right-LGN,8209,Right-LGN,0,0,127,0
+thalamus,medial geniculate,Right-MGN,8215,Right-MGN,170,255,127,0
+thalamus,medial geniculate,Left-MGN,8115,Left-MGN,170,255,127,0
+thalamus,pulvinar inferior,Left-PuI,8121,Left-PuI,170,170,255,0
+thalamus,pulvinar medial,Left-PuM,8123,Left-PuM,170,255,255,0
+thalamus,limitans (suprageniculate),Left-L-Sg,8111,Left-L-Sg,170,85,127,0
+thalamus,ventral posterolateral,Left-VPL,8133,Left-VPL,255,0,255,0
+thalamus,centromedian,Left-CM,8106,Left-CM,170,170,0,0
+thalamus,ventral lateral anterior,Left-VLa,8128,Left-VLa,85,170,0,0
+thalamus,pulvinar anterior,Left-PuA,8120,Left-PuA,0,170,255,0
+thalamus,mediodorsal medial,Left-MDm,8113,Left-MDm,170,170,127,0
+thalamus,parafascicular,Left-Pf,8118,Left-Pf,0,85,255,0
+thalamus,ventral anterior,Left-VAmc,8127,Left-VAmc,255,85,0,0
+thalamus,mediodorsal lateral,Left-MDl,8112,Left-MDl,0,170,127,0
+thalamus,central medial,Left-CeM,8104,Left-CeM,170,85,0,0
+thalamus,ventral anterior,Left-VA,8126,Left-VA,85,85,0,0
+thalamus,medial ventral (reuniens),Left-MV(Re),8116,Left-MV(Re),0,0,255,0
+thalamus,ventromedial,Left-VM,8130,Left-VM,85,255,0,0
+thalamus,central lateral,Left-CL,8105,Left-CL,0,170,0,0
+thalamus,pulvinar lateral,Left-PuL,8122,Left-PuL,0,255,255,0
+thalamus,paratenial,Left-Pt,8119,Left-Pt,170,85,255,0
+thalamus,anteroventral,Left-AV,8103,Left-AV,0,85,0,0
+thalamus,paracentral,Left-Pc,8117,Left-Pc,170,0,255,0
+thalamus,ventral lateral posterior,Left-VLp,8129,Left-VLp,255,170,0,0
+thalamus,lateral posterior,Left-LP,8110,Left-LP,0,85,127,0
+thalamus,pulvinar inferior,Right-PuI,8221,Right-PuI,170,170,255,0
+thalamus,pulvinar medial,Right-PuM,8223,Right-PuM,170,255,255,0
+thalamus,limitans (suprageniculate),Right-L-Sg,8211,Right-L-Sg,170,85,127,0
+thalamus,ventral posterolateral,Right-VPL,8233,Right-VPL,255,0,255,0
+thalamus,centromedian,Right-CM,8206,Right-CM,170,170,0,0
+thalamus,ventral lateral anterior,Right-VLa,8228,Right-VLa,85,170,0,0
+thalamus,pulvinar anterior,Right-PuA,8220,Right-PuA,0,170,255,0
+thalamus,mediodorsal medial,Right-MDm,8213,Right-MDm,170,170,127,0
+thalamus,parafascicular,Right-Pf,8218,Right-Pf,0,85,255,0
+thalamus,ventral anterior,Right-VAmc,8227,Right-VAmc,255,85,0,0
+thalamus,mediodorsal lateral,Right-MDl,8212,Right-MDl,0,170,127,0
+thalamus,vental anterior,Right-VA,8226,Right-VA,85,85,0,0
+thalamus,medial ventral (reuniens),Right-MV(Re),8216,Right-MV(Re),0,0,255,0
+thalamus,central medial,Right-CeM,8204,Right-CeM,170,85,0,0
+thalamus,ventromedial,Right-VM,8230,Right-VM,85,255,0,0
+thalamus,pulvinar lateral,Right-PuL,8222,Right-PuL,0,255,255,0
+thalamus,central lateral,Right-CL,8205,Right-CL,0,170,0,0
+thalamus,ventral lateral posterior,Right-VLp,8229,Right-VLp,255,170,0,0
+thalamus,paracentral,Right-Pc,8217,Right-Pc,170,0,255,0
+thalamus,paratenial,Right-Pt,8219,Right-Pt,170,85,255,0
+thalamus,anteroventral,Right-AV,8203,Right-AV,0,85,0,0
+thalamus,lateral posterior,Right-LP,8210,Right-LP,0,85,127,0
+thalamus,laterodorsal,Left-LD,8108,Left-LD,170,255,0,0
+thalamus,laterodorsal,Right-LD,8208,Right-LD,170,255,0,0
+thalamus,left whole thalamus,Left-Whole_thalamus,NA,NA,NA,NA,NA,NA
+thalamus,right whole thalamus,Right-Whole_thalamus,NA,NA,NA,NA,NA,NA
+hippocampus,hippocampal tail,Hippocampal_tail,226,HP_tail,170,170,255,0
+hippocampus,subiculum body,subiculum-body,236,subiculum-body,0,0,255,0
+hippocampus,CA1 body,CA1-body,238,CA1-body,255,0,0,0
+hippocampus,subiculum head,subiculum-head,235,subiculum-head,0,0,175,0
+hippocampus,hippocampal fissure,hippocampal-fissure,215,hippocampal_fissure,128,32,255,0
+hippocampus,presubiculum head,presubiculum-head,233,presubiculum-head,32,0,32,0
+hippocampus,CA1 head,CA1-head,237,CA1-head,175,75,75,0
+hippocampus,presubiculum body,presubiculum-body,234,presubiculum-body,64,0,64,0
+hippocampus,parasubiculum,parasubiculum,203,parasubiculum,175,175,75,0
+hippocampus,molecular layer head,molecular_layer_HP-head,245,molecular_layer_HP-head,100,25,25,0
+hippocampus,molecular layer body,molecular_layer_HP-body,246,molecular_layer_HP-body,128,0,0,0
+hippocampus,GC ML DG head,GC-ML-DG-head,243,GC-ML-DG-head,75,125,175,0
+hippocampus,CA3 body,CA3-body,240,CA3-body,0,128,0,0
+hippocampus,GC ML DG body,GC-ML-DG-body,244,GC-ML-DG-body,32,200,255,0
+hippocampus,CA4 head,CA4-head,241,CA4-head,120,90,50,0
+hippocampus,CA4 body,CA4-body,242,CA4-body,196,160,128,0
+hippocampus,fimbria,fimbria,212,fimbria,204,153,204,0
+hippocampus,CA3 head,CA3-head,239,CA3-head,0,80,0,0
+hippocampus,hippocampal amydgala transition area,HATA,211,HATA,128,255,128,0
+hippocampus,whole hippocampus,Whole_hippocampus,NA,NA,NA,NA,NA,NA
+hippocampus,whole hippocampus body,Whole_hippocampal_body,NA,NA,NA,NA,NA,NA
+hippocampus,whole hippocampus head,Whole_hippocampal_head,NA,NA,NA,NA,NA,NA
+amygdala,lateral nucleus,Lateral-nucleus,7001,Lateral-nucleus,72,132,181,0
+amygdala,basal nucleus,Basal-nucleus,7003,Basal-nucleus,207,63,79,0
+amygdala,accessory basal nucleus,Accessory-Basal-nucleus,7008,Accessory-Basal-nucleus,232,146,35,0
+amygdala,anterior amygdaloid area,Anterior-amygdaloid-area-AAA,7010,Anterior-amygdaloid-area-AAA,250,250,0,0
+amygdala,central nucleus,Central-nucleus,7005,Central-nucleus,197,60,248,0
+amygdala,medial nucleus,Medial-nucleus,7006,Medial-nucleus,2,149,2,0
+amygdala,cortical nucleus,Cortical-nucleus,7007,Cortical-nucleus,221,249,166,0
+amygdala,corticoamygdaloid transition,Corticoamygdaloid-transitio,7009,Corticoamygdaloid-transitio,20,60,120,0
+amygdala,paralaminar nucleus,Paralaminar-nucleus,7015,Paralaminar-nucleus,45,205,165,0
+amygdala,whole amygdala,Whole_amygdala,NA,NA,NA,NA,NA,NA

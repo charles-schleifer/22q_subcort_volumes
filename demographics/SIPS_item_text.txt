@@ -1,0 +1,20 @@
+item	text
+P1SEV	Unusual thought content/delusional ideas
+P2SEV	Suspiciousness/persecutory ideas
+P3SEV	Grandiose ideas
+P4SEV	Perceptual abnormalities/hallucinations
+P5SEV	Disorganized communication
+N1SEV	Social anhedonia
+N2SEV	Avolition
+N3SEV	Decreased expression of emotion
+N4SEV	Decreased experience of emotions and self
+N5SEV	Decreased ideational richness
+N6SEV	Occupational functioning
+D1SEV	Odd behavior or appearance
+D2SEV	Bizarre thinking
+D3SEV	Trouble with focus and attention
+D4SEV	Impairment in personal hygiene
+G1SEV	Sleep disturbance
+G2SEV	Dysphoric mood
+G3SEV	Motor disturbances
+G4SEV	Impaired tolerance to normal stress

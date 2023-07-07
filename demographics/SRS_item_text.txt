@@ -1,0 +1,66 @@
+item	text
+SRS1	Seems much more fidgety in social situations than when alone
+SRS2	Expressions on their face don't match what they are saying
+SRS3	Seems self-confident when interacting with others
+SRS4	When under stress, shows rigid or inflexible patterns of behavior that seem odd
+SRS5	Doesn't recognize when others are trying to take advantage of them
+SRS6	Would rather be alone than with others
+SRS7	Is aware of what others are thinking or feeling
+SRS8	Behaves in ways that seem strange or bizarre
+SRS9	Clings to adults, seems too dependent on them
+SRS10	Takes things too literally and doesn't get the real meaning of a conversation
+SRS11	Has good self-confidence
+SRS12	Is able to communicate their feelings to others
+SRS13	Is awkward in turn-taking interactions with peers
+SRS14	Is not well coordinated
+SRS15	Is able to understand the meaning of others' tone of voice/facial expressions
+SRS16	Avoids eye contact or has unusual eye contact
+SRS17	Recognizes when something is unfair
+SRS18	Has difficulty making friends, even when trying their best
+SRS19	Gets frustrated trying to get ideas across in conversations
+SRS20	Shows unusual sensory interests or strange ways of playing with toys
+SRS21	Is able to imitate others' actions
+SRS22	Plays appropriately with children their age
+SRS23	Does not join group activities unless told to do so
+SRS24	Has more difficulty than other children with changes is their routine
+SRS25	Doesnt seem to mind being out of step with or not on the came wavelength as others
+SRS26	Offers comfort to other when they are sad
+SRS27	Avoids starting social interactions with peers or adults
+SRS28	Thinks or talk about the same thing over and over
+SRS29	Is regarded by the other children as odd or weird
+SRS30	Becomes upset in a situation with lots of things going on
+SRS31	Can't get their mind off something once they start thinking about it
+SRS32	Has good personal hygeiene
+SRS33	Is socially awkward, even when they are trying to be polite
+SRS34	Avoids people who want to be emotionally close to them
+SRS35	Has trouble keeping up with the flow of a normal conversation
+SRS36	Has difficulty relating to adults
+SRS37	Has difficulty relating to peers
+SRS38	Responds appropriately to mood changes in others
+SRS39	Has an unusually narrow range of interests
+SRS40	Is imaginative, good at pretending (without losing touch with reality)
+SRS41	Wanders aimlessly from one activity to another
+SRS42	Seems overly sensitive to sounds, textures, or smells
+SRS43	Separates easily from caregivers
+SRS44	Doesn't understand cause and effect the way other children their age do
+SRS45	Focuses their attention to where others are looking or listening
+SRS46	Has overly serious facial expressions
+SRS47	Is too silly or laughs inappropriately
+SRS48	Has a sense of humor, understands jokes
+SRS49	Does extremely well at a few tasks, but not at most other tasks
+SRS50	Has repetitive behaviors such as hand flapping or rocking
+SRS51	Has difficulty answering questions directly and ends up talking around the subject
+SRS52	Knows when they are talking too loud or making too much noise
+SRS53	Talks to people with an unusual tone of voice
+SRS54	Seems to react to people as if they are objects
+SRS55	Knows when they are too close to someone or is invading someone's space
+SRS56	Walks in between two people who are talking
+SRS57	Gets teased a lot
+SRS58	Concentrates too much on parts of things rather than seeing the whole picture	
+SRS59	Is overly suspicious
+SRS60	Is emotionally distant, doesn't show their feelings
+SRS61	Is inflexible, has a hard time changing their mind
+SRS62	Gives unusual or illogical reasons for doing things
+SRS63	Touches others in an unusual way
+SRS64	Is too tense in social settings
+SRS65	Stares or gazes off into space

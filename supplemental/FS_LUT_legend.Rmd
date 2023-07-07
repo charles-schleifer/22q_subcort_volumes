@@ -1,0 +1,173 @@
+---
+title: "22q_subcort_volumes"
+author: "charlie schleifer"
+date: "2/8/23"
+output: html_document
+---
+## Overview
+read freesurfer lookup table and print colors
+
+## set up workspace
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# clear workspace
+rm(list = ls(all.names = TRUE))
+
+# list packages to load
+# ciftiTools dependency rgl may need XQuartz installed in order to visualize surfaces
+#packages <- c("conflicted", "here", "magrittr", "mgcv", "gratia", "lme4", "lmerTest", "invgamma", "longCombat", "ciftiTools", "readxl", "dplyr", "data.table", "DescTools","tableone", "tibble", "reshape2", "viridis", "scico", "ggplot2", "gridExtra", "ggpubr","stringr")
+
+packages <- c("conflicted", "here", "magrittr", "dplyr", "data.table", "readxl", "tableone","ggplot2","svglite", "viridis", "longCombat")
+
+# install packages if not yet installed
+all_packages <- rownames(installed.packages())
+installed_packages <- packages %in% all_packages
+if (any(installed_packages == FALSE)){install.packages(packages[!installed_packages])}
+
+# load packages
+invisible(lapply(packages, library, character.only = TRUE))
+
+# use the filter function from dplyr, not stats
+conflict_prefer("filter", "dplyr")
+
+# get path to project repo directory
+project <- here()
+print(paste("Project directory:", project))
+
+```
+
+## read data
+```{r}
+
+lut <- read.table(file.path(project,"lut_names_thal_hip_amy_edit.txt"), header=TRUE)
+lut$hexcode <- lapply(1:nrow(lut), function(r)rgb(red=lut[r,"R"], green=lut[r,"G"], blue=lut[r,"B"], maxColorValue = 255)) %>% do.call(rbind,.)
+#lut$hexcode <- rgb(red=lut$R, green=lut$G, blue=lut$B, maxColorValue = 255)
+lut$order <- 1:nrow(lut)
+
+```
+
+## plot lookup table
+```{r}
+# get color table based on hexcodes
+# Note: need to reference hexcodes outside of aes()
+plot <- ggplot(data=lut, aes(x="color", y=reorder(Name, -order)))+
+  geom_tile(fill=lut$hexcode, color="black")+
+  theme_classic()+
+  theme(plot.background = element_rect(fill = "black"),
+        panel.background = element_rect(fill = "black"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.text.y=element_text(color="white",family="Arial"),
+        axis.text.x=element_blank())+
+  coord_equal()+
+  xlab("")
+  #ggtitle("sMRI legend")
+
+plot
+ggsave(plot=plot, filename=file.path(project,"figures/atlas/subcort_legend.svg"), width=8, height=8,units="in",device = "svg")
+
+
+# Amygdala only
+plotA <- ggplot(data=lut[45:53,], aes(x="color", y=reorder(Name, -order)))+
+  geom_tile(fill=lut[45:53,]$hexcode, color="black")+
+  theme_classic()+
+  theme(plot.background = element_rect(fill = "black"),
+        panel.background = element_rect(fill = "black"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.text.y=element_text(color="white",family="Arial"),
+        axis.text.x=element_blank())+
+  coord_equal()+
+  xlab("")
+  #ggtitle("sMRI legend")
+
+plotA
+ggsave(plot=plotA, filename=file.path(project,"figures/atlas/subcort_legend_amygdala.svg"),units="in",device = "svg")
+
+# Hippocampus only
+plotH1 <- ggplot(data=lut[26:35,], aes(x="color", y=reorder(Name, -order)))+
+  geom_tile(fill=lut[26:35,]$hexcode, color="black")+
+  theme_classic()+
+  theme(plot.background = element_rect(fill = "black"),
+        panel.background = element_rect(fill = "black"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.text.y=element_text(color="white",family="Arial"),
+        axis.text.x=element_blank())+
+  coord_equal()+
+  xlab("")
+  #ggtitle("sMRI legend")
+
+plotH1
+ggsave(plot=plotH1, filename=file.path(project,"figures/atlas/subcort_legend_hip1.svg"),units="in",device = "svg")
+
+plotH2 <- ggplot(data=lut[36:44,], aes(x="color", y=reorder(Name, -order)))+
+  geom_tile(fill=lut[36:44,]$hexcode, color="black")+
+  theme_classic()+
+  theme(plot.background = element_rect(fill = "black"),
+        panel.background = element_rect(fill = "black"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.text.y=element_text(color="white",family="Arial"),
+        axis.text.x=element_blank())+
+  coord_equal()+
+  xlab("")
+  #ggtitle("sMRI legend")
+
+plotH2
+ggsave(plot=plotH2, filename=file.path(project,"figures/atlas/subcort_legend_hip2.svg"),units="in",device = "svg")
+
+# Thalamus only
+plotT1 <- ggplot(data=lut[1:9,], aes(x="color", y=reorder(Name, -order)))+
+  geom_tile(fill=lut[1:9,]$hexcode, color="black")+
+  theme_classic()+
+  theme(plot.background = element_rect(fill = "black"),
+        panel.background = element_rect(fill = "black"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.text.y=element_text(color="white",family="Arial"),
+        axis.text.x=element_blank())+
+  coord_equal()+
+  xlab("")
+  #ggtitle("sMRI legend")
+
+plotT1
+ggsave(plot=plotT1, filename=file.path(project,"figures/atlas/subcort_legend_thal1.svg"),units="in",device = "svg")
+
+
+plotT2 <- ggplot(data=lut[10:17,], aes(x="color", y=reorder(Name, -order)))+
+  geom_tile(fill=lut[10:17,]$hexcode, color="black")+
+  theme_classic()+
+  theme(plot.background = element_rect(fill = "black"),
+        panel.background = element_rect(fill = "black"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.text.y=element_text(color="white",family="Arial"),
+        axis.text.x=element_blank())+
+  coord_equal()+
+  xlab("")
+  #ggtitle("sMRI legend")
+
+plotT2
+ggsave(plot=plotT2, filename=file.path(project,"figures/atlas/subcort_legend_thal2.svg"),units="in",device = "svg")
+
+
+plotT3 <- ggplot(data=lut[18:25,], aes(x="color", y=reorder(Name, -order)))+
+  geom_tile(fill=lut[18:25,]$hexcode, color="black")+
+  theme_classic()+
+  theme(plot.background = element_rect(fill = "black"),
+        panel.background = element_rect(fill = "black"),
+        axis.ticks.x=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.text.y=element_text(color="white",family="Arial"),
+        axis.text.x=element_blank())+
+  coord_equal()+
+  xlab("")
+  #ggtitle("sMRI legend")
+
+plotT3
+ggsave(plot=plotT3, filename=file.path(project,"figures/atlas/subcort_legend_thal3.svg"),units="in",device = "svg")
+
+
+```
+
+

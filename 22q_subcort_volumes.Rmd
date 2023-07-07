@@ -1,0 +1,1914 @@
+---
+title: "22q_subcort_volumes"
+author: "charlie schleifer"
+date: "2/8/23"
+output: html_document
+---
+## Overview
+Subcortical nuclei volumes for Thalamus, Hippocampus, and Amygdala were generated with FreeSurfer 7.3.2 segment_structures
+This script is for analysis of those results in 22qDel, 22qDup, and HCS
+
+## set up workspace
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# clear workspace
+rm(list = ls(all.names = TRUE))
+
+# install limma
+#install.packages("BiocManager")
+#BiocManager::install("limma")
+
+# install DMwR
+#remotes::install_github("cran/DMwR")
+
+# list packages to load
+# ciftiTools dependency rgl may need XQuartz installed in order to visualize surfaces
+#packages <- c("conflicted", "here", "magrittr", "mgcv", "gratia", "lme4", "lmerTest", "invgamma", "longCombat", "ciftiTools", "readxl", "dplyr", "data.table", "DescTools","tableone", "tibble", "reshape2", "viridis", "scico", "ggplot2", "gridExtra", "ggpubr","stringr")
+packages <- c("conflicted", "here", "magrittr", "dplyr", "data.table", "readxl", "tableone","ggplot2","gghalves","viridis","DMwR","DDoutlier","lmerTest","effects","longCombat", "limma","pls","mgcv","gratia","tidymv", "itsadug")
+
+# install packages if not yet installed
+all_packages <- rownames(installed.packages())
+installed_packages <- packages %in% all_packages
+if (any(installed_packages == FALSE)){install.packages(packages[!installed_packages])}
+
+# load packages
+invisible(lapply(packages, library, character.only = TRUE))
+
+# use the filter function from dplyr, not stats
+conflict_prefer("filter", "dplyr")
+
+# get path to project repo directory
+project <- here()
+print(paste("Project directory:", project))
+
+```
+
+## read data
+```{r}
+# path to data (organized with subject directories containing only the relevant files)
+# TODO: put data in a shared location
+dpath <- "~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/"
+
+# get files
+sessions_all <- list.files(path=dpath, pattern="Q_[0-9]")
+
+# function to read text file and change rows to columns
+#read_fssubcort <- function(path, sesh, name){
+#  file <- file.path(dpath,sesh,name)
+#  orig <- read.table(file)
+#  out <- as.data.frame(t(orig$V2))
+#  names(out) <- orig$V1
+#  #out$MRI_S_ID <- sesh
+#  # for longitudinal 
+#  out$MRI_S_ID <- gsub(".long.*","", sesh)
+#  return(out)
+#}
+
+read_fssubcort_long <- function(path, sesh, name){
+  file <- file.path(dpath,sesh,name)
+  orig <- read.table(file)
+  out <- as.data.frame(t(orig$V2))
+  names(out) <- orig$V1
+  #out$MRI_S_ID <- sesh
+  # for longitudinal need to remove end of folder name to get MRI_S_ID
+  out$MRI_S_ID <- gsub(".long.*","", sesh)
+  return(out)
+}
+
+# read data
+thal_lr <- lapply(sessions_all, function(s) read_fssubcort_long(path=dpath,sesh=s,name="ThalamicNuclei.long.volumes.txt")) %>% do.call(rbind,.)
+names(thal_lr)[which(!names(thal_lr)=="MRI_S_ID")] <- paste0("Thal_",names(thal_lr)[which(!names(thal_lr)=="MRI_S_ID")])
+amy_l <- lapply(sessions_all, function(s) read_fssubcort_long(path=dpath,sesh=s,name="lh.amygNucVolumes.long.txt")) %>% do.call(rbind,.)
+names(amy_l)[which(!names(amy_l)=="MRI_S_ID")] <- paste0("Amy_Left_",names(amy_l)[which(!names(amy_l)=="MRI_S_ID")])
+amy_r <- lapply(sessions_all, function(s) read_fssubcort_long(path=dpath,sesh=s,name="rh.amygNucVolumes.long.txt")) %>% do.call(rbind,.)
+names(amy_r)[which(!names(amy_r)=="MRI_S_ID")] <- paste0("Amy_Right_",names(amy_r)[which(!names(amy_r)=="MRI_S_ID")])
+hip_l <- lapply(sessions_all, function(s) read_fssubcort_long(path=dpath,sesh=s,name="lh.hippoSfVolumes.long.txt")) %>% do.call(rbind,.)
+names(hip_l)[which(!names(hip_l)=="MRI_S_ID")] <- paste0("Hip_Left_",names(hip_l)[which(!names(hip_l)=="MRI_S_ID")])
+hip_r <- lapply(sessions_all, function(s) read_fssubcort_long(path=dpath,sesh=s,name="rh.hippoSfVolumes.long.txt")) %>% do.call(rbind,.)
+names(hip_r)[which(!names(hip_r)=="MRI_S_ID")] <- paste0("Hip_Right_",names(hip_r)[which(!names(hip_r)=="MRI_S_ID")])
+
+# merge data
+subcort_all <- merge(x=thal_lr, y=amy_l, by="MRI_S_ID")
+subcort_all <- merge(x=subcort_all, y=amy_r, by="MRI_S_ID")
+subcort_all <- merge(x=subcort_all, y=hip_l, by="MRI_S_ID")
+subcort_all <- merge(x=subcort_all, y=hip_r, by="MRI_S_ID")
+
+# replace problematic characters with underscores in column names
+colnames(subcort_all) <- gsub("-","_",colnames(subcort_all))
+colnames(subcort_all) <- gsub("\\(","_",colnames(subcort_all))
+colnames(subcort_all) <- gsub("\\)","_",colnames(subcort_all))
+
+# read eTIV
+etiv <- read.csv(file.path(dpath,"etiv_cross_sectional.txt"), header=TRUE)
+
+# manually exclude subjects based on QC
+exclude <- c("Q_0071_03022010", "Q_0258_06062014", "Q_0288_03212017", "Q_0397_11082018", "Q_0549_10182022", "Q_0315_02162017", "Q_0167_04052012","Q_0021_08172009","Q_0361_08212017")
+subcort_all <- subcort_all %>% filter(!MRI_S_ID %in% exclude)
+
+# exclude all medial pulvinar data (poor segmentation in most images)
+subcort_all <- subset(subcort_all, select = -c(Thal_Left_PuM,Thal_Right_PuM))
+
+# exclude bilateral thalamus from n=4 sessions that have visibly poor thalamic segmentation (part of striatum appears to be included in some lateral thalamic ROIs)
+thal_exclude <- c("Q_0244_09162013", "Q_0244_09232014", "Q_0304_12202016", "Q_0425_11052019")
+thal_names <- names(subcort_all)[grep("Thal",names(subcort_all))]
+thal_ex_rows <- which(subcort_all$MRI_S_ID %in% thal_exclude)
+subcort_all[thal_ex_rows, thal_names] <- NA
+
+# get feature names
+sc_names <- names(subcort_all)[which(names(subcort_all) != "MRI_S_ID")]
+
+```
+
+histograms for each region
+```{r}
+#lapply(sc_names, function(n)hist(subcort_all[,n],main=n))
+```
+
+
+compare lh and rh within subjects
+```{r}
+## make a dataframe with different aspects of the region names
+#sc_names_lr <- data.frame(full_name=sc_names)
+#split_names <- strsplit(sc_names_lr$full_name, split="_") %>% do.call(rbind,.) %>% as.data.frame()
+#sc_names_lr$structure <- split_names$V1
+#sc_names_lr$hemi <- split_names$V2
+#sc_names_lr$name <- lapply(1:nrow(sc_names_lr), function(r) gsub(paste0(sc_names_lr[r,"structure"],"_",sc_names_lr[r,"hemi"],"_"),"",sc_names_lr[r,"full_name"])) %>% #do.call(rbind,.) 
+#
+## unique regions
+#bilat_names <- data.frame(name=unique(sc_names_lr$name))
+#bilat_names <- merge(x=bilat_names, y=filter(sc_names_lr, hemi=="Left")[,c("name","full_name")], by="name", all.x=TRUE) %>% rename("L"="full_name")
+#bilat_names <- merge(x=bilat_names, y=filter(sc_names_lr, hemi=="Right")[,c("name","full_name","structure")], by="name", all.x=TRUE) %>% rename("R"="full_name")
+#
+## function to get L-R for all structures for a specific session
+#compare_lr <- function(df=subcort_all, session, bilat_names){
+#  sesh <- filter(df, MRI_S_ID==session)
+#  l <- lapply(1:nrow(bilat_names), function(r) as.numeric(sesh[,bilat_names[r,"L"]])) %>% do.call(rbind,.)
+#  r <- lapply(1:nrow(bilat_names), function(r) as.numeric(sesh[,bilat_names[r,"R"]])) %>% do.call(rbind,.)
+#  #m <- (l+r)/2
+#  #lrdiff <- lapply(1:nrow(bilat_names), function(r) as.numeric(sesh[,bilat_names[r,"L"]])-as.numeric(sesh[,bilat_names[r,"R"]])) %>% do.call(rbind,.)
+#  #l <- lapply(1:nrow(bilat_names), function(r) as.numeric(sesh[,bilat_names[r,"L"]]))
+#  #r <- lapply(1:nrow(bilat_names), function(r) as.numeric(sesh[,bilat_names[r,"R"]]))
+#  #l <- as.numeric(sesh[,"Thal_Left_Whole_thalamus"])
+#  #out <- data.frame(name=bilat_names$name, L=l, R=r, mean=m, diff=(l-r), sdiff=(l-r)/m)
+#  out <- data.frame(MRI_S_ID=session,structure=bilat_names$structure, name=bilat_names$name, L=l, R=r, LR_ratio=(l/r))
+#  out$flag <- out$LR_ratio < 0.5 | out$LR_ratio > 2
+#  return(out)
+#}
+#
+##test <- compare_lr(session = "Q_0001_02222018", bilat_names = bilat_names, df=subcort_all)
+#
+## function to 
+#lr_all <- lapply(subcort_all$MRI_S_ID, function(s) compare_lr(session = s, bilat_names = bilat_names, df=subcort_all))
+#names(lr_all) <- subcort_all$MRI_S_ID
+#
+#lr_df <- lr_all %>% do.call(rbind,.) %>% as.data.frame
+#
+#lr_flag <- filter(lr_df, flag==TRUE)
+#
+#flag_subjects <- unique(lr_flag$MRI_S_ID)
+```
+
+local outlier factor
+```{r}
+##subcort_lof <- lapply(sc_names, function(n)lofactor(subcort_all[,n], k=10)) %>% do.call(cbind,.) %>% as.data.frame
+#subcort_lof <- lapply(sc_names, function(n)LOOP(dataset=as.data.frame(subcort_all[,n]), k=50)) %>% do.call(cbind,.) %>% as.data.frame
+#colnames(subcort_lof) <- sc_names
+#subcort_lof$MRI_S_ID <-subcort_all$MRI_S_ID
+#
+#lof_long <- melt(subcort_lof, id.vars="MRI_S_ID", measure.vars=sc_names, value.name="LOOP") 
+#sc_long  <- melt(subcort_all, id.vars="MRI_S_ID", measure.vars=sc_names, value.name="volume") 
+#vol_lof_long <- merge(lof_long,sc_long, by=c("MRI_S_ID","variable"))
+##plot(density(lof_long$value))
+#
+##lof_mean <- mean(lof_long$value)
+##lof_sd <- sd(lof_long$value)
+#
+## count as outlier if LOOP > 0.90
+#vol_lof_long$outlier <- (lof_long$LOOP > 0.90)
+#
+## get 99th %ile cutoff from all pooled LOF scores 
+##lof99 <- as.numeric(quantile(lof_long$value, probs=0.99))
+##lof_filter <- filter(lof_long, value > lof99)
+
+
+```
+
+
+```{r}
+#outlier_plot <- function(roi){
+#  df <- filter(vol_lof_long, variable==roi)
+#  ggplot(df, aes(x=volume, y=1, color=outlier))+
+#  geom_point()+
+#  scale_color_manual(values=c("black","red"))+
+#  ggtitle(roi)
+#}
+#
+#oplots <- lapply(sc_names, outlier_plot)  
+#oplots
+```
+
+
+outlier from standard deviation
+```{r}
+sc_long  <- reshape2::melt(subcort_all, id.vars="MRI_S_ID", measure.vars=sc_names, value.name="volume") 
+
+# get mean, sd, and upper and lower bounds (mean +/- 3*SD) for each roi
+roi_mean_sd <- data.frame(roi=sc_names)
+roi_mean_sd$mean <- lapply(sc_names, function(n) mean(subcort_all[,n], na.rm=TRUE)) %>% do.call(rbind,.)
+roi_mean_sd$sd <- lapply(sc_names, function(n) sd(subcort_all[,n], na.rm=TRUE)) %>% do.call(rbind,.) 
+roi_mean_sd$lower <- (roi_mean_sd$mean - (3*roi_mean_sd$sd))
+roi_mean_sd$upper <- (roi_mean_sd$mean + (3*roi_mean_sd$sd))
+
+# for each measurement, determine if outside bounds for roi
+sc_out_long <- sc_long  
+for(i in 1:nrow(sc_out_long)){
+  roi <- sc_out_long[i,"variable"]
+  vol <- sc_out_long[i,"volume"]
+  mean <- roi_mean_sd[which(roi_mean_sd$roi==roi),"mean"]
+  upper <- roi_mean_sd[which(roi_mean_sd$roi==roi),"upper"]
+  lower <- roi_mean_sd[which(roi_mean_sd$roi==roi),"lower"]
+  sc_out_long[i,"roi_mean"] <- mean
+  sc_out_long[i,"lower"] <- lower
+  sc_out_long[i,"upper"] <- upper
+  sc_out_long[i,"outlier"] <- (vol >= upper | vol <= lower)
+}
+
+out_filter <- filter(sc_out_long, outlier == TRUE)
+
+```
+
+```{r}
+outlier_plot <- function(roi){
+  df <- filter(sc_out_long, variable==roi)
+  ggplot(df, aes(x=volume, y="", color=outlier, fill=outlier))+
+  #geom_point(shape=21, alpha=0.8, position = position_jitter(width = 0, height=0.01))+
+  geom_point(shape=21, alpha=0.8)+
+  geom_vline(aes(xintercept = upper), lty="dashed", color="red", alpha=0.7)+
+  geom_vline(aes(xintercept = lower), lty="dashed", color="red", alpha=0.7)+
+  geom_vline(aes(xintercept = roi_mean), lty="dashed", color="black", alpha=0.7)+
+  scale_color_manual(values=c("black","red"))+
+  scale_fill_manual(values=c("white","red"))+
+  ggtitle(roi)+
+  ylab("")
+}
+
+oplots <- lapply(sc_names, outlier_plot)
+names(oplots) <- sc_names
+
+oplots$Thal_Right_MDm
+```
+
+## load sistat data and get lists of scans to use
+all sistat tables should be exported as CSVs into a single directory
+the next several chunks deal with reading, cleaning and annotating the data exported from sistat, and then age matching
+the hcs sample is younger than del due to a large amount of very young hcs subjects. plan is to match samples by using followup timepoints rather than baseline for some younger participants, and dropping several older del subjects, and younger hcs subjects (prioritizing dropping subjects with worse motion stats when possible)
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# set location of directory with ucla sistat CSVs
+csvdir_ucla <- file.path(project,"demographics/ucla_sistat")
+
+# get list of files_ucla in directory
+files_ucla <- list.files(csvdir_ucla)
+fpaths <- lapply(files_ucla, function(file) paste(csvdir_ucla,file,sep="/"))
+
+# clean names
+fnames <- gsub(".csv","",files_ucla)
+fnames <- gsub("Re22Q_","",fnames)
+fnames <- gsub("Form_","",fnames)
+fnames <- gsub("Qry_","",fnames)
+
+# read all, set to na: "-9999", "-9998","." 
+input_all_ucla <- lapply(fpaths, read.csv, header=T, na.strings=c(".","-9999","-9998"), strip.white=T, sep=",")
+names(input_all_ucla) <- fnames
+df_all_ucla <- lapply(input_all_ucla, function(x) data.frame(x))
+
+# get demo_mri 
+ucla_demo <- df_all_ucla$demo_mri
+
+# remove "FAMILY MEMBER" designation from subject identity
+ucla_demo$SUBJECT_IDENTITY <- ucla_demo$SUBJECT_IDENTITY %>% sub("FAMILY MEMBER","",.) %>% sub(",","",.) %>% trimws(which="both") %>% as.factor
+# change sex coding from 0/1 to F/M and set to factor
+ucla_demo$SEX <- factor(ucla_demo$SEX,levels=c(0,1),labels=c("F","M"))
+```
+
+# TEMPORARY
+read temporary csv with several subjects not yet in sistat
+```{r}
+# TODO: this chunk is temporary until sistat is updated 
+# TODO: note: q_0526 sex was "na" in original sheet, changed to M because combat can't have NAs
+# read new data
+temp_demo <- read_xlsx(file.path(project,"demographics/temporary/sMRI_demo_info_forCharlie.xlsx"), col_names=TRUE,na="",trim_ws = TRUE)
+
+# make empty demographics data frame to add new data to
+demo_add <- ucla_demo[1:nrow(temp_demo),]
+demo_add[,] <- NA
+demo_add$SUBJECTID <- temp_demo$`Subject ID`
+demo_add$SUBJECT_IDENTITY <- temp_demo$Diagnosis
+demo_add$MRI_S_ID <- temp_demo$`MRI ID`
+demo_add$SEX <- as.factor(temp_demo$Sex)
+demo_add$AGE <- temp_demo$Age
+demo_add$AGEMONTH <- temp_demo$Age*12
+demo_add$CONVERTEDVISITNUM <- 2
+
+# append to ucla demo
+ucla_demo <- rbind(ucla_demo,demo_add)
+```
+ 
+continue regular steps
+```{r}
+# manually fix missing sex for Q_0381_09102019
+# TODO: fix in sistat and re-export
+ucla_demo[which(ucla_demo$MRI_S_ID == "Q_0381_09102019"),"SEX"] <- "F"
+
+# set race=NA to 7 (unknown)
+ucla_demo$RACE[is.na(ucla_demo$RACE)] <- 7
+# set race as factor 1=American Indian/Alaska Native; 2=Asian; 3=Native Hawaiian/Pacific Islander; 4=Black or African American; 5=White; 6=Multiple; 7=Unknown
+ucla_demo$RACE <- factor(ucla_demo$RACE,levels=c(1:7),labels=c("1_Native_American","2_Asian","3_Pacific_Island","4_Black","5_White","6_Multiple","7_Unknown"))
+# ethnicity as factor with 0=N 1=Y
+ucla_demo$HISPANIC[is.na(ucla_demo$HISPANIC)] <- "Unknown"
+ucla_demo$HISPANIC <- factor(ucla_demo$HISPANIC,levels=c(0,1,"Unknown"),labels=c("N","Y","Unknown"))
+# get more accurate age with AGEMONTH/12
+ucla_demo$AGE <- as.numeric(ucla_demo$AGEMONTH)/12 
+
+# subset to used scans
+ucla_demo <- filter(ucla_demo, MRI_S_ID %in% subcort_all$MRI_S_ID)
+
+# function to add column to code timepoints relative to sample used (i.e. if visit 1 and 1.12 missing, then 1.24 is baseline)
+# trio/prisma coded as T/P-visit_n where T-1 would be the subject's first trio scan and P-1 the first prisma, P-2 the second...
+# function should be applied to the indicies of rows (r) in a subset of demo_mri
+gettp <- function(r, df){
+  sub <- df$SUBJECTID[[r]]
+  visit <- df$CONVERTEDVISITNUM[[r]]
+  all_visits <- df$CONVERTEDVISITNUM[which(df$SUBJECTID == sub)] %>% sort
+  n_visits <- length(all_visits)
+  nt_visits <-length(which(all_visits < 2))
+  np_visits <- length(which(all_visits >= 2))
+  visit_index <- which(all_visits == visit)
+  if (visit < 2){
+    label=paste("T-",visit_index,sep="")
+  }else if (visit >= 2){
+    p_visits <- all_visits[which(all_visits >= 2)] %>% sort
+    p_visit_index <- which(p_visits == visit)
+    label=paste("P-",p_visit_index,sep="")
+  }
+  return(c(sub,visit,label,n_visits,nt_visits,np_visits,visit_index))
+}
+
+# get timepoints
+timepoints <- lapply(1:nrow(ucla_demo),function(r) gettp(r,ucla_demo)) %>% do.call(rbind,.) %>% as.data.frame
+colnames(timepoints) <- c("SUBJECTID","CONVERTEDVISITNUM","converted_timepoint","n_timepoints","n_trio","n_prisma","visit_index")
+ucla_demo_tp <- cbind(ucla_demo,timepoints[,3:7])
+ucla_demo_tp$visit_index %<>% as.factor
+
+# subset to under max age limit (45 years old)
+ucla_demo_tp_agelim <- filter(ucla_demo_tp, ucla_demo_tp$AGE < 50)
+#ucla_demo_tp_agelim <- filter(ucla_demo_tp, ucla_demo_tp$AGE < 44)
+
+# subset to hcs del
+#ucla_demo_hcs_del <- ucla_demo_tp_agelim %>% filter(SUBJECT_IDENTITY=="CONTROL" | SUBJECT_IDENTITY =="PATIENT-DEL")
+
+# remove unused factor levels
+ucla_demo_tp_agelim %<>% droplevels
+```
+
+All timepoints, pre-matching demographics summary
+```{r}
+demo_summary <- CreateTableOne(data=ucla_demo_tp_agelim,vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
+print(demo_summary, showAllLevels=T)
+#print(demo_summary, showAllLevels=F)
+
+```
+
+Baseline pre-matching summary
+```{r}
+demo_summary_bl <- CreateTableOne(data=filter(ucla_demo_tp_agelim, visit_index == 1),vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
+print(demo_summary_bl)
+```
+
+Age waterfall plot
+```{r}
+ucla_demo_waterfall <- ucla_demo_tp_agelim
+ucla_demo_waterfall$Scanner <- gsub("-[0-9]","",ucla_demo_waterfall$converted_timepoint)
+ucla_demo_waterfall$Scanner %<>% gsub("T","trio",.)
+ucla_demo_waterfall$Scanner %<>% gsub("P","prisma",.)
+ucla_demo_waterfall$Group <- ucla_demo_waterfall$SUBJECT_IDENTITY
+# get age at timepoint 1 for every row
+ucla_demo_waterfall$age1 <- lapply(ucla_demo_waterfall$SUBJECTID, function(i) min(filter(ucla_demo_waterfall, SUBJECTID==i)$AGEMONTH)) %>% do.call(rbind,.)
+
+#waterfall <- ggplot(ucla_demo_waterfall, aes(x=(AGEMONTH/12), y=reorder(SUBJECTID, AGEMONTH),color=Group, fill=Group)) +
+waterfall <- ggplot(ucla_demo_waterfall, aes(x=(AGEMONTH/12), y=as.factor(age1) ,color=Group, fill=Group)) +
+  geom_point(aes(shape=Scanner), color="black",alpha=0.7) + 
+  scale_shape_manual(values = c(24,21)) + 
+  theme_classic() + 
+  theme(text=element_text(family="Arial"))+
+  theme(axis.text.y=element_blank(), axis.ticks.x=element_blank(),axis.ticks.y=element_blank()) + 
+  geom_line(aes(group=SUBJECTID,color=SUBJECT_IDENTITY),alpha=0.7) +
+  scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
+  scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
+  ylab("Individual") +
+  xlab("Age") +
+  xlim(5,50)+
+  ggtitle("Age at scan")+
+  coord_cartesian(clip = "off")
+
+waterfall
+
+#ggsave(plot=waterfall, filename=file.path(project,"figures/demographics/waterfall_subcort_age.svg"), width=6, height=6, device = "svg")
+#ggsave(plot=waterfall, filename=file.path(project,"figures/demographics/waterfall_subcort_age.png"), width=6, height=6, device = "png")
+
+
+```
+
+## Harmonize sites
+merge imaging with demographics
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# add site column
+ucla_demo_tp_agelim$site <- gsub("*-[0-9]","",ucla_demo_tp_agelim$converted_timepoint)
+
+# merge subcort_all with demo
+demo_sc <- merge(x=ucla_demo_tp_agelim, y=subcort_all, by="MRI_S_ID", all.x=TRUE)
+
+# merge with eTIV
+demo_sc <- merge(x=demo_sc, y=etiv, by="MRI_S_ID")
+demo_sc$eTIVscaled <- demo_sc$eTIV/1000000
+
+# make numeric gene dosage column from SUBJECT_IDENTITY
+demo_sc$gene_dosage <- demo_sc$SUBJECT_IDENTITY %>% gsub("PATIENT-DEL","1",.) %>% gsub("CONTROL","2",.) %>% gsub("PATIENT-DUP","3",.) %>% as.numeric
+```
+
+impute outliers and excluded data (ComBat can't have NAs in input)
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# data frame with MRI_S_ID and region names to remove
+# first get all the thalamus ROIs for the subjects with whole thal excluded
+remove_thal <- lapply(thal_exclude, function(n) data.frame(MRI_S_ID = n, variable=thal_names)) %>% do.call(rbind,.)
+# and add that to the subjects/regions in out_filter
+sparse_remove <- rbind(out_filter[,c("MRI_S_ID","variable")], remove_thal)
+# add site and gene dosage from demo_sc
+sparse_remove <- merge(x=sparse_remove, y=demo_sc[,c("MRI_S_ID","site","gene_dosage")], by="MRI_S_ID")
+
+# replace with overall mean for that structure
+demo_sc_impute <- demo_sc
+for (i in 1:nrow(sparse_remove)){
+  sesh <- as.character(sparse_remove[i,"MRI_S_ID"])
+  roi <- as.character(sparse_remove[i,"variable"])
+  s <- as.character(sparse_remove[i,"site"])
+  gd <- as.numeric(sparse_remove[i,"gene_dosage"])
+  # first, set to NA in demo_sc_impute
+  demo_sc_impute[which(demo_sc_impute$MRI_S_ID==sesh),roi] <- NA
+  # then for that ROI, get mean for the same diagnostic group and scanner as current subject
+  demo_filter <- filter(demo_sc_impute, gene_dosage == gd & site == s)
+  roi_mean <- mean(demo_filter[,roi],na.rm=TRUE)
+  # replace with mean
+  demo_sc_impute[which(demo_sc_impute$MRI_S_ID==sesh),roi] <- roi_mean
+}
+```
+
+run longComBat
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# set up longCombat variables
+# formula should match fixed effects in your subsequent analysis
+# subject id coded as random effect by (1|subject id variable)
+demovars <- c("MRI_S_ID","SUBJECTID","site","gene_dosage","AGE","SEX","eTIVscaled","visit_index")
+features <- sc_names
+idvar <- 'MRI_S_ID'
+batchvar <- 'site'
+timevar <- 'visit_index'
+formula <- 'gene_dosage + AGE + SEX + eTIVscaled'
+ranef <- '(1|SUBJECTID)'
+
+# make data frame with columns for each variable in the model
+# one column for each variable in your formula as well as one column for each neuroimaging feature
+# input df should not have any unused columns or package will error
+# one row per unique scan
+combat_input<- demo_sc_impute[,c(demovars,features)]
+
+# run longCombat
+sc_vol_combat <- longCombat(data=combat_input, idvar=idvar, timevar=timevar, batchvar=batchvar, features=features, formula=formula, ranef=ranef)
+
+# get the harmonized data
+sc_vol_combat_data <- sc_vol_combat$data_combat
+
+# merge combat back with original
+demo_combat <- merge(x=demo_sc, y=sc_vol_combat_data, by=c("MRI_S_ID","visit_index","site"))
+```
+
+LME to test effect of 22q11.2 CNV dosage on combat adjusted features
+```{r warning=FALSE}
+# get names of combat features
+sc_names_combat <- paste0(sc_names,".combat")
+
+# set outliers to NA after combat
+demo_combat_na <- demo_combat
+for (i in 1:nrow(sparse_remove)){
+  sesh <- as.character(sparse_remove[i,"MRI_S_ID"])
+  roi <- as.character(sparse_remove[i,"variable"])
+  demo_combat_na[which(demo_combat_na$MRI_S_ID==sesh),paste0(roi,".combat")] <- NA
+}
+
+# save demo_combat
+#write.csv(demo_combat_na, file=file.path(project,"22q_subcort_vols_combat_na.csv"), quote=TRUE, row.names = FALSE)
+
+# test random intercept model at each region
+lme_combat <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_na, REML=TRUE))
+names(lme_combat) <- sc_names_combat
+
+# get p-val for gene dosage effect
+gene_dosage_effect <- lapply(lme_combat, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_dosage_effect) <- c("gene_dosage_beta","gene_dosage_p")
+gene_dosage_effect$gene_dosage_fdr_q <- p.adjust(gene_dosage_effect$gene_dosage_p, method="fdr")
+gene_dosage_effect$Region <- sc_names_combat
+gene_dosage_effect$fdr_sig <- gene_dosage_effect$gene_dosage_fdr_q < 0.05
+
+# get only significant effects
+gene_dosage_effect_sig <- filter(gene_dosage_effect,fdr_sig==TRUE)
+gene_dosage_effect_sig <- gene_dosage_effect_sig[order(gene_dosage_effect_sig$gene_dosage_beta),]
+
+#write.table(gene_dosage_effect_sig, file="~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/gene_dosage_lme_significant.csv", sep=",", col.names = TRUE, row.names = FALSE)
+```
+
+make table for export with gene dosage effects
+```{r paged.print=FALSE}
+# read edited lookup table matching freesurfer names to full names
+lut <- read.csv(file.path(project,"lut_names_thal_hip_amy_match.txt"), header=TRUE)
+lut$region_match <- gsub("-","_",lut$region)
+lut$region_match <- gsub("\\(","_",lut$region_match)
+lut$region_match <- gsub("\\)","_",lut$region_match)
+
+# create data frame for export
+save_dosage_effect <- gene_dosage_effect_sig[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q")]
+colnames(save_dosage_effect) <- c("beta","p","FDR q")
+
+# get region names for matching
+save_dosage_effect$Region <- gsub(".combat","",gene_dosage_effect_sig$Region)
+save_dosage_effect$Region <- gsub("Thal_","",save_dosage_effect$Region)
+save_dosage_effect$Region <- gsub("Hip_Left_","",save_dosage_effect$Region)
+save_dosage_effect$Region <- gsub("Hip_Right_","",save_dosage_effect$Region)
+save_dosage_effect$Region <- gsub("Amy_Left_","",save_dosage_effect$Region)
+save_dosage_effect$Region <- gsub("Amy_Right_","",save_dosage_effect$Region)
+
+# get hemisphere
+save_dosage_effect$Hemi <- gsub(".combat","",gene_dosage_effect_sig$Region)
+save_dosage_effect$Hemi <- gsub("Thal_","",save_dosage_effect$Hemi)
+save_dosage_effect$Hemi <- gsub("Hip_","",save_dosage_effect$Hemi)
+save_dosage_effect$Hemi <- gsub("Amy_","",save_dosage_effect$Hemi)
+save_dosage_effect$Hemi <- gsub("_.*","",save_dosage_effect$Hemi)
+save_dosage_effect$Hemi <- gsub("Right","R",save_dosage_effect$Hemi)
+save_dosage_effect$Hemi <- gsub("Left","L",save_dosage_effect$Hemi)
+
+# merge with full names
+save_dosage_effect <- merge(x=save_dosage_effect, y=lut[c("Structure","Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
+save_dosage_effect <- save_dosage_effect[order(save_dosage_effect$beta),]
+
+save_dosage_effect$Structure <- gsub("thalamus","thal",save_dosage_effect$Structure)
+save_dosage_effect$Structure <- gsub("hippocampus","hip",save_dosage_effect$Structure)
+save_dosage_effect$Structure <- gsub("amygdala","amy",save_dosage_effect$Structure)
+rownames(save_dosage_effect) <- NULL
+
+# round
+save_dosage_effect$beta %<>% round(., digits=1) %>% sprintf("%.1f",.)
+save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
+save_dosage_effect$`FDR q` %<>% round(., digits=5) %>% sprintf("%.5f",.)
+
+save_dosage_effect[,c("Name","Structure","Hemi","beta","p","FDR q")]
+```
+
+volume barplots by gene dosage for select regions
+```{r}
+ggplot(data=demo_combat_na, aes(x=gene_dosage, y=Thal_Left_MDm.combat, group=gene_dosage, fill=gene_dosage))+
+  geom_boxplot()+
+  scale_fill_viridis()+
+  xlab("22q11.2 CNV dosage")+
+  ylab("volume (mm^3)")+
+  ggtitle("Left Thal MDm volume")+
+  labs(fill="gene dosage")+
+  theme_classic()
+
+
+ggplot(data=demo_combat_na, aes(x=gene_dosage, y=Thal_Right_MDm.combat, group=gene_dosage, fill=gene_dosage))+
+  geom_boxplot()+
+  scale_fill_viridis()+
+  xlab("22q11.2 CNV dosage")+
+  ylab("volume (mm^3)")+
+  ggtitle("Right Thal MDm volume")+
+  labs(fill="gene dosage")+
+  theme_classic()
+
+ggplot(data=demo_combat_na, aes(x=gene_dosage, y=Hip_Right_Whole_hippocampus.combat, group=gene_dosage, fill=gene_dosage))+
+  geom_boxplot()+
+  scale_fill_viridis()+
+  xlab("22q11.2 CNV dosage")+
+  ylab("volume (mm^3)")+
+  ggtitle("Right whole Hipp volume")+
+  labs(fill="gene dosage")+
+  theme_classic()
+
+
+```
+scatterplots
+```{r}
+# get model estimates (need to rerun model with lme4 rather than lmertest)
+# https://lmudge13.github.io/sample_code/mixed_effects.html
+
+# Left Thal mediodorsal medial  
+Thal_Left_MDm <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Left_MDm.combat ~ gene_dosage + AGE + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+# plot data points and model estimate
+plot_Thal_Left_MDm <- ggplot()+
+  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_fill_viridis()+
+  geom_segment(aes(y=mean(Thal_Left_MDm$fit), yend=mean(Thal_Left_MDm$fit),x=1, xend=3), lty="dashed", color="grey")+
+  geom_ribbon(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", alpha=0.6)+
+  geom_line(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  xlab("22q11.2 CNV dosage")+
+  ylab("volume (mm^3)")+
+  ggtitle("Left Thalamus MDm volume")+
+  labs(fill="gene dosage")+
+  theme_classic()+
+  theme(legend.position="none")
+
+plot_Thal_Left_MDm
+#ggsave(plot=plot_Thal_Left_MDm, filename=file.path(project,"figures/gene_dosage/Thal_Left_MDm.svg"), width=5, height=6, device = "svg")
+#ggsave(plot=plot_Thal_Left_MDm, filename=file.path(project,"figures/gene_dosage/Thal_Left_MDm.png"), width=5, height=6, device = "png", dpi=300)
+
+
+# Right whole hipp
+Hip_Right_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Hip_Right_Whole_hippocampus.combat ~ gene_dosage + AGE + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+
+# plot data points and model estimate
+plot_Hip_Right_Whole <- ggplot()+
+  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Hip_Right_Whole_hippocampus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_fill_viridis()+
+  geom_segment(aes(y=mean(Hip_Right_Whole$fit), yend=mean(Hip_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
+  geom_ribbon(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
+  geom_line(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  xlab("22q11.2 CNV dosage")+
+  ylab("volume (mm^3)")+
+  ggtitle("Right Whole Hippocampus volume")+
+  labs(fill="gene dosage")+
+  theme_classic()+
+  theme(legend.position="none")
+
+plot_Hip_Right_Whole
+#ggsave(plot=plot_Hip_Right_Whole, filename=file.path(project,"figures/gene_dosage/Hip_Right_Whole.svg"), width=5, height=6, device = "svg")
+#ggsave(plot=plot_Hip_Right_Whole, filename=file.path(project,"figures/gene_dosage/Hip_Right_Whole.png"), width=5, height=6, device = "png", dpi=300)
+
+```
+
+
+To test for group differences, not just gene dosage effects (e.g. Dup and Del both decreased), use a model with a binary variable for each group? or two separate case/control models? 
+```{r warning=FALSE}
+# test random intercept model at each region separately in Del and Dup
+lme_combat_del <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=filter(demo_combat_na, gene_dosage %in% c(1,2)), REML=TRUE))
+
+lme_combat_dup <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=filter(demo_combat_na, gene_dosage %in% c(2,3)), REML=TRUE))
+
+# get p-val for gene dosage effect
+gene_dosage_effect_del <- lapply(lme_combat_del, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_dosage_effect_del) <- c("gene_dosage_beta","gene_dosage_p")
+gene_dosage_effect_del$Region <- sc_names_combat
+gene_dosage_effect_del$model <- "Del"
+
+gene_dosage_effect_dup <- lapply(lme_combat_dup, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_dosage_effect_dup) <- c("gene_dosage_beta","gene_dosage_p")
+gene_dosage_effect_dup$Region <- sc_names_combat
+gene_dosage_effect_dup$model <- "Dup"
+
+del_dup_vs_hc <- rbind(gene_dosage_effect_del,gene_dosage_effect_dup)
+del_dup_vs_hc$gene_dosage_fdr_q <- p.adjust(del_dup_vs_hc$gene_dosage_p, method="fdr")
+del_dup_vs_hc$fdr_sig <- del_dup_vs_hc$gene_dosage_fdr_q < 0.05
+
+del_dup_vs_hc_merged <- merge(x=filter(del_dup_vs_hc, model=="Del"), y=filter(del_dup_vs_hc, model=="Dup"), by="Region")
+
+# number of sig 22qDel vs control
+sum(del_dup_vs_hc_merged$fdr_sig.x)
+
+# number of sig 22qDel vs control
+sum(del_dup_vs_hc_merged$fdr_sig.y)
+
+# get only effects that are significant in both models
+del_dup_vs_hc_merged_sig <- filter(del_dup_vs_hc_merged,fdr_sig.x==TRUE & fdr_sig.y==TRUE)
+#del_dup_vs_hc_sig <- del_dup_vs_hc_sig[order(del_dup_vs_hc_sig$gene_dosage_beta),]
+```
+
+LME for gene_dosage * Age linear interaction
+```{r warning=FALSE}
+# test random intercept model for group*age interaction at each region
+lme_combat_agegene <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_na, REML=TRUE))
+
+# get p-val for gene dosage effect
+gene_by_age_effect <- lapply(lme_combat_agegene, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage:AGE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_by_age_effect) <- c("gene_by_age_beta","gene_by_age_p")
+gene_by_age_effect$gene_by_age_fdr_q <- p.adjust(gene_by_age_effect$gene_by_age_p, method="fdr")
+gene_by_age_effect$Region <- sc_names_combat
+gene_by_age_effect$fdr_sig <- gene_by_age_effect$gene_by_age_fdr_q < 0.05
+gene_by_age_effect <- gene_by_age_effect[order(gene_by_age_effect$gene_by_age_p),]
+
+# get only significant effects
+gene_by_age_effect_sig <- filter(gene_by_age_effect,fdr_sig==TRUE)
+#gene_by_age_effect_sig <- gene_by_age_effect_sig[order(gene_by_age_effect_sig$gene_dosage_beta),]
+
+#write.table(gene_dosage_effect_sig, file="~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/gene_dosage_lme_significant.csv", sep=",", col.names = TRUE, row.names = FALSE)
+```
+
+LME for separate group*age interaction in each group 
+```{r warning=FALSE}
+
+# test random intercept model for group*age interaction at each region
+lme_combat_agegene_del <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=filter(demo_combat_na, gene_dosage %in% c(1,2)), REML=TRUE))
+
+lme_combat_agegene_dup <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=filter(demo_combat_na, gene_dosage %in% c(2,3)), REML=TRUE))
+
+# get p-val for gene dosage effect
+gene_by_age_effect_del <- lapply(lme_combat_agegene_del, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage:AGE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_by_age_effect_del) <- c("gene_by_age_beta","gene_by_age_p")
+gene_by_age_effect_del$Region <- sc_names_combat
+gene_by_age_effect_del$model <- "Del"
+
+gene_by_age_effect_dup <- lapply(lme_combat_agegene_dup, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage:AGE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_by_age_effect_dup) <- c("gene_by_age_beta","gene_by_age_p")
+gene_by_age_effect_dup$Region <- sc_names_combat
+gene_by_age_effect_dup$model <- "Dup"
+
+gene_by_age_del_dup_vs_hc <- rbind(gene_by_age_effect_del,gene_by_age_effect_dup)
+gene_by_age_del_dup_vs_hc$gene_by_age_fdr_q <- p.adjust(gene_by_age_del_dup_vs_hc$gene_by_age_p, method="fdr")
+#gene_by_age_del_dup_vs_hc$fdr_sig <- gene_by_age_del_dup_vs_hc$gene_dosage_fdr_q < 0.05
+
+#gene_by_age_del_dup_vs_hc_merged <- merge(x=filter(gene_by_age_del_dup_vs_hc, model=="Del"), y=filter(gene_by_age_del_dup_vs_hc, model=="Dup"), by="Region")
+
+# get only effects that are significant in both models
+#del_dup_vs_hc_merged_sig <- filter(del_dup_vs_hc_merged,fdr_sig.x==TRUE,fdr_sig.y==TRUE)
+
+
+
+```
+
+
+
+longitudinal demo table 
+```{r}
+#dir <- "/Users/charlie/Dropbox/PhD/bearden_lab/22q/analyses/striatum_thalamus_fc"
+
+# get variables from demo_mri
+df_demo <- demo_combat_na
+
+
+### hand
+# get handedness item scores coded in sistat as 1=L, 2=R, 3=either, 0=no experience
+edin <- df_all_ucla$edin[,c("SUBJECTID","CONVERTEDVISITNUM","EDIN1","EDIN2","EDIN3","EDIN4","EDIN5","EDIN6","EDIN7","EDIN8","EDIN9","EDIN10")]
+# function to get total edinburgh score and handedness
+# formula is 100*(R-L)/(R+L). score < -40 means left handed, score > 40 right handed
+# if more than 2 items NA then score is NA
+get_hand <- function(edin){
+  sub <- edin[c("SUBJECTID")]
+  visit <- edin[c("CONVERTEDVISITNUM")]
+  scores <- edin[c("EDIN1","EDIN2","EDIN3","EDIN4","EDIN5","EDIN6","EDIN7","EDIN8","EDIN9","EDIN10")]
+  l <- sum(scores == 1, na.rm=TRUE)
+  r <- sum(scores == 2, na.rm=TRUE)
+  na <- sum(is.na(scores))
+  if (na < 3){
+    score <- 10*(r-l)
+  }
+  if (na > 2){
+    hand <- NA
+    score <- NA
+  }else if(score > 40){
+    hand <-"R"
+  }else if (score < -40){
+    hand <- "L"
+  }else if (score >= -40 & score <= 40) {
+    hand <- "A"
+  }else{
+    hand <- NA
+  }
+  output <- cbind(sub,visit,score,hand) %>% as.data.frame
+  colnames(output) <- c("SUBJECTID","CONVERTEDVISITNUM","hand_score","hand")
+  return(output)
+}
+# get handedness
+edin_result <- lapply(1:nrow(edin), function(r) get_hand(edin[r,])) %>% do.call(rbind,.) %>% as.data.frame
+
+# merge handedness with demo table
+df_demo <- merge(x=df_demo, y=edin_result[c("SUBJECTID","CONVERTEDVISITNUM","hand")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T)
+
+# manually fix a few subjects' handedness
+#q_0017="A"
+df_demo[which(df_demo$SUBJECTID == "q_0017"),"hand"] <- "A"
+#q_0263="R"
+df_demo[which(df_demo$SUBJECTID == "q_0263"),"hand"] <- "R"
+#q_0331="R"
+df_demo[which(df_demo$SUBJECTID == "q_0331"),"hand"] <- "R"
+
+### psych dx
+# first get SCID columns with Dx (currently only using patient Dx not collateral)
+scid_dx_all <- df_all_ucla$SCID[,c("PATCODE1","PATCODE2","PATCODE3","PATCODE4","PATCODE5","PATCODE6","PATCODE7","PATCODE8")]
+
+# get list of unique dx entries
+dx_unique <- scid_dx_all %>% as.matrix %>% as.vector %>% sort %>% unique
+
+# create matching key between unique dx and dx groups for demographics table
+# first save dx_unique as csv
+#write.table(dx_unique, file=file.path(csvdir_ucla,"scid_unique_dx.csv"), row.names=F, col.names=F)
+# then manually edit csv so that column 2 contains the dx group for each specific dx. save edited csv as scid_unique_dx_matching.csv
+# dx group categories based on DSM-5 https://www.psychiatry.org/File%20Library/Psychiatrists/Practice/DSM/APA_DSM-5-Contents.pdf
+# Notes: leave second column blank for non-psych dx (eg Crohn's), code single-episode MDD in full remission as depressive_disorder_past, all other MDD as depressive_disorder
+# read matching table back in 
+dx_unique_matching <- read.csv(file=file.path(project,"demographics/scid_unique_dx_matching.csv"), header=F)
+
+# function to take scid patient codes 1-8 for a subject and output binary y/n for each dx in dx_groups based on dx_unique_matching
+# should be applied to rows of the scid data frame
+get_general_dx_scid <- function(scid_row,dx_matching){
+  # get subject id and visit columns
+  id_cols <- scid_row[c("SUBJECTID","CONVERTEDVISITNUM")]
+  # get list of all unique dx groups in matching key
+  dx_groups <- dx_matching[,2] %>% sort %>% unique
+  dx_groups <- dx_groups[dx_groups != ""]
+  # get patcodes 1-8
+  patcodes_all <- scid_row[c("PATCODE1","PATCODE2","PATCODE3","PATCODE4","PATCODE5","PATCODE6","PATCODE7","PATCODE8")] %>% as.matrix
+  patcodes <- patcodes_all[patcodes_all != ""]
+  # if subject has data in patcodes, convert to dx groups
+  if(length(patcodes) > 0){
+    # get dx group for each patcode by referencing dx_matching
+    sub_dx <- lapply(patcodes, function(x) filter(dx_matching, V1 == x)$V2) %>% do.call(cbind,.) %>% as.matrix
+    sub_dx <- sub_dx[sub_dx != ""]
+    # check if subject has SCID dx in each dx group, return TRUE for yes, FALSE for no
+    dx_yn <- lapply(dx_groups, function(x) x %in% sub_dx) %>% do.call(cbind,.) %>% as.data.frame
+  # return empty columns if no patcode data (without this will fail for subjects with no data)
+  }else{
+    dx_yn <- matrix(nrow=1,ncol=length(dx_groups)) %>% as.data.frame 
+  }
+  colnames(dx_yn) <- paste("SCID", dx_groups, sep="_")
+  output <- cbind(id_cols, dx_yn)
+  return(output)
+}
+
+# get general dx for each scid entry
+scid_general <- lapply(1:nrow(df_all_ucla$SCID), function(r) get_general_dx_scid(scid_row=df_all_ucla$SCID[r,], dx_matching=dx_unique_matching)) %>% do.call(rbind,.) %>% as.data.frame
+
+# merge scid general with demo table
+df_demo <- merge(x=df_demo, y=scid_general, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T)
+
+# count instances of each dx
+dx_counts <- df_demo %>% dplyr::select(starts_with("SCID_")) %>% colSums(na.rm=T)
+
+# get list of dx with more than 2 instances in the data set
+dx_use <- which(dx_counts > 2) %>% names
+
+# remove depressive_disorder_past (single episode full remission)
+dx_use <- dx_use[dx_use != "SCID_Depression_Related_Past"]
+# remove learning disorder
+dx_use <- dx_use[dx_use != "SCID_Learning_Disorder"]
+
+# add info from summPsych
+summpsych <- df_all_ucla$summPsych
+
+# meds as factors
+summpsych$PSYTYPE <- factor(summpsych$PSYTYPE, levels=c(1,2,3,4,5), labels=c("antipsychotic","antidepressant_or_mood_stabilizer","stimulant","other","none"))
+
+# merge meds with demo table
+df_demo <- merge(x=df_demo, y=summpsych[,c("SUBJECTID","CONVERTEDVISITNUM","PSYTYPE")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("psych_meds" = "PSYTYPE")
+
+# function to mark subject as ASD positive if positive at any visit in summPsych
+get_asd <- function(subject, summ_psych){
+  sp_all <- filter(summ_psych, summ_psych$SUBJECTID==subject)
+  if(nrow(sp_all)>0){
+    asd_all <- sp_all$ASDDIAGNOS
+    # check if any visit coded as 1 (meaning asd=yes)
+    asd_yn <- (1 %in% asd_all)
+  }else{
+    asd_yn <- NA
+  }
+  return(asd_yn)
+}
+
+# add ASD column based on summPsych
+asd_col <- lapply(1:nrow(df_demo), function(r) get_asd(subject=df_demo[r,"SUBJECTID"], summ_psych=summpsych)) %>% do.call(rbind,.) %>% as.data.frame
+colnames(asd_col) <- "summPsych_ASD"
+
+# merge summPsych ASD with demo table
+df_demo <- cbind(df_demo,asd_col)
+
+# remove SCID_ASD column, redundant with summPsych
+dx_use <- dx_use[dx_use != "SCID_ASD"]
+
+# add IQ and merge with demo table
+# TO-DO figure out neuropsych test date matching
+#neurocog <- df_all$neurocogTest[,c("SUBJECTID","CONVERTEDVISITNUM","IQ_SCORE","VOCA_TSCORE","MATRIX_TSCORE")]
+#df_demo_table_full <- merge(x=df_demo_table_full, y=neurocog, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T)
+
+
+# function to get psychosis status from SIPS
+# to be applied to the row indices of a demographics df, and also given the SIPS df
+get_sips <- function(r,demo,sips){
+   sub <- demo$SUBJECTID[[r]]
+   visit <- demo$CONVERTEDVISITNUM[[r]]
+   df_out <- data.frame(SUBJECTID=sub, CONVERTEDVISITNUM=visit)
+   sips_sesh <- sips %>% filter(SUBJECTID == sub & CONVERTEDVISITNUM == visit)
+   if(nrow(sips_sesh) < 1){
+     # if no match for sub+visit in sips table, set outputs to NA
+     df_out[,c("SIPS_p_sum","SIPS_n_sum","SIPS_d_sum","SIPS_g_sum","SIPS_total","SIPS_psychosis_6","SIPS_psspectrum_3")] <- rep(NA,times=7)
+   }else if(nrow(sips_sesh) > 1){
+     # if more than one match for sub+visit, note error
+     df_out[,c("SIPS_p_sum","SIPS_n_sum","SIPS_d_sum","SIPS_g_sum","SIPS_total", "SIPS_psychosis_6","SIPS_psspectrum_3")] <- rep("ERROR-duplicates",times=7)
+   }else{
+     # get SIPS P scores
+     sips_p_scores <- sips_sesh[c("P1SEV","P2SEV","P3SEV","P4SEV","P5SEV")]
+     # sum SIPS P
+     df_out[,"SIPS_p_sum"] <- sum(sips_p_scores)
+     # get SIPS N
+     sips_n_scores <- sips_sesh[c("N1SEV","N2SEV","N3SEV","N4SEV","N5SEV","N6SEV")]
+     df_out[,"SIPS_n_sum"] <- sum(sips_n_scores)
+     # get SIPS D
+     sips_d_scores <- sips_sesh[c("D1SEV","D2SEV","D3SEV","D4SEV")]
+     df_out[,"SIPS_d_sum"] <- sum(sips_d_scores)
+     # get SIPS G
+     sips_g_scores <- sips_sesh[c("G1SEV","G2SEV","G3SEV","G4SEV")]
+     df_out[,"SIPS_g_sum"] <- sum(sips_g_scores)
+     # get SIPS total
+     df_out["SIPS_total"] <- (df_out["SIPS_p_sum"]+df_out["SIPS_n_sum"]+df_out["SIPS_d_sum"]+df_out["SIPS_g_sum"] )
+     # check psychosis criteria of at least one SIPS P score of 6
+     count_6 <- length(which(sips_p_scores == 6))
+     if(is.na(sum(sips_p_scores))){
+       df_out[,"SIPS_psychosis_6"] <- NA
+     }else if(count_6 > 0){
+       df_out[,"SIPS_psychosis_6"] <- 1
+     }else{
+       df_out[,"SIPS_psychosis_6"] <- 0
+     }
+     # check psychosis-spectrum criteria of at least one SIPS P >= 3
+     count_3 <- length(which(sips_p_scores >= 3))
+     if(is.na(sum(sips_p_scores))){
+       df_out[,"SIPS_psspectrum_3"] <- NA
+     }else if(count_3 > 0){
+       df_out[,"SIPS_psspectrum_3"] <- 1
+     }else{
+       df_out[,"SIPS_psspectrum_3"] <- 0
+     }
+   }
+   return(df_out)
+}
+
+# get sips 
+demo_table_sips <- lapply(1:nrow(df_demo), function(r) get_sips(r=r, demo=df_demo, sips=df_all_ucla$SIPS)) %>% do.call(rbind,.)
+
+# merge sips with demo table
+df_demo <- merge(x=df_demo, y=demo_table_sips[,c("SUBJECTID","CONVERTEDVISITNUM","SIPS_total","SIPS_psspectrum_3")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("SIPS_prodromal" = "SIPS_psspectrum_3")
+
+# set sips_total to numeric and sips_prodromal to factor
+df_demo %<>% mutate_at(vars("SIPS_prodromal"), ~as.logical(.))
+df_demo %<>% mutate_at(vars("SIPS_total"), ~as.numeric(.))
+
+# get IQ
+# WASI, WISC-IV, DKEFS and trail making all under df_all$DKEFS for trio data
+# IQSS -- full scale WASI
+ucla_neuro1 <- df_all_ucla$DKEFS[,c("SUBJECTID","CONVERTEDVISITNUM","VOCASS","MATRIXSS","IQSS")] %>% rename("WASI_verbal" = "VOCASS") %>% rename("WASI_matrix" = "MATRIXSS") %>% rename("IQ_full" = "IQSS")
+# renewal neuro (prisma) under df_all$neurocogTest
+ucla_neuro2 <- df_all_ucla$neurocogTest[,c("SUBJECTID","CONVERTEDVISITNUM","VOCA_TSCORE","MATRIX_TSCORE","IQ_SCORE")] %>% rename("WASI_verbal" = "VOCA_TSCORE") %>% rename("WASI_matrix" = "MATRIX_TSCORE") %>% rename("IQ_full" = "IQ_SCORE")
+# combine 22q orig and renewal scores before merging with demo table
+ucla_neuro <- rbind(ucla_neuro1, ucla_neuro2)
+# merge neuro with demo table
+df_demo <- merge(x=df_demo, y=ucla_neuro[,c("SUBJECTID","CONVERTEDVISITNUM","IQ_full","WASI_verbal","WASI_matrix")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) 
+# record IQ instrument
+df_demo$IQ_measure <- NA
+df_demo$IQ_measure[!is.na(df_demo$IQ_full)] <- "WASI_full_scale"
+
+
+# get number of longitudinal visits per subject
+# apply to list of subjects ids in baseline df
+get_n_visits <- function(subject,full_df){
+  sub_all <- filter(full_df, SUBJECTID == subject)
+  n_sesh <- nrow(sub_all)
+  return(n_sesh)
+}
+
+#df_demo$visit_counts <- lapply(df_demo$SUBJECTID, function(s) get_n_visits(subject=s, full_df=ucla_demo_hcs_del)) %>% do.call(rbind,.) %>% as.data.frame %>% rename("visit_counts"="V1")
+
+df_demo$visit_counts <- lapply(df_demo$SUBJECTID, function(s) get_n_visits(subject=s, full_df=demo_combat)) %>% do.call(rbind,.) %>% as.vector
+df_demo$visit_counts %<>% as.numeric
+
+# get subjects missing TESTDATE
+missing_date <- filter(demo_combat_na, is.na(TESTDATE))
+
+# manually add missing dates
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0192_06172014"),"TESTDATE"] <- "06/17/2014"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0508_06232022"),"TESTDATE"] <- "06/23/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0519_05312022"),"TESTDATE"] <- "05/31/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0520_06012022"),"TESTDATE"] <- "06/01/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0521_05202022"),"TESTDATE"] <- "05/20/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0525_06072022"),"TESTDATE"] <- "06/07/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0526_06242022"),"TESTDATE"] <- "06/24/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0527_07112022"),"TESTDATE"] <- "07/11/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0528_07202022"),"TESTDATE"] <- "07/20/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0529_07202022"),"TESTDATE"] <- "07/20/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0561_11032022"),"TESTDATE"] <- "11/03/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0568_10252022"),"TESTDATE"] <- "10/25/2022"
+
+# get inter-visit interval
+# apply to list of subjects ids in baseline df
+get_avg_interval <- function(subject,full_df){
+  dates_initial <- filter(full_df, SUBJECTID == subject)$TESTDATE
+  dates_all <- sort(as.Date(dates_initial,format="%m/%d/%Y"))
+  intervals<-NULL
+  ndates<-length(dates_all)
+  # NA if only one visit
+  if(ndates==1){
+    intervals<-NA
+    avg_interval<-NA
+  }else if (ndates>1){
+    # starting with the second visit, get all intervals between date i and i-1
+    for (i in 2:ndates){
+      #diff <- difftime(as.Date(dates_all[i], format="%m/%d/%Y" ), as.Date(dates_all[i-1], format="%m/%d/%Y"), units="days") %>% as.numeric
+      diff <- difftime(dates_all[i], dates_all[i-1], units="days") %>% as.numeric
+      intervals <- c(intervals,diff)
+    }
+    avg_interval <- mean(intervals)
+  }
+  return(avg_interval)
+}
+#get_avg_interval(subject="q_0001", full_df=demo_combat)
+
+#df_demo$avg_interval <- lapply(df_demo$SUBJECTID, function(s) get_avg_interval(subject=s, full_df=ucla_demo_hcs_del)) %>% do.call(rbind,.) %>% as.data.frame %>% rename("avg_interval"="V1")
+
+df_demo$avg_interval <- lapply(df_demo$SUBJECTID, function(s) get_avg_interval(subject=s, full_df=demo_combat_na)) %>% do.call(rbind,.) %>% as.vector
+
+# vector of variables for demo table
+#vars_use <- c("AGE","SEX","EDUDAD","EDUMOM","EDUYEARS","hand", "percent_BOLD_scrubbed", "IQ_full","WASI_verbal","WASI_matrix", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds")
+vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds","visit_counts","avg_interval")
+
+# make table
+demo_match_final <- CreateTableOne(data=df_demo,vars=vars_use,strata="SUBJECT_IDENTITY",addOverall=F,includeNA=T)
+
+# export tableone
+export_demo_table <- print(demo_match_final, quote=F, noSpaces=F, printToggle=T)
+export_demo_table
+#write.csv(export_demo_table, file=file.path(project,"table1_demographics.csv"))
+
+```
+
+
+final baseline demo table 
+```{r}
+#dir <- "/Users/charlie/Dropbox/PhD/bearden_lab/22q/analyses/striatum_thalamus_fc"
+
+# get variables from demo_mri
+#df_demo_table_bl <- filter(demo_combat, visit_index == 1)[,c("SUBJECTID", "CONVERTEDVISITNUM", "MRI_S_ID", "SUBJECT_IDENTITY", "AGE", "SEX", "EDUDAD", "EDUMOM", "EDUYEARS")]
+# all columns, no NA
+# TODO: impute for plsr?
+#df_demo_table_bl <- filter(demo_combat_na, visit_index == 1)
+df_demo_table_bl <- filter(demo_combat, visit_index == 1)
+
+### hand
+# get handedness item scores coded in sistat as 1=L, 2=R, 3=either, 0=no experience
+edin <- df_all_ucla$edin[,c("SUBJECTID","CONVERTEDVISITNUM","EDIN1","EDIN2","EDIN3","EDIN4","EDIN5","EDIN6","EDIN7","EDIN8","EDIN9","EDIN10")]
+# function to get total edinburgh score and handedness
+# formula is 100*(R-L)/(R+L). score < -40 means left handed, score > 40 right handed
+# if more than 2 items NA then score is NA
+get_hand <- function(edin){
+  sub <- edin[c("SUBJECTID")]
+  visit <- edin[c("CONVERTEDVISITNUM")]
+  scores <- edin[c("EDIN1","EDIN2","EDIN3","EDIN4","EDIN5","EDIN6","EDIN7","EDIN8","EDIN9","EDIN10")]
+  l <- sum(scores == 1, na.rm=TRUE)
+  r <- sum(scores == 2, na.rm=TRUE)
+  na <- sum(is.na(scores))
+  if (na < 3){
+    score <- 10*(r-l)
+  }
+  if (na > 2){
+    hand <- NA
+    score <- NA
+  }else if(score > 40){
+    hand <-"R"
+  }else if (score < -40){
+    hand <- "L"
+  }else if (score >= -40 & score <= 40) {
+    hand <- "A"
+  }else{
+    hand <- NA
+  }
+  output <- cbind(sub,visit,score,hand) %>% as.data.frame
+  colnames(output) <- c("SUBJECTID","CONVERTEDVISITNUM","hand_score","hand")
+  return(output)
+}
+# get handedness
+edin_result <- lapply(1:nrow(edin), function(r) get_hand(edin[r,])) %>% do.call(rbind,.) %>% as.data.frame
+
+# merge handedness with demo table
+df_demo_table_bl <- merge(x=df_demo_table_bl, y=edin_result[c("SUBJECTID","CONVERTEDVISITNUM","hand")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T)
+
+# manually fix a few subjects' handedness
+#q_0017="A"
+df_demo_table_bl[which(df_demo_table_bl$SUBJECTID == "q_0017"),"hand"] <- "A"
+#q_0263="R"
+df_demo_table_bl[which(df_demo_table_bl$SUBJECTID == "q_0263"),"hand"] <- "R"
+#q_0331="R"
+df_demo_table_bl[which(df_demo_table_bl$SUBJECTID == "q_0331"),"hand"] <- "R"
+
+### psych dx
+# first get SCID columns with Dx (currently only using patient Dx not collateral)
+scid_dx_all <- df_all_ucla$SCID[,c("PATCODE1","PATCODE2","PATCODE3","PATCODE4","PATCODE5","PATCODE6","PATCODE7","PATCODE8")]
+
+# get list of unique dx entries
+dx_unique <- scid_dx_all %>% as.matrix %>% as.vector %>% sort %>% unique
+
+# create matching key between unique dx and dx groups for demographics table
+# first save dx_unique as csv
+#write.table(dx_unique, file=file.path(csvdir_ucla,"scid_unique_dx.csv"), row.names=F, col.names=F)
+# then manually edit csv so that column 2 contains the dx group for each specific dx. save edited csv as scid_unique_dx_matching.csv
+# dx group categories based on DSM-5 https://www.psychiatry.org/File%20Library/Psychiatrists/Practice/DSM/APA_DSM-5-Contents.pdf
+# Notes: leave second column blank for non-psych dx (eg Crohn's), code single-episode MDD in full remission as depressive_disorder_past, all other MDD as depressive_disorder
+# read matching table back in 
+dx_unique_matching <- read.csv(file=file.path(project,"demographics/scid_unique_dx_matching.csv"), header=F)
+
+# function to take scid patient codes 1-8 for a subject and output binary y/n for each dx in dx_groups based on dx_unique_matching
+# should be applied to rows of the scid data frame
+get_general_dx_scid <- function(scid_row,dx_matching){
+  # get subject id and visit columns
+  id_cols <- scid_row[c("SUBJECTID","CONVERTEDVISITNUM")]
+  # get list of all unique dx groups in matching key
+  dx_groups <- dx_matching[,2] %>% sort %>% unique
+  dx_groups <- dx_groups[dx_groups != ""]
+  # get patcodes 1-8
+  patcodes_all <- scid_row[c("PATCODE1","PATCODE2","PATCODE3","PATCODE4","PATCODE5","PATCODE6","PATCODE7","PATCODE8")] %>% as.matrix
+  patcodes <- patcodes_all[patcodes_all != ""]
+  # if subject has data in patcodes, convert to dx groups
+  if(length(patcodes) > 0){
+    # get dx group for each patcode by referencing dx_matching
+    sub_dx <- lapply(patcodes, function(x) filter(dx_matching, V1 == x)$V2) %>% do.call(cbind,.) %>% as.matrix
+    sub_dx <- sub_dx[sub_dx != ""]
+    # check if subject has SCID dx in each dx group, return TRUE for yes, FALSE for no
+    dx_yn <- lapply(dx_groups, function(x) x %in% sub_dx) %>% do.call(cbind,.) %>% as.data.frame
+  # return empty columns if no patcode data (without this will fail for subjects with no data)
+  }else{
+    dx_yn <- matrix(nrow=1,ncol=length(dx_groups)) %>% as.data.frame 
+  }
+  colnames(dx_yn) <- paste("SCID", dx_groups, sep="_")
+  output <- cbind(id_cols, dx_yn)
+  return(output)
+}
+
+# get general dx for each scid entry
+scid_general <- lapply(1:nrow(df_all_ucla$SCID), function(r) get_general_dx_scid(scid_row=df_all_ucla$SCID[r,], dx_matching=dx_unique_matching)) %>% do.call(rbind,.) %>% as.data.frame
+
+# merge scid general with demo table
+df_demo_table_bl <- merge(x=df_demo_table_bl, y=scid_general, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T)
+
+# count instances of each dx
+dx_counts <- df_demo_table_bl %>% dplyr::select(starts_with("SCID_")) %>% colSums(na.rm=T)
+
+# get list of dx with more than 2 instances in the data set
+dx_use <- which(dx_counts > 2) %>% names
+
+# remove depressive_disorder_past (single episode full remission)
+dx_use <- dx_use[dx_use != "SCID_Depression_Related_Past"]
+# remove learning disorder
+dx_use <- dx_use[dx_use != "SCID_Learning_Disorder"]
+
+# add info from summPsych
+summpsych <- df_all_ucla$summPsych
+
+# meds as factors
+summpsych$PSYTYPE <- factor(summpsych$PSYTYPE, levels=c(1,2,3,4,5), labels=c("antipsychotic","antidepressant_or_mood_stabilizer","stimulant","other","none"))
+
+# merge meds with demo table
+df_demo_table_bl <- merge(x=df_demo_table_bl, y=summpsych[,c("SUBJECTID","CONVERTEDVISITNUM","PSYTYPE")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("psych_meds" = "PSYTYPE")
+
+# function to mark subject as ASD positive if positive at any visit in summPsych
+get_asd <- function(subject, summ_psych){
+  sp_all <- filter(summ_psych, summ_psych$SUBJECTID==subject)
+  if(nrow(sp_all)>0){
+    asd_all <- sp_all$ASDDIAGNOS
+    # check if any visit coded as 1 (meaning asd=yes)
+    asd_yn <- (1 %in% asd_all)
+  }else{
+    asd_yn <- NA
+  }
+  return(asd_yn)
+}
+
+# add ASD column based on summPsych
+asd_col <- lapply(1:nrow(df_demo_table_bl), function(r) get_asd(subject=df_demo_table_bl[r,"SUBJECTID"], summ_psych=summpsych)) %>% do.call(rbind,.) %>% as.data.frame
+colnames(asd_col) <- "summPsych_ASD"
+
+# merge summPsych ASD with demo table
+df_demo_table_bl <- cbind(df_demo_table_bl,asd_col)
+
+# remove SCID_ASD column, redundant with summPsych
+dx_use <- dx_use[dx_use != "SCID_ASD"]
+
+# add IQ and merge with demo table
+# TO-DO figure out neuropsych test date matching
+#neurocog <- df_all$neurocogTest[,c("SUBJECTID","CONVERTEDVISITNUM","IQ_SCORE","VOCA_TSCORE","MATRIX_TSCORE")]
+#df_demo_table_full <- merge(x=df_demo_table_full, y=neurocog, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T)
+
+
+# function to get psychosis status from SIPS
+# to be applied to the row indices of a demographics df, and also given the SIPS df
+get_sips <- function(r,demo,sips){
+   sub <- demo$SUBJECTID[[r]]
+   visit <- demo$CONVERTEDVISITNUM[[r]]
+   df_out <- data.frame(SUBJECTID=sub, CONVERTEDVISITNUM=visit)
+   sips_sesh <- sips %>% filter(SUBJECTID == sub & CONVERTEDVISITNUM == visit)
+   if(nrow(sips_sesh) < 1){
+     # if no match for sub+visit in sips table, set outputs to NA
+     df_out[,c("SIPS_p_sum","SIPS_n_sum","SIPS_d_sum","SIPS_g_sum","SIPS_total","SIPS_psychosis_6","SIPS_psspectrum_3")] <- rep(NA,times=7)
+   }else if(nrow(sips_sesh) > 1){
+     # if more than one match for sub+visit, note error
+     df_out[,c("SIPS_p_sum","SIPS_n_sum","SIPS_d_sum","SIPS_g_sum","SIPS_total", "SIPS_psychosis_6","SIPS_psspectrum_3")] <- rep("ERROR-duplicates",times=7)
+   }else{
+     # get SIPS P scores
+     sips_p_scores <- sips_sesh[c("P1SEV","P2SEV","P3SEV","P4SEV","P5SEV")]
+     # sum SIPS P
+     df_out[,"SIPS_p_sum"] <- sum(sips_p_scores)
+     # get SIPS N
+     sips_n_scores <- sips_sesh[c("N1SEV","N2SEV","N3SEV","N4SEV","N5SEV","N6SEV")]
+     df_out[,"SIPS_n_sum"] <- sum(sips_n_scores)
+     # get SIPS D
+     sips_d_scores <- sips_sesh[c("D1SEV","D2SEV","D3SEV","D4SEV")]
+     df_out[,"SIPS_d_sum"] <- sum(sips_d_scores)
+     # get SIPS G
+     sips_g_scores <- sips_sesh[c("G1SEV","G2SEV","G3SEV","G4SEV")]
+     df_out[,"SIPS_g_sum"] <- sum(sips_g_scores)
+     # get SIPS total
+     df_out["SIPS_total"] <- (df_out["SIPS_p_sum"]+df_out["SIPS_n_sum"]+df_out["SIPS_d_sum"]+df_out["SIPS_g_sum"] )
+     # check psychosis criteria of at least one SIPS P score of 6
+     count_6 <- length(which(sips_p_scores == 6))
+     if(is.na(sum(sips_p_scores))){
+       df_out[,"SIPS_psychosis_6"] <- NA
+     }else if(count_6 > 0){
+       df_out[,"SIPS_psychosis_6"] <- 1
+     }else{
+       df_out[,"SIPS_psychosis_6"] <- 0
+     }
+     # check psychosis-spectrum criteria of at least one SIPS P >= 3
+     count_3 <- length(which(sips_p_scores >= 3))
+     if(is.na(sum(sips_p_scores))){
+       df_out[,"SIPS_psspectrum_3"] <- NA
+     }else if(count_3 > 0){
+       df_out[,"SIPS_psspectrum_3"] <- 1
+     }else{
+       df_out[,"SIPS_psspectrum_3"] <- 0
+     }
+   }
+   return(df_out)
+}
+
+# get sips 
+demo_table_sips <- lapply(1:nrow(df_demo_table_bl), function(r) get_sips(r=r, demo=df_demo_table_bl, sips=df_all_ucla$SIPS)) %>% do.call(rbind,.)
+
+# merge sips with demo table
+df_demo_table_bl <- merge(x=df_demo_table_bl, y=demo_table_sips[,c("SUBJECTID","CONVERTEDVISITNUM","SIPS_total","SIPS_psspectrum_3")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("SIPS_prodromal" = "SIPS_psspectrum_3")
+# set sips_total to numeric and sips_prodromal to factor
+df_demo_table_bl %<>% mutate_at(vars("SIPS_prodromal"), ~as.logical(.))
+df_demo_table_bl %<>% mutate_at(vars("SIPS_total"), ~as.numeric(.))
+
+
+# also merge full SIPS codes
+sips_sev <- grep("SEV",names(df_all_ucla$SIPS), value=TRUE)
+df_demo_table_bl <- merge(x=df_demo_table_bl, y=df_all_ucla$SIPS[,cbind(sips_sev, "SUBJECTID","CONVERTEDVISITNUM")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=TRUE)
+
+# get SRS categories
+srs_ts <- c("TSRAW","TSAWARE","TSCOGNIT","TSCOMMUN","TSMOTIV","TSAUTIST")
+df_demo_table_bl <- merge(x=df_demo_table_bl, y=df_all_ucla$SRS[,cbind(srs_ts, "SUBJECTID","CONVERTEDVISITNUM")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=TRUE)
+# get SRS items
+srs_items <- grep("SRS",names(df_all_ucla$SRS), value=TRUE)
+df_demo_table_bl <- merge(x=df_demo_table_bl, y=df_all_ucla$SRS[,cbind(srs_items, "SUBJECTID","CONVERTEDVISITNUM")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=TRUE)
+
+
+# get IQ
+# WASI, WISC-IV, DKEFS and trail making all under df_all$DKEFS for trio data
+# IQSS -- full scale WASI
+ucla_neuro1 <- df_all_ucla$DKEFS[,c("SUBJECTID","CONVERTEDVISITNUM","VOCASS","MATRIXSS","IQSS")] %>% rename("WASI_verbal" = "VOCASS") %>% rename("WASI_matrix" = "MATRIXSS") %>% rename("IQ_full" = "IQSS")
+# renewal neuro (prisma) under df_all$neurocogTest
+ucla_neuro2 <- df_all_ucla$neurocogTest[,c("SUBJECTID","CONVERTEDVISITNUM","VOCA_TSCORE","MATRIX_TSCORE","IQ_SCORE")] %>% rename("WASI_verbal" = "VOCA_TSCORE") %>% rename("WASI_matrix" = "MATRIX_TSCORE") %>% rename("IQ_full" = "IQ_SCORE")
+# combine 22q orig and renewal scores before merging with demo table
+ucla_neuro <- rbind(ucla_neuro1, ucla_neuro2)
+# merge neuro with demo table
+df_demo_table_bl <- merge(x=df_demo_table_bl, y=ucla_neuro[,c("SUBJECTID","CONVERTEDVISITNUM","IQ_full","WASI_verbal","WASI_matrix")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) 
+# record IQ instrument
+df_demo_table_bl$IQ_measure <- NA
+df_demo_table_bl$IQ_measure[!is.na(df_demo_table_bl$IQ_full)] <- "WASI_full_scale"
+
+
+# get number of longitudinal visits per subject
+# apply to list of subjects ids in baseline df
+get_n_visits <- function(subject,full_df){
+  sub_all <- filter(full_df, SUBJECTID == subject)
+  n_sesh <- nrow(sub_all)
+  return(n_sesh)
+}
+
+#df_demo_table_bl$visit_counts <- lapply(df_demo_table_bl$SUBJECTID, function(s) get_n_visits(subject=s, full_df=ucla_demo_hcs_del)) %>% do.call(rbind,.) %>% as.data.frame %>% rename("visit_counts"="V1")
+
+df_demo_table_bl$visit_counts <- lapply(df_demo_table_bl$SUBJECTID, function(s) get_n_visits(subject=s, full_df=demo_combat)) %>% do.call(rbind,.) %>% as.vector
+df_demo_table_bl$visit_counts %<>% as.numeric
+
+# get subjects missing TESTDATE
+missing_date <- filter(demo_combat_na, is.na(TESTDATE))
+
+# manually add missing dates
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0192_06172014"),"TESTDATE"] <- "06/17/2014"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0508_06232022"),"TESTDATE"] <- "06/23/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0519_05312022"),"TESTDATE"] <- "05/31/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0520_06012022"),"TESTDATE"] <- "06/01/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0521_05202022"),"TESTDATE"] <- "05/20/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0525_06072022"),"TESTDATE"] <- "06/07/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0526_06242022"),"TESTDATE"] <- "06/24/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0527_07112022"),"TESTDATE"] <- "07/11/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0528_07202022"),"TESTDATE"] <- "07/20/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0529_07202022"),"TESTDATE"] <- "07/20/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0561_11032022"),"TESTDATE"] <- "11/03/2022"
+demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0568_10252022"),"TESTDATE"] <- "10/25/2022"
+
+# get inter-visit interval
+# apply to list of subjects ids in baseline df
+get_avg_interval <- function(subject,full_df){
+  dates_initial <- filter(full_df, SUBJECTID == subject)$TESTDATE
+  dates_all <- sort(as.Date(dates_initial,format="%m/%d/%Y"))
+  intervals<-NULL
+  ndates<-length(dates_all)
+  # NA if only one visit
+  if(ndates==1){
+    intervals<-NA
+    avg_interval<-NA
+  }else if (ndates>1){
+    # starting with the second visit, get all intervals between date i and i-1
+    for (i in 2:ndates){
+      #diff <- difftime(as.Date(dates_all[i], format="%m/%d/%Y" ), as.Date(dates_all[i-1], format="%m/%d/%Y"), units="days") %>% as.numeric
+      diff <- difftime(dates_all[i], dates_all[i-1], units="days") %>% as.numeric
+      intervals <- c(intervals,diff)
+    }
+    avg_interval <- mean(intervals)
+  }
+  return(avg_interval)
+}
+#get_avg_interval(subject="q_0001", full_df=demo_combat)
+
+#df_demo_table_bl$avg_interval <- lapply(df_demo_table_bl$SUBJECTID, function(s) get_avg_interval(subject=s, full_df=ucla_demo_hcs_del)) %>% do.call(rbind,.) %>% as.data.frame %>% rename("avg_interval"="V1")
+
+df_demo_table_bl$avg_interval <- lapply(df_demo_table_bl$SUBJECTID, function(s) get_avg_interval(subject=s, full_df=demo_combat_na)) %>% do.call(rbind,.) %>% as.vector
+
+# vector of variables for demo table
+#vars_use <- c("AGE","SEX","EDUDAD","EDUMOM","EDUYEARS","hand", "percent_BOLD_scrubbed", "IQ_full","WASI_verbal","WASI_matrix", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds")
+vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds","visit_counts","avg_interval")
+
+# make table
+demo_match_final <- CreateTableOne(data=df_demo_table_bl,vars=vars_use,strata="SUBJECT_IDENTITY",addOverall=F,includeNA=T)
+
+# export tableone
+export_demo_table <- print(demo_match_final, quote=F, noSpaces=F, printToggle=T)
+#export_demo_table
+#write.csv(export_demo_table, file=file.path(project,"table1_demographics.csv"))
+
+```
+
+partial least squares relating brain volumes to SRS ad SIPS 
+```{r}
+#df_del_bl <- filter(df_demo_table_bl, SUBJECT_IDENTITY=="PATIENT-DEL")
+#df_dup_bl <- filter(df_demo_table_bl, SUBJECT_IDENTITY=="PATIENT-DUP")
+df_del_dup_bl <- filter(df_demo_table_bl, SUBJECT_IDENTITY=="PATIENT-DEL"|SUBJECT_IDENTITY=="PATIENT-DUP")
+
+
+# create a formula object for the plsr model. multiple response (Y) variables specified with cbind on the left of "~" multiple X separate with "+"
+#ycols <- paste(paste(srs_items, collapse=", "), paste(sips_sev, collapse=", "), sep=", ")
+#plsformula <- as.formula(paste("cbind(",ycols,") ~", paste(sc_names_combat, collapse = " + ")))
+# set up with volumes as Y and symptoms as X to more easily get overall percent symptom variance explained
+ycols <- paste(sc_names_combat, collapse=", ")
+xcols <- paste(paste(srs_items, collapse=" + "), paste(sips_sev, collapse=" + "), sep=" + ")
+plsformula <- as.formula(paste("cbind(",ycols,") ~", xcols))
+
+# need to use cbind to have multiple responses...
+#pls_test <- plsr(formula=plsformula, data=df_del_dup_bl, scale=TRUE, center=TRUE, validation="LOO", na.action="na.omit")
+pls_test <- plsr(formula=plsformula, data=df_demo_table_bl, scale=TRUE, center=TRUE, validation="CV", na.action="na.omit")
+#summary(pls_test)
+
+# plot model RMSE for first 5 components
+#validationplot(pls_test,ncomp =1:5)
+
+# get explained variance in X for first five components
+x_explvar <- explvar(pls_test)[1:5]
+
+# Y loadings, first 5 components
+y_loadings <- as.data.frame(pls_test$Yloadings[,1:5])
+colnames(y_loadings) <- gsub(" ", "",colnames(y_loadings))
+y_loadings$feature <- rownames(y_loadings)
+
+# X loadings, first 5 components
+x_loadings <- as.data.frame(pls_test$loadings[,1:5])
+colnames(x_loadings) <- gsub(" ", "",colnames(x_loadings))
+x_loadings$feature <- rownames(x_loadings)
+
+# add item text to behavior loadings 
+srs_text <- read.delim(file.path(project,"demographics/SRS_item_text.txt"), sep="\t")
+sips_text <- read.delim(file.path(project,"demographics/SIPS_item_text.txt"), sep="\t")
+all_text <- rbind(srs_text, sips_text)
+x_loadings <- merge(x=x_loadings, y=all_text, by.x="feature", by.y="item", all.x=TRUE)
+
+# sort x and y loadings for first 3 compoments
+x1_sort <- x_loadings[order(x_loadings$Comp1),c("feature","Comp1","text")] %>% rename("loading"="Comp1") %>% as.data.frame()
+x2_sort <- x_loadings[order(x_loadings$Comp2),c("feature","Comp2","text")] %>% rename("loading"="Comp2") %>% as.data.frame()
+x3_sort <- x_loadings[order(x_loadings$Comp3),c("feature","Comp3","text")] %>% rename("loading"="Comp3") %>% as.data.frame()
+
+y1_sort <- y_loadings[order(y_loadings$Comp1),c("feature","Comp1")] %>% rename("loading"="Comp1") %>% as.data.frame()
+y2_sort <- y_loadings[order(y_loadings$Comp2),c("feature","Comp2")] %>% rename("loading"="Comp2") %>% as.data.frame()
+y3_sort <- y_loadings[order(y_loadings$Comp3),c("feature","Comp3")] %>% rename("loading"="Comp3") %>% as.data.frame()
+
+# function to take top n loadings by absolute value
+abs_decile <- function(df, n){
+  df$abs <- abs(df$loading)
+  df <- df[order(df$abs, decreasing=TRUE),]
+  out <- df[1:n,]
+  return(out)
+}
+
+# get top 15 X and Y loadings for first 3 components
+x1_top15 <- abs_decile(x1_sort, 15)[,c("feature","loading","text")]
+x2_top15 <- abs_decile(x2_sort, 15)[,c("feature","loading","text")]
+x3_top15 <- abs_decile(x3_sort, 15)[,c("feature","loading","text")]
+
+y1_top15 <- abs_decile(y1_sort, 15)[,c("feature","loading")]
+y2_top15 <- abs_decile(y2_sort, 15)[,c("feature","loading")]
+y3_top15 <- abs_decile(y3_sort, 15)[,c("feature","loading")]
+
+y1_top15
+x1_top15
+
+y2_top15
+x2_top15
+
+y3_top15
+x3_top15
+
+
+```
+
+
+```{r}
+# get sessions missing data
+missing_hand <- filter(df_demo_table_bl, is.na(hand))[,c("SUBJECTID","CONVERTEDVISITNUM")]
+missing_hand$missing_handedness <- 1
+
+missing_SIPS <- filter(df_demo_table_bl, is.na(SIPS_total) & AGE >= 10)[,c("SUBJECTID","CONVERTEDVISITNUM")]
+missing_SIPS$missing_SIPS <- 1
+
+#missing_summpsych <- filter(df_demo_table_bl, is.na(summPsych_ASD))[,c("SUBJECTID","CONVERTEDVISITNUM")]
+#missing_summpsych$missing_summpsych <- 1
+
+missing_SCID <- filter(df_demo_table_bl, is.na(SCID_ADHD))[,c("SUBJECTID","CONVERTEDVISITNUM")]
+missing_SCID$missing_SCID <- 1
+
+missing_IQ <- filter(df_demo_table_bl, is.na(IQ_full))[,c("SUBJECTID","CONVERTEDVISITNUM")]
+missing_IQ$missing_IQ <- 1
+
+#missing_merged <- merge(missing_SCID, missing_summpsych, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=TRUE, all.y=TRUE)
+#missing_merged <- merge(missing_merged, missing_SIPS, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=TRUE, all.y=TRUE)
+missing_merged <- merge(missing_SCID, missing_SIPS, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=TRUE, all.y=TRUE)
+missing_merged <- merge(missing_merged, missing_IQ, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=TRUE, all.y=TRUE)
+missing_merged <- merge(missing_merged, missing_hand, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=TRUE, all.y=TRUE)
+
+missing_merged <- arrange(missing_merged,missing_SCID, missing_SIPS, missing_IQ)
+
+# read functional study missing_merged table
+missing_tcc <- read.csv(file="~/Dropbox/github/22q_tcc_longitudinal/demographics/22q_long_tcc_missing_data.csv", header=TRUE)
+
+# check if missing_merged row is in missing_tcc and save as column
+missing_merged$in_fmri_study <- do.call(paste0,missing_merged) %in% do.call(paste0, missing_tcc)
+
+missing_merged_new <- filter(missing_merged, in_fmri_study==FALSE)
+
+# add subjects missing SRS
+df_demo_table_bl <- merge(df_demo_table_bl, df_all_ucla$SRS[,c("SUBJECTID","CONVERTEDVISITNUM","TOTRAW","TOTAWARE","TOTCOGNIT","TOTCOMMUN","TOTMOTIV","TOTAUTIST")], by=c("SUBJECTID","CONVERTEDVISITNUM"))
+missing_SRS <- filter(df_demo_table_bl, is.na(TOTRAW) & SUBJECT_IDENTITY != "CONTROL")[,c("SUBJECTID","CONVERTEDVISITNUM")]
+missing_SRS$missing_SRS <- 1
+missing_merged_new <- merge(missing_merged_new, missing_SRS, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=TRUE, all.y=TRUE)
+
+ 
+# write csv with missing files
+#write.csv(missing_merged_new, file="~/Dropbox/github/22q_subcort_volumes//demographics/22q_subcort_missing_data.csv", row.names = FALSE, quote=FALSE)
+
+```
+
+scatterplots
+```{r}
+# get model estimates (need to rerun model with lme4 rather than lmertest)
+# https://lmudge13.github.io/sample_code/mixed_effects.html
+
+## Left Thal mediodorsal medial  
+#Thal_Left_MDm <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Left_MDm.combat ~ gene_dosage + AGE + SEX + eTIVscaled + site + #(1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+## plot data points and model estimate
+#plot_Thal_Left_MDm <- ggplot()+
+#  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+#  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+#  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+#  scale_fill_viridis()+
+#  geom_segment(aes(y=mean(Thal_Left_MDm$fit), yend=mean(Thal_Left_MDm$fit),x=1, xend=3), lty="dashed", color="grey")+
+#  geom_ribbon(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", alpha=0.6)+
+#  geom_line(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+#  xlab("22q11.2 CNV dosage")+
+#  ylab("volume (mm^3)")+
+#  ggtitle("Left Thalamus MDm volume")+
+#  labs(fill="gene dosage")+
+#  theme_classic()+
+#  theme(legend.position="none")
+#
+#plot_Thal_Left_MDm
+##ggsave(plot=plot_Thal_Left_MDm, filename=file.path(project,"figures/gene_dosage/Thal_Left_MDm.svg"), width=5, height=6, device = "svg")
+##ggsave(plot=plot_Thal_Left_MDm, filename=file.path(project,"figures/gene_dosage/Thal_Left_MDm.png"), width=5, height=6, device = "png", dpi=300)
+#
+#
+## Right whole hipp
+#Hip_Right_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Hip_Right_Whole_hippocampus.combat ~ gene_dosage + AGE + SEX + eTIVscaled + site + #(1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+#
+## plot data points and model estimate
+#plot_Hip_Right_Whole <- ggplot()+
+#  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Hip_Right_Whole_hippocampus.combat,fill=gene_dosage),fill="lightgrey", side="r", #lty="blank")+
+#  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, #fill=gene_dosage),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
+#  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+#  scale_fill_viridis()+
+#  geom_segment(aes(y=mean(Hip_Right_Whole$fit), yend=mean(Hip_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
+#  geom_ribbon(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
+#  geom_line(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+#  xlab("22q11.2 CNV dosage")+
+#  ylab("volume (mm^3)")+
+#  ggtitle("Right Whole Hippocampus volume")+
+#  labs(fill="gene dosage")+
+#  theme_classic()+
+#  theme(legend.position="none")
+#
+#plot_Hip_Right_Whole
+##ggsave(plot=plot_Hip_Right_Whole, filename=file.path(project,"figures/gene_dosage/Hip_Right_Whole.svg"), width=5, height=6, device = "svg")
+##ggsave(plot=plot_Hip_Right_Whole, filename=file.path(project,"figures/gene_dosage/Hip_Right_Whole.png"), width=5, height=6, device = "png", dpi=300)
+
+```
+
+scatterplots with ASD highlighted
+```{r}
+# add autism to full dataset (previously only added to baseline)
+# add ASD column based on summPsych
+asd_col_full <- lapply(1:nrow(demo_combat_na), function(r) get_asd(subject=demo_combat_na[r,"SUBJECTID"], summ_psych=summpsych)) %>% do.call(rbind,.) %>% as.data.frame
+colnames(asd_col_full) <- "summPsych_ASD"
+
+# merge summPsych ASD with demo table
+demo_combat_asd <- cbind(demo_combat_na,asd_col_full)
+
+# get sips 
+sips_full <- lapply(1:nrow(demo_combat_na), function(r) get_sips(r=r, demo=demo_combat_na, sips=df_all_ucla$SIPS)) %>% do.call(rbind,.)
+# merge sips with demo table
+demo_combat_dx <- merge(x=demo_combat_asd, y=sips_full[,c("SUBJECTID","CONVERTEDVISITNUM","SIPS_total","SIPS_psspectrum_3")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("SIPS_prodromal" = "SIPS_psspectrum_3")
+demo_combat_dx$SIPS_prodromal <- (demo_combat_dx$SIPS_prodromal == 1)
+
+# Left Thal mediodorsal medial  
+Thal_Left_MDm <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Left_MDm.combat ~ gene_dosage + AGE + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+# plot data points and model estimate
+plot_Thal_Left_MDm_asd <- ggplot()+
+  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, group=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat, fill=gene_dosage, color=summPsych_ASD),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
+  scale_color_manual(values=c("black","red"))+  
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_fill_viridis()+
+  geom_segment(aes(y=mean(Thal_Left_MDm$fit), yend=mean(Thal_Left_MDm$fit),x=1, xend=3), lty="dashed", color="grey")+
+  geom_ribbon(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", alpha=0.6)+
+  geom_line(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  xlab("22q11.2 CNV dosage")+
+  ylab("volume (mm^3)")+
+  ggtitle("Left Thalamus MDm volume, autism red")+
+  labs(fill="gene dosage")+
+  theme_classic()+
+  theme(legend.position="none")
+
+plot_Thal_Left_MDm_asd
+
+plot_Thal_Left_MDm_pro <- ggplot()+
+  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, group=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat, fill=gene_dosage, color=SIPS_prodromal),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
+  scale_color_manual(values=c("black","red"))+  
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_fill_viridis()+
+  geom_segment(aes(y=mean(Thal_Left_MDm$fit), yend=mean(Thal_Left_MDm$fit),x=1, xend=3), lty="dashed", color="grey")+
+  geom_ribbon(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", alpha=0.6)+
+  geom_line(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  xlab("22q11.2 CNV dosage")+
+  ylab("volume (mm^3)")+
+  ggtitle("Left Thalamus MDm volume, prodromal red")+
+  labs(fill="gene dosage")+
+  theme_classic()+
+  theme(legend.position="none")
+
+plot_Thal_Left_MDm_pro
+
+
+# Right whole hipp
+Hip_Right_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Hip_Right_Whole_hippocampus.combat ~ gene_dosage + AGE + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+
+# plot data points and model estimate
+plot_Hip_Right_Whole_asd <- ggplot()+
+  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, group=gene_dosage,y=Hip_Right_Whole_hippocampus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage, color=summPsych_ASD),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
+  scale_color_manual(values=c("black","red"))+
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_fill_viridis()+
+  geom_segment(aes(y=mean(Hip_Right_Whole$fit), yend=mean(Hip_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
+  geom_ribbon(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
+  geom_line(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  xlab("22q11.2 CNV dosage")+
+  ylab("volume (mm^3)")+
+  ggtitle("Right Whole Hippocampus volume, autism red")+
+  labs(fill="gene dosage")+
+  theme_classic()+
+  theme(legend.position="none")
+
+plot_Hip_Right_Whole_asd
+
+plot_Hip_Right_Whole_pro <- ggplot()+
+  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, group=gene_dosage,y=Hip_Right_Whole_hippocampus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage, color=SIPS_prodromal),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
+  scale_color_manual(values=c("black","red"))+
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_fill_viridis()+
+  geom_segment(aes(y=mean(Hip_Right_Whole$fit), yend=mean(Hip_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
+  geom_ribbon(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
+  geom_line(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  xlab("22q11.2 CNV dosage")+
+  ylab("volume (mm^3)")+
+  ggtitle("Right Whole Hippocampus volume, prodromal red")+
+  labs(fill="gene dosage")+
+  theme_classic()+
+  theme(legend.position="none")
+
+plot_Hip_Right_Whole_pro
+
+```
+
+
+
+## Sx vs brain volumes
+LME to test effect of psychosis on combat adjusted features in only patient groups
+```{r warning=FALSE}
+# filter demographics+volumes for only Del/Dup patients
+df_demo_pt <- filter(df_demo, SUBJECT_IDENTITY != "CONTROL")
+df_demo_pt %<>% droplevels()
+
+# test random intercept model at each region
+lme_prodromal <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("SIPS_prodromal","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=df_demo_pt, REML=TRUE))
+names(lme_prodromal) <- sc_names_combat
+
+# get p-val for gene dosage effect
+prodromal_effect <- lapply(lme_prodromal, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SIPS_prodromalTRUE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
+colnames(prodromal_effect) <- c("prodromal_beta","prodromal_p")
+prodromal_effect$prodromal_fdr_q <- p.adjust(prodromal_effect$prodromal_p, method="fdr")
+prodromal_effect$Region <- sc_names_combat
+prodromal_effect$fdr_sig <- prodromal_effect$prodromal_fdr_q < 0.05
+
+# get only significant effects
+prodromal_effect_sig <- filter(prodromal_effect,fdr_sig==TRUE)
+prodromal_effect_sig <- prodromal_effect_sig[order(prodromal_effect_sig$prodromal_beta),]
+```
+
+same for autism
+```{r warning=FALSE}
+# test random intercept model at each region
+lme_asd <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("summPsych_ASD","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=df_demo_pt, REML=TRUE))
+names(lme_asd) <- sc_names_combat
+
+# get p-val for gene dosage effect
+asd_effect <- lapply(lme_asd, function(l) summary(l,ddf="Kenward-Roger")$coefficients["summPsych_ASDTRUE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
+colnames(asd_effect) <- c("asd_beta","asd_p")
+asd_effect$asd_fdr_q <- p.adjust(asd_effect$asd_p, method="fdr")
+asd_effect$Region <- sc_names_combat
+asd_effect$fdr_sig <- asd_effect$asd_fdr_q < 0.05
+
+# get only significant effects
+asd_effect_sig <- filter(asd_effect,fdr_sig==TRUE)
+asd_effect_sig <- asd_effect_sig[order(asd_effect_sig$asd_beta),]
+```
+
+same for SIPS total
+```{r warning=FALSE}
+# test random intercept model at each region
+lme_sips_total <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("SIPS_total","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=df_demo_pt, REML=TRUE))
+names(lme_sips_total) <- sc_names_combat
+
+# get p-val for gene dosage effect
+sips_total_effect <- lapply(lme_sips_total, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SIPS_total",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
+colnames(sips_total_effect) <- c("sips_total_beta","sips_total_p")
+sips_total_effect$sips_total_fdr_q <- p.adjust(sips_total_effect$sips_total_p, method="fdr")
+sips_total_effect$Region <- sc_names_combat
+sips_total_effect$fdr_sig <- sips_total_effect$sips_total_fdr_q < 0.05
+
+# get only significant effects
+sips_total_effect_sig <- filter(sips_total_effect,fdr_sig==TRUE)
+sips_total_effect_sig <- sips_total_effect_sig[order(sips_total_effect_sig$sips_total_beta),]
+```
+
+same for IQ 
+```{r warning=FALSE}
+# test random intercept model at each region
+lme_IQ <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("IQ_full","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=df_demo_pt, REML=TRUE))
+names(lme_IQ) <- sc_names_combat
+
+# get p-val for gene dosage effect
+IQ_effect <- lapply(lme_IQ, function(l) summary(l,ddf="Kenward-Roger")$coefficients["IQ_full",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
+colnames(IQ_effect) <- c("IQ_beta","IQ_p")
+IQ_effect$IQ_fdr_q <- p.adjust(IQ_effect$IQ_p, method="fdr")
+IQ_effect$Region <- sc_names_combat
+IQ_effect$fdr_sig <- IQ_effect$IQ_fdr_q < 0.05
+
+# get only significant effects
+IQ_effect_sig <- filter(IQ_effect,fdr_sig==TRUE)
+IQ_effect_sig <- IQ_effect_sig[order(IQ_effect_sig$IQ_beta),]
+```
+
+## Non-linear age effects
+GAMMs in each group at every ROI
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# subjectID must be factor. Site and sex should be numeric
+demo_combat_na_gam <- demo_combat_na 
+demo_combat_na_gam$SUBJECTID %<>% as.factor
+demo_combat_na_gam$site <- demo_combat_na_gam$site %>% gsub("T","0",.) %>% gsub("P","1",.) %>% as.numeric 
+demo_combat_na_gam$SEX <- demo_combat_na_gam$SEX %>% gsub("F","0",.) %>% gsub("M","1",.) %>% as.numeric 
+
+# test random intercept GAMM at each region
+#gamm_combat <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=gene_dosage)","gene_dosage","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na, selection=TRUE,method="REML", na.action="na.omit"))
+
+gamm_combat <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na_gam, selection=TRUE,method="REML", na.action="na.omit"))
+
+
+names(gamm_combat) <- sc_names_combat
+
+stables <- lapply(gamm_combat,function(g) summary(g, freq=T)$s.table)
+
+# get p-vals
+del_age_pvals <- lapply(stables, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DEL",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
+del_age_pvals$Region <- rownames(del_age_pvals)
+del_age_pvals$SUBJECT_IDENTITY <- "PATIENT-DEL"
+
+dup_age_pvals <- lapply(stables, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DUP",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
+dup_age_pvals$Region <- rownames(dup_age_pvals)
+dup_age_pvals$SUBJECT_IDENTITY <- "PATIENT-DUP"
+
+hcs_age_pvals <- lapply(stables, function(s)s["s(AGE):SUBJECT_IDENTITYCONTROL",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame  %>% rename("age_p_val"="p.value")
+hcs_age_pvals$Region <- rownames(hcs_age_pvals)
+hcs_age_pvals$SUBJECT_IDENTITY <- "CONTROL"
+
+# correct for multiple comparisons (one test for age effects per group per network)
+all_age_pvals <- rbind(del_age_pvals,dup_age_pvals,hcs_age_pvals)
+all_age_pvals$age_p_val_fdr <- all_age_pvals$age_p_val %>% p.adjust(., method="fdr")
+all_age_pvals
+
+# make pretty table for export
+out_age_pvals <- all_age_pvals[,c("SUBJECT_IDENTITY","Region","F","age_p_val","age_p_val_fdr")]
+rownames(out_age_pvals) <- NULL
+out_age_pvals <- rename(out_age_pvals, "p"="age_p_val","FDR_q"="age_p_val_fdr", "Group"="SUBJECT_IDENTITY")
+out_age_pvals$Group <- out_age_pvals$Group %>% gsub("CONTROL","TD",.) %>% gsub("PATIENT-DEL","22qDel",.) %>% gsub("PATIENT-DUP","22qDup",.)
+out_age_pvals$Region <- gsub(".combat","",out_age_pvals$Region)
+out_age_pvals$F %<>% round(., digits=2) %>% sprintf("%.4f",.)
+out_age_pvals$p %<>% signif(., digits=2) %>% sprintf("%.3f",.)
+out_age_pvals$FDR_q %<>% signif(., digits=3) %>% sprintf("%.4f",.)
+out_age_pvals
+
+# get smooth estimates shifted by GAMM intercept to allow plotting over original data
+#smooth_estimates_se_b0 <- function(gamm,smooth,n){
+#  out <- smooth_estimates(gamm,smooth,n=n, partial_match = T)
+#  out$est <- out$est + gamm$coefficients["(Intercept)"]
+#  out$selo <- out$est - out$se
+#  out$sehi <- out$est + out$se
+#  return(out)
+#}
+
+smooth_estimates_se <- function(gamm,smooth,n){
+  out <- smooth_estimates(gamm,smooth,n=n, partial_match = T)
+  out$selo <- out$est - out$se
+  out$sehi <- out$est + out$se
+  return(out)
+}
+
+# smooth estimate
+smooth_all_combat <- lapply(gamm_combat, function(g) smooth_estimates_se(gamm=g, smooth="s(AGE)", n=1000))
+names(smooth_all_combat) <- sc_names_combat
+
+```
+
+plot all age smooths with partial residuals
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# function to plot gamm and scatter
+#plot_gamm_points_combat <- function(name,xlab="", ylab="",ylim=c(-1,1.1),xlim=c(5.9,23)){
+#plot_gamm_points_combat <- function(name,xlab="", ylab=""){
+#  ggplot(data = smooth_all_combat[[name]],  aes_string(x="AGE", y="est"))+
+#  geom_ribbon(aes_string(x = "AGE", ymin = "selo",ymax = "sehi", fill = "SUBJECT_IDENTITY"),alpha = .18, linetype = 0)+
+#  #scale_x_continuous(limits=xlim,expand=c(0,0))+
+#  #scale_y_continuous(limits=ylim,expand=c(0,0))+
+#  geom_line(aes_string(x = "AGE", y = "est", color = "SUBJECT_IDENTITY"),size = 1)+theme_bw()+
+#  theme_classic() + 
+#  theme(legend.title = element_blank())+
+#  theme(axis.title.y = element_text(angle = 0,vjust=0.5))+
+#  ylab(ylab)+
+#  xlab(xlab)+
+#  ggtitle(paste(gsub("_"," ",gsub(".combat","",name)),"Volume"))+
+#  scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
+#  scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
+#  geom_point(data=demo_combat_na, aes_string(x="AGE", y=name, color="SUBJECT_IDENTITY", fill="SUBJECT_IDENTITY",shape="site")) +
+#  scale_shape_manual(values = c(17, 16)) 
+#}
+#
+#lapply(sc_names_combat,function(x) plot_gamm_points_combat(x,xlab="Age",ylab="Volume"))
+
+plot_gamm_resid <- function(name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23)){
+  #resid <- add_partial_residuals(data=demo_combat_na,model=gamm_combat[[name]])
+  resid <- add_partial_residuals(data=gamm_combat[[name]]$model,model=gamm_combat[[name]])
+  resid_del <- filter(resid, SUBJECT_IDENTITY=="PATIENT-DEL")
+  resid_del$yvar <- resid_del$`s(AGE):SUBJECT_IDENTITYPATIENT-DEL`
+  resid_dup <- filter(resid, SUBJECT_IDENTITY=="PATIENT-DUP")
+  resid_dup$yvar <- resid_dup$`s(AGE):SUBJECT_IDENTITYPATIENT-DUP`
+  resid_hcs <- filter(resid, SUBJECT_IDENTITY=="CONTROL")
+  resid_hcs$yvar <- resid_hcs$`s(AGE):SUBJECT_IDENTITYCONTROL`
+  ggplot()+
+    geom_point(data=resid_hcs, aes(x=AGE, y=yvar), color=viridis(3)[2]) +
+    geom_point(data=resid_del, aes(x=AGE, y=yvar), color=viridis(3)[1]) +
+    geom_point(data=resid_dup, aes(x=AGE, y=yvar), color=viridis(3)[3]) +
+    #scale_shape_manual(values = c(17, 16))+
+    geom_ribbon(data = smooth_all_combat[[name]],aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .18, linetype = 0)+
+    geom_line(data = smooth_all_combat[[name]],aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
+    scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
+    scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
+    #scale_x_continuous(limits=xlim,expand=c(0,0))+
+    #scale_y_continuous(limits=ylim,expand=c(0,0))+
+    theme_classic() + 
+    theme(legend.title = element_blank())+
+    theme(axis.title.y = element_text(angle = 0,vjust=0.5))+
+    ylab(ylab)+
+    xlab(xlab)+
+    ggtitle(paste(gsub("_"," ",gsub(".combat","",name)),"Volume"))
+}
+
+
+
+#plot_gamm_resid_tc(name="Frontoparietal.combat",xlab="Age",ylab="TCC")
+#plot_gamm_resid_tc(name="Somatomotor.combat",xlab="Age",ylab="TCC")
+lapply(sc_names_combat,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
+
+```
+```{r}
+#par(bg="black")
+#plot_data(gamm_combat[[1]],view="AGE", split_by = "SUBJECT_IDENTITY", col=viridis(3), hide.label = TRUE, main="title", xlab="Age", ylab="Volume", alpha=1)
+#plot_smooth(gamm_combat[[1]],view="AGE", plot_all = "SUBJECT_IDENTITY", rm.ranef = TRUE, rug=FALSE, se=1, add=TRUE,col=viridis(3), hide.label = TRUE, lwd=2)
+
+```
+
+
+```{r}
+##test_plot <- plot(gamm_combat[[1]], residuals = TRUE)
+##plotdf <- as.data.frame(test_plot[[1]][c("x", "se", "fit")])
+#
+##pred <- tidymv::predict_gam(gamm_combat[[1]], exclude="s(SUBJECTID)", )
+##pred <- tidymv::predict_gam(gamm_combat[[1]], exclude="s(SUBJECTID)")
+##pred <- predict_gam(gamm_combat[[1]], length_out=100)
+##pred <- tidygam::predict_gam(gamm_combat[[1]], ci_z=1.96, length_out = 100, series="AGE")
+#
+##ggplot(data=pred, aes(x=AGE, y=Thal_Left_LGN.combat, color=SUBJECT_IDENTITY, fill=SUBJECT_IDENTITY))+
+##  geom_smooth(aes(x=AGE, y=Thal_Left_LGN.combat, color=SUBJECT_IDENTITY, fill=SUBJECT_IDENTITY), se=FALSE)
+##  geom_ribbon(aes(x=AGE, ymin=lower_ci, ymax=upper_ci, color=SUBJECT_IDENTITY, fill=SUBJECT_IDENTITY))
+#
+##ggplot()+
+##  geom_line(data=pred, aes(x=AGE, y=Thal_Left_LGN.combat, color=SUBJECT_IDENTITY, fill=SUBJECT_IDENTITY))
+#
+## predict GAMM at within group means
+#demo_combat_na_del <- filter(demo_combat_na_gam, gene_dosage==1) %>% droplevels
+#demo_combat_na_dup <- filter(demo_combat_na_gam, gene_dosage==3) %>% droplevels
+#demo_combat_na_hcs <- filter(demo_combat_na_gam, gene_dosage==2) %>% droplevels
+#
+#pred_del <- predict_gam(gamm_combat[[1]], exclude="s(SUBJECTID)", values = list(SUBJECT_IDENTITY="PATIENT-DEL", SUBJECTID=NULL, eTIVscaled = #mean(demo_combat_na_del$eTIVscaled), site=mean(demo_combat_na_del$site), SEX=mean(demo_combat_na_del$SEX)), length_out=100)
+#
+#pred_dup <- predict_gam(gamm_combat[[1]], exclude="s(SUBJECTID)", values = list(SUBJECT_IDENTITY="PATIENT-DUP", SUBJECTID=NULL, eTIVscaled = #mean(demo_combat_na_dup$eTIVscaled), site=mean(demo_combat_na_dup$site), SEX=mean(demo_combat_na_dup$SEX)), length_out=100)
+#
+#pred_hcs <- predict_gam(gamm_combat[[1]], exclude="s(SUBJECTID)", values = list(SUBJECT_IDENTITY="CONTROL", SUBJECTID=NULL, eTIVscaled = #mean(demo_combat_na_hcs$eTIVscaled), site=mean(demo_combat_na_hcs$site), SEX=mean(demo_combat_na_hcs$SEX)), length_out=100)
+#
+#pred <- rbind(pred_del,pred_dup,pred_hcs)
+#pred$sehi <- pred$fit + pred$se.fit
+#pred$selo <- pred$fit - pred$se.fit
+#
+#
+##pred <- predict_gam(gamm_combat[[1]], exclude="s(SUBJECTID)", values = list(SUBJECTID=NULL, eTIVscaled = mean(demo_combat_na_gam$eTIVscaled), #site=mean(demo_combat_na_gam$site), SEX=mean(demo_combat_na_gam$SEX)))
+#
+##pred <- predict_gam(gamm_combat[[1]], exclude="s(SUBJECTID)", values = list(SUBJECTID=NULL, eTIVscaled = mean(demo_combat_na_gam$eTIVscaled), #site=mean(demo_combat_na_gam$site), SEX=mean(demo_combat_na_gam$SEX)))
+#
+##pred <- predict_gam(gamm_combat[[1]], values = list(eTIVscaled = mean(demo_combat_na_gam$eTIVscaled), site=mean(demo_combat_na_gam$site), #SEX=mean(demo_combat_na_gam$SEX)))
+#
+#
+#ggplot()+
+#  #geom_smooth_ci(SUBJECT_IDENTITY)+
+#  #geom_smooth(aes(group=SUBJECT_IDENTITY, color=SUBJECT_IDENTITY, ymax=sehi, ymin=selo), method=NULL)+
+#  geom_ribbon(data=pred,aes(x=AGE,group=SUBJECT_IDENTITY, color=SUBJECT_IDENTITY,fill=SUBJECT_IDENTITY,ymin=selo, ymax=sehi),alpha=0.5)+
+#  geom_line(data=pred,aes(x=AGE, y=fit,group=SUBJECT_IDENTITY, lty=SUBJECT_IDENTITY),color="black")+
+#  #geom_line(data=pred,aes(x=AGE, y=fit,group=SUBJECT_IDENTITY, color=SUBJECT_IDENTITY))+
+#  scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
+#  scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
+#  geom_point(data=demo_combat_na, aes_string(x="AGE", y=sc_names_combat[[1]], color="SUBJECT_IDENTITY", fill="SUBJECT_IDENTITY",shape="site"),color="black") +
+#  scale_shape_manual(values = c(24, 21)) 
+#
+```
+
+
+
