@@ -22,6 +22,7 @@ rm(list = ls(all.names = TRUE))
 #BiocManager::install("limma")
 
 # install DMwR
+#install.packages("remotes")
 #remotes::install_github("cran/DMwR")
 
 # list packages to load
@@ -1725,7 +1726,7 @@ IQ_effect_sig <- filter(IQ_effect,fdr_sig==TRUE)
 IQ_effect_sig <- IQ_effect_sig[order(IQ_effect_sig$IQ_beta),]
 ```
 
-## Non-linear age effects
+## Non-linear age effects, full sample
 GAMMs in each group at every ROI
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # subjectID must be factor. Site and sex should be numeric
@@ -1771,7 +1772,10 @@ out_age_pvals$Region <- gsub(".combat","",out_age_pvals$Region)
 out_age_pvals$F %<>% round(., digits=2) %>% sprintf("%.4f",.)
 out_age_pvals$p %<>% signif(., digits=2) %>% sprintf("%.3f",.)
 out_age_pvals$FDR_q %<>% signif(., digits=3) %>% sprintf("%.4f",.)
-out_age_pvals
+
+# get only significant results
+out_age_pvals_sig <- filter(out_age_pvals, FDR_q<0.05)
+out_age_pvals_sig
 
 # get smooth estimates shifted by GAMM intercept to allow plotting over original data
 #smooth_estimates_se_b0 <- function(gamm,smooth,n){
@@ -1912,6 +1916,166 @@ lapply(sc_names_combat,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volum
 #  geom_point(data=demo_combat_na, aes_string(x="AGE", y=sc_names_combat[[1]], color="SUBJECT_IDENTITY", fill="SUBJECT_IDENTITY",shape="site"),color="black") +
 #  scale_shape_manual(values = c(24, 21)) 
 #
+```
+
+## Non-linear age effects, Age < 30
+GAMMs in each group at every ROI for only subjects under 30 years old
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+demo_combat_na_gam_u30 <- filter(demo_combat_na_gam, AGE<=30)
+
+# test random intercept GAMM at each region
+#gamm_combat <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na_gam, selection=TRUE,method="REML", na.action="na.omit"))
+
+gamm_combat_u30 <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na_gam_u30, selection=TRUE,method="REML", na.action="na.omit"))
+
+names(gamm_combat_u30) <- sc_names_combat
+
+stables_u30 <- lapply(gamm_combat_u30,function(g) summary(g, freq=T)$s.table)
+
+# get p-vals
+del_age_pvals_u30 <- lapply(stables_u30, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DEL",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
+del_age_pvals_u30$Region <- rownames(del_age_pvals_u30)
+del_age_pvals_u30$SUBJECT_IDENTITY <- "PATIENT-DEL"
+
+dup_age_pvals_u30 <- lapply(stables_u30, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DUP",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
+dup_age_pvals_u30$Region <- rownames(dup_age_pvals_u30)
+dup_age_pvals_u30$SUBJECT_IDENTITY <- "PATIENT-DUP"
+
+hcs_age_pvals_u30 <- lapply(stables_u30, function(s)s["s(AGE):SUBJECT_IDENTITYCONTROL",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame  %>% rename("age_p_val"="p.value")
+hcs_age_pvals_u30$Region <- rownames(hcs_age_pvals_u30)
+hcs_age_pvals_u30$SUBJECT_IDENTITY <- "CONTROL"
+
+# correct for multiple comparisons (one test for age effects per group per network)
+all_age_pvals_u30 <- rbind(del_age_pvals_u30,dup_age_pvals_u30,hcs_age_pvals_u30)
+all_age_pvals_u30$age_p_val_fdr <- all_age_pvals_u30$age_p_val %>% p.adjust(., method="fdr")
+all_age_pvals_u30
+
+# make pretty table for export
+out_age_pvals_u30 <- all_age_pvals_u30[,c("SUBJECT_IDENTITY","Region","F","age_p_val","age_p_val_fdr")]
+rownames(out_age_pvals_u30) <- NULL
+out_age_pvals_u30 <- rename(out_age_pvals_u30, "p"="age_p_val","FDR_q"="age_p_val_fdr", "Group"="SUBJECT_IDENTITY")
+out_age_pvals_u30$Group <- out_age_pvals_u30$Group %>% gsub("CONTROL","TD",.) %>% gsub("PATIENT-DEL","22qDel",.) %>% gsub("PATIENT-DUP","22qDup",.)
+out_age_pvals_u30$Region <- gsub(".combat","",out_age_pvals_u30$Region)
+out_age_pvals_u30$F %<>% round(., digits=2) %>% sprintf("%.4f",.)
+out_age_pvals_u30$p %<>% signif(., digits=2) %>% sprintf("%.3f",.)
+out_age_pvals_u30$FDR_q %<>% signif(., digits=3) %>% sprintf("%.4f",.)
+
+# get only significant results
+out_age_pvals_u30_sig <- filter(out_age_pvals_u30, FDR_q<0.05)
+out_age_pvals_u30_sig
+
+# get smooth estimates shifted by GAMM intercept to allow plotting over original data
+#smooth_estimates_se_b0 <- function(gamm,smooth,n){
+#  out <- smooth_estimates(gamm,smooth,n=n, partial_match = T)
+#  out$est <- out$est + gamm$coefficients["(Intercept)"]
+#  out$selo <- out$est - out$se
+#  out$sehi <- out$est + out$se
+#  return(out)
+#}
+
+smooth_estimates_se <- function(gamm,smooth,n){
+  out <- smooth_estimates(gamm,smooth,n=n, partial_match = T)
+  out$selo <- out$est - out$se
+  out$sehi <- out$est + out$se
+  return(out)
+}
+
+# smooth estimate
+smooth_all_combat_u30 <- lapply(gamm_combat_u30, function(g) smooth_estimates_se(gamm=g, smooth="s(AGE)", n=1000))
+names(smooth_all_combat_u30) <- sc_names_combat
+
+```
+
+compare u30 with whole sample
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# split data frames by group
+sig_del <- filter(out_age_pvals_sig, Group=="22qDel")
+sig_dup <- filter(out_age_pvals_sig, Group=="22qDup")
+sig_hcs <- filter(out_age_pvals_sig, Group=="TD")
+sig_del_u30 <- filter(out_age_pvals_u30_sig, Group=="22qDel")
+sig_dup_u30 <- filter(out_age_pvals_u30_sig, Group=="22qDup")
+sig_hcs_u30 <- filter(out_age_pvals_u30_sig, Group=="TD")
+
+# list of unique regions with significance in 22q or TD, whole sample or under 30
+sig_regions_compare <- data.frame(Region=sort(unique(c(out_age_pvals_u30_sig$Region,out_age_pvals_sig$Region))))
+row.names(sig_regions_compare) <- sig_regions_compare$Region
+
+for (region in sig_regions_compare$Region){
+  sig_regions_compare[region,"Del_all"] <- region %in% sig_del$Region
+  sig_regions_compare[region,"Del_u30"] <- region %in% sig_del_u30$Region
+  sig_regions_compare[region,"Dup_all"] <- region %in% sig_dup$Region
+  sig_regions_compare[region,"Dup_u30"] <- region %in% sig_dup_u30$Region
+  sig_regions_compare[region,"TD_all"]<- region %in% sig_hcs$Region
+  sig_regions_compare[region,"TD_u30"] <- region %in% sig_hcs_u30$Region
+}
+#sig_regions_compare
+
+# create new column with TRUE if not also significant in TD
+sig_regions_compare$TD_sig <- NA
+for (r in 1:nrow(sig_regions_compare)){
+  td <- sig_regions_compare[r,"TD_all"]
+  td30 <- sig_regions_compare[r,"TD_u30"]
+  if (td==TRUE | td30==TRUE){
+    sig_regions_compare[r,"TD_sig"] <- TRUE
+  }else{
+    sig_regions_compare[r,"TD_sig"] <- FALSE
+  }
+}
+
+# create long df for plotting
+setDT(sig_regions_compare)
+idvars=c("Region","TD_sig")
+compare_long <- melt.data.table(sig_regions_compare, id.vars = idvars, measure.vars = names(sig_regions_compare)[which(!names(sig_regions_compare) %in% idvars)])
+compare_long$Region %<>% as.factor
+
+# order by region, then group
+setorder(compare_long, Region, variable)
+
+# for plotting, create new column with TRUE if the value at row r is equal to row r-1 (excluding rows where variable is del_all)
+compare_long$postmatch <- NA
+for (r in 1:(nrow(compare_long)-1)){
+  val <- compare_long[r,"value"]
+  postval <- compare_long[(r+1),"value"]
+  if (val==TRUE & postval==TRUE){
+    compare_long[r,"postmatch"] <- TRUE
+  }else{
+    compare_long[r,"postmatch"] <- FALSE
+  }
+}
+# set to NA group that will be rightmost column of plot
+groups <- levels(compare_long$variable)
+last_group <- groups[length(groups)]
+compare_long[which(compare_long$variable==last_group),"postmatch"] <- NA
+
+# create column with TRUE if pt group is significant but TD are not
+compare_long$pt_sig_only <- NA
+for (r in 1:(nrow(compare_long))){
+  if(compare_long[r,"TD_sig"]==FALSE & compare_long[r,"value"]==TRUE){
+    compare_long[r,"pt_sig_only"] <- TRUE
+  }
+  if(compare_long[r,"variable"]=="TD_all" | compare_long[r,"variable"]=="TD_u30"){
+    compare_long[r,"pt_sig_only"] <- NA
+  }
+}
+
+# plot
+ggplot(data=compare_long, aes(y=Region, x=variable))+
+  geom_line(aes(group=Region, color=postmatch), show.legend = FALSE)+
+  scale_color_manual(values=c("white", "black"))+
+  new_scale_color()+
+  geom_point(aes(shape=value, size=value, color=pt_sig_only))+
+  scale_shape_manual(values=c(1,16))+
+  scale_size_manual(values=c(1,3))+
+  scale_color_manual(values = c("red","black"), na.value = "black")+
+  labs(shape="Sig. age effect",size="Sig. age effect", color="Sig. in patients only")+
+  scale_x_discrete(position = "top")+
+  xlab("Cohort")+
+  ylab("Region")+
+  ggtitle("Significant age effects by cohort")+
+  theme_bw()
+  
+       
 ```
 
 
