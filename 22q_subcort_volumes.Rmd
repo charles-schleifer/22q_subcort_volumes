@@ -502,15 +502,9 @@ demo_combat <- merge(x=demo_sc, y=sc_vol_combat_data, by=c("MRI_S_ID","visit_ind
 
 ## gene dosage models
 first, set up data frame
-```{r warning=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # get names of combat features
 sc_names_combat <- paste0(sc_names,".combat")
-
-# list names of whole structures
-ws_names_combat <- c("Thal_Right_Whole_thalamus.combat","Thal_Left_Whole_thalamus.combat","Hip_Right_Whole_hippocampus.combat","Hip_Left_Whole_hippocampus.combat","Amy_Right_Whole_amygdala.combat","Amy_Left_Whole_amygdala.combat")
-
-# get names of only subregions
-subregion_names_combat <- sc_names_combat[which(!sc_names_combat %in% ws_names_combat)]
 
 # set outliers to NA after combat
 demo_combat_na <- demo_combat
@@ -524,17 +518,64 @@ for (i in 1:nrow(sparse_remove)){
 #write.csv(demo_combat_na, file=file.path(project,"22q_subcort_vols_combat_na.csv"), quote=TRUE, row.names = FALSE)
 ```
 
+normalize based on control group mean and SD to get standardized betas
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# names for normed columns
+sc_names_normed <- paste0(sc_names_combat, ".norm")
+
+# for every region, get mean and SD for control group
+norm_name_match <- data.frame(combat=sc_names_combat, normed=sc_names_normed, control_mean=NA, control_sd=NA)
+for (r in 1:nrow(norm_name_match)){
+  region <- norm_name_match[r,"combat"]
+  control_dat <- filter(demo_combat_na, SUBJECT_IDENTITY=="CONTROL")[,region]
+  norm_name_match[r,"control_mean"] <- mean(control_dat, na.rm=TRUE)
+  norm_name_match[r,"control_sd"] <- sd(control_dat, na.rm=TRUE)
+}
+
+# df to hold normed data
+demo_combat_normed <- demo_combat_na
+demo_combat_normed[r,sc_names_normed] <- NA
+
+# for every region in each subject, normalize based on control mean and SD
+for (r in 1:nrow(demo_combat_normed)){ 
+  for (c in 1:nrow(norm_name_match)){
+    # get column names and control stats for a given region
+    combat_name <- norm_name_match[c,"combat"]
+    normed_name <- norm_name_match[c,"normed"]
+    control_mean <- norm_name_match[c,"control_mean"]
+    control_sd <- norm_name_match[c,"control_sd"]
+    # get the pre-normed combat-adjusted value
+    combat_val <- demo_combat_normed[r,combat_name]
+    # if not NA, normalize based on control stats 
+    if(is.na(combat_val)){
+      normed_val <- NA
+    }else{
+      normed_val <- (combat_val - control_mean)/control_sd
+    }
+    # store normed value
+    demo_combat_normed[r,normed_name] <- normed_val
+  }
+}
+
+# list names of whole structures
+ws_names_normed <- c("Thal_Right_Whole_thalamus.combat.norm","Thal_Left_Whole_thalamus.combat.norm","Hip_Right_Whole_hippocampus.combat.norm","Hip_Left_Whole_hippocampus.combat.norm","Amy_Right_Whole_amygdala.combat.norm","Amy_Left_Whole_amygdala.combat.norm")
+
+# get names of only subregions
+subregion_names_normed <- sc_names_normed[which(!sc_names_normed %in% ws_names_normed)]
+
+```
+
 LME for whole thal, hipp, amy
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # test random intercept model at each region
-#lme_combat_ws <- lapply(ws_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_na, REML=TRUE))
-lme_combat_ws <- lapply(ws_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","AGE2","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_na, REML=TRUE))
-names(lme_combat_ws) <- ws_names_combat
+#lme_combat_ws <- lapply(ws_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","AGE2","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_na, REML=TRUE))
+lme_combat_ws <- lapply(ws_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","AGE2","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_normed, REML=TRUE))
+names(lme_combat_ws) <- ws_names_normed
 
 # get p-val for gene dosage effect
 gene_dosage_effect_ws <- lapply(lme_combat_ws, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
 colnames(gene_dosage_effect_ws) <- c("gene_dosage_beta","gene_dosage_p")
-gene_dosage_effect_ws$Region <- ws_names_combat
+gene_dosage_effect_ws$Region <- ws_names_normed
 # order by betas
 gene_dosage_effect_ws <- gene_dosage_effect_ws[order(gene_dosage_effect_ws$gene_dosage_beta),]
 ```
@@ -552,7 +593,7 @@ save_dosage_effect_ws <- gene_dosage_effect_ws[,c("gene_dosage_beta","gene_dosag
 colnames(save_dosage_effect_ws) <- c("beta","p")
 
 # get region names for matching
-save_dosage_effect_ws$Region <- gsub(".combat","",gene_dosage_effect_ws$Region)
+save_dosage_effect_ws$Region <- gsub(".combat.norm","",gene_dosage_effect_ws$Region)
 save_dosage_effect_ws$Region <- gsub("Thal_","",save_dosage_effect_ws$Region)
 save_dosage_effect_ws$Region <- gsub("Hip_Left_","",save_dosage_effect_ws$Region)
 save_dosage_effect_ws$Region <- gsub("Hip_Right_","",save_dosage_effect_ws$Region)
@@ -560,7 +601,7 @@ save_dosage_effect_ws$Region <- gsub("Amy_Left_","",save_dosage_effect_ws$Region
 save_dosage_effect_ws$Region <- gsub("Amy_Right_","",save_dosage_effect_ws$Region)
 
 # get hemisphere
-save_dosage_effect_ws$Hemi <- gsub(".combat","",gene_dosage_effect_ws$Region)
+save_dosage_effect_ws$Hemi <- gsub(".combat.norm","",gene_dosage_effect_ws$Region)
 save_dosage_effect_ws$Hemi <- gsub("Thal_","",save_dosage_effect_ws$Hemi)
 save_dosage_effect_ws$Hemi <- gsub("Hip_","",save_dosage_effect_ws$Hemi)
 save_dosage_effect_ws$Hemi <- gsub("Amy_","",save_dosage_effect_ws$Hemi)
@@ -577,7 +618,7 @@ save_dosage_effect_ws$Name <- gsub("right ","",save_dosage_effect_ws$Name)
 save_dosage_effect_ws$Region <- save_dosage_effect_ws$Name
 
 # round
-save_dosage_effect_ws$beta %<>% round(., digits=1) %>% sprintf("%.1f",.)
+save_dosage_effect_ws$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
 save_dosage_effect_ws$p %<>% round(., digits=7) %>% sprintf("%.7f",.)
 #save_dosage_effect_ws$`FDR q` %<>% round(., digits=5) %>% sprintf("%.5f",.)
 
@@ -587,15 +628,14 @@ save_dosage_effect_ws[,c("Region","Hemi","beta","p")]
 LME for all subregions
 ```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 # test random intercept model at each region
-#lme_combat <- lapply(subregion_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_na, REML=TRUE))
-lme_combat <- lapply(subregion_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","AGE2","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_na, REML=TRUE))
-names(lme_combat) <- subregion_names_combat
+lme_combat <- lapply(subregion_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","AGE2","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_normed, REML=TRUE))
+names(lme_combat) <- subregion_names_normed
 
 # get p-val for gene dosage effect
 gene_dosage_effect <- lapply(lme_combat, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
 colnames(gene_dosage_effect) <- c("gene_dosage_beta","gene_dosage_p")
 gene_dosage_effect$gene_dosage_fdr_q <- p.adjust(gene_dosage_effect$gene_dosage_p, method="fdr")
-gene_dosage_effect$Region <- subregion_names_combat
+gene_dosage_effect$Region <- subregion_names_normed
 gene_dosage_effect$fdr_sig <- gene_dosage_effect$gene_dosage_fdr_q < 0.05
 
 # get only significant effects
@@ -618,7 +658,7 @@ save_dosage_effect <- gene_dosage_effect_sig[,c("gene_dosage_beta","gene_dosage_
 colnames(save_dosage_effect) <- c("beta","p","FDR q")
 
 # get region names for matching
-save_dosage_effect$Region <- gsub(".combat","",gene_dosage_effect_sig$Region)
+save_dosage_effect$Region <- gsub(".combat.norm","",gene_dosage_effect_sig$Region)
 save_dosage_effect$Region <- gsub("Thal_","",save_dosage_effect$Region)
 save_dosage_effect$Region <- gsub("Hip_Left_","",save_dosage_effect$Region)
 save_dosage_effect$Region <- gsub("Hip_Right_","",save_dosage_effect$Region)
@@ -626,7 +666,7 @@ save_dosage_effect$Region <- gsub("Amy_Left_","",save_dosage_effect$Region)
 save_dosage_effect$Region <- gsub("Amy_Right_","",save_dosage_effect$Region)
 
 # get hemisphere
-save_dosage_effect$Hemi <- gsub(".combat","",gene_dosage_effect_sig$Region)
+save_dosage_effect$Hemi <- gsub(".combat.norm","",gene_dosage_effect_sig$Region)
 save_dosage_effect$Hemi <- gsub("Thal_","",save_dosage_effect$Hemi)
 save_dosage_effect$Hemi <- gsub("Hip_","",save_dosage_effect$Hemi)
 save_dosage_effect$Hemi <- gsub("Amy_","",save_dosage_effect$Hemi)
@@ -645,7 +685,7 @@ save_dosage_effect$Region <- save_dosage_effect$Name
 rownames(save_dosage_effect) <- NULL
 
 # round
-save_dosage_effect$beta %<>% round(., digits=1) %>% sprintf("%.1f",.)
+save_dosage_effect$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
 save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
 save_dosage_effect$`FDR q` %<>% round(., digits=5) %>% sprintf("%.5f",.)
 
@@ -2206,6 +2246,4 @@ ggplot(data=compare_long, aes(y=Region, x=variable))+
   
        
 ```
-
-
 

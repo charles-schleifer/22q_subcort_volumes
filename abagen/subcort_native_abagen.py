@@ -19,7 +19,8 @@ pd.set_option('display.max_columns', 500)
 # get path to parent directory (github repo)
 # this works if full script is run, otherwise, need to set project manually to github repo path
 # project='/Users/charlie/Dropbox/github/22q_spatial_transcriptomic/'
-project=os.path.dirname(__file__)+'/'    
+#project=os.path.dirname(__file__)+'/'    
+project="/Users/charlie/Dropbox/github/22q_subcort_volumes/abagen/"
 
 # example data
 exatlas = abagen.fetch_desikan_killiany(native=True)
@@ -27,7 +28,7 @@ exatlas = abagen.fetch_desikan_killiany(native=True)
 
 # get freesurfer data for all donors
 #/Users/charlie/abagen-data/freesurfer
-fs = abagen.datasets.fetch_freesurfer(donors=('9861', '10021', '12876', '14380', '15496', '15697'))
+#fs = abagen.datasets.fetch_freesurfer(donors=('9861', '10021', '12876', '14380', '15496', '15697'))
 
 # create new atlas dictionary for native space individual thalamus
 fspath='/Users/charlie/abagen-data/freesurfer/' 
@@ -42,19 +43,21 @@ thal['info']=project+'thal_info_abagen.csv'
 
 # volume only
 #ahbaThalNative = abagen.get_expression_data(atlas=thal['image'], atlas_info=thal['info'], norm_structures=True, return_donors=True,donor_probes='independent', verbose=2)
-ahbaThalNative = abagen.get_expression_data(atlas=thal['image'], atlas_info=thal['info'], norm_structures=True, return_donors=True,lr_mirror='bidirectional', verbose=2)
 
+#ahbaThalNative = abagen.get_expression_data(atlas=thal['image'], atlas_info=thal['info'], norm_structures=True, return_donors=True,lr_mirror='bidirectional', verbose=2)
+# try robust sigmoid norm no scaling
+ahbaThalNative = abagen.get_expression_data(atlas=thal['image'], atlas_info=thal['info'], norm_structures=True, return_donors=True,lr_mirror='bidirectional',sample_norm='robust_sigmoid',gene_norm='robust_sigmoid', verbose=2)
 
 # save results
-#for d in ahbaThalNative.keys():
-#    ahbaThalNative[d].to_csv(project+'/thal_native_expression.'+d+'.csv')
+for d in ahbaThalNative.keys():
+    ahbaThalNative[d].to_csv(project+'/thal_native_expression.'+d+'.csv')
     
 
 # generate and save methods report
-#volReport = reporting.Report(atlas=thal['image'], atlas_info=thal['info'], norm_structures=True, return_donors=True,donor_probes='independent')
-#volReport_out = volReport.gen_report()
-#with open(project+'/abagen_methods_report_thal_native.txt', 'w') as text_file:
-#    text_file.write(volReport_out)
+volReport = reporting.Report(atlas=thal['image'], atlas_info=thal['info'], norm_structures=True, return_donors=True,donor_probes='independent')
+volReport_out = volReport.gen_report()
+with open(project+'/abagen_methods_report_thal_native.txt', 'w') as text_file:
+    text_file.write(volReport_out)
 
 
 # get regions where all donors have data
