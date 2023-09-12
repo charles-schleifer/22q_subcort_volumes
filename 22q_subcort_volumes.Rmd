@@ -28,7 +28,7 @@ rm(list = ls(all.names = TRUE))
 # list packages to load
 # ciftiTools dependency rgl may need XQuartz installed in order to visualize surfaces
 #packages <- c("conflicted", "here", "magrittr", "mgcv", "gratia", "lme4", "lmerTest", "invgamma", "longCombat", "ciftiTools", "readxl", "dplyr", "data.table", "DescTools","tableone", "tibble", "reshape2", "viridis", "scico", "ggplot2", "gridExtra", "ggpubr","stringr")
-packages <- c("conflicted", "here", "magrittr", "dplyr", "data.table", "readxl", "tableone","ggplot2","gghalves","viridis","DMwR","DDoutlier","lmerTest","effects","longCombat", "limma","pls","mgcv","gratia","tidymv", "itsadug")
+packages <- c("conflicted", "here", "magrittr", "dplyr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","pls","mgcv","gratia","tidymv", "itsadug")
 
 # install packages if not yet installed
 all_packages <- rownames(installed.packages())
@@ -104,6 +104,12 @@ colnames(subcort_all) <- gsub("\\)","_",colnames(subcort_all))
 
 # read eTIV
 etiv <- read.csv(file.path(dpath,"etiv_cross_sectional.txt"), header=TRUE)
+```
+
+exclude data and combine regions
+```{r}
+# store original subcort_all
+subcort_all_orig <- subcort_all
 
 # manually exclude subjects based on QC
 exclude <- c("Q_0071_03022010", "Q_0258_06062014", "Q_0288_03212017", "Q_0397_11082018", "Q_0549_10182022", "Q_0315_02162017", "Q_0167_04052012","Q_0021_08172009","Q_0361_08212017")
@@ -112,15 +118,85 @@ subcort_all <- subcort_all %>% filter(!MRI_S_ID %in% exclude)
 # exclude all medial pulvinar data (poor segmentation in most images)
 subcort_all <- subset(subcort_all, select = -c(Thal_Left_PuM,Thal_Right_PuM))
 
+# exclude whole hippocampal body and head (redundant with more fine grained regions)
+subcort_all <- subset(subcort_all, select = -c(Hip_Right_Whole_hippocampal_body, Hip_Left_Whole_hippocampal_body, Hip_Right_Whole_hippocampal_head, Hip_Left_Whole_hippocampal_head))
+
+
 # exclude bilateral thalamus from n=4 sessions that have visibly poor thalamic segmentation (part of striatum appears to be included in some lateral thalamic ROIs)
 thal_exclude <- c("Q_0244_09162013", "Q_0244_09232014", "Q_0304_12202016", "Q_0425_11052019")
 thal_names <- names(subcort_all)[grep("Thal",names(subcort_all))]
 thal_ex_rows <- which(subcort_all$MRI_S_ID %in% thal_exclude)
 subcort_all[thal_ex_rows, thal_names] <- NA
 
+# group subregions
+thal_combine <- list(MD_all=c("MDm","MDl"),
+                     VL_all=c("VLp","VLa"),
+                     VA_all=c("VA","VAmc"),
+                     Pu_part=c("PuA","PuL","PuI"))
+
+hip_combine <- list(CA1=c("CA1_head","CA1_body"),
+                     CA3=c("CA3_head","CA3_body"),
+                     CA4=c("CA4_head","CA4_body"),
+                     GC_ML_DG=c("GC_ML_DG_head","GC_ML_DG_body"),
+                     molecular_layer_HP=c("molecular_layer_HP_head","molecular_layer_HP_body"),
+                     presubiculum=c("presubiculum_head","presubiculum_body"),
+                     subiculum=c("subiculum_head","subiculum_body"))
+
+# make groupings for left and right
+# L thal
+thal_combine_L <-  thal_combine
+names(thal_combine_L) <- paste0("Thal_Left_",names(thal_combine))
+thal_combine_L <- lapply(thal_combine_L, function(x) paste0("Thal_Left_",x))
+# R thal
+thal_combine_R <-  thal_combine
+names(thal_combine_R) <- paste0("Thal_Right_",names(thal_combine))
+thal_combine_R <- lapply(thal_combine_R, function(x) paste0("Thal_Right_",x))
+# L hip
+hip_combine_L <-  hip_combine
+names(hip_combine_L) <- paste0("Hip_Left_",names(hip_combine))
+hip_combine_L <- lapply(hip_combine_L, function(x) paste0("Hip_Left_",x))
+# R hip
+hip_combine_R <-  hip_combine
+names(hip_combine_R) <- paste0("Hip_Right_",names(hip_combine))
+hip_combine_R <- lapply(hip_combine_R, function(x) paste0("Hip_Right_",x))
+
+# list of all columns to replace
+all_replace <- c(as.vector(unlist(hip_combine_R)), as.vector(unlist(hip_combine_L)), as.vector(unlist(thal_combine_R)), as.vector(unlist(thal_combine_L)))
+
+# function to combine subregions
+# regions should be vector of column names to add together
+combine_volumes <- function(regions, df){
+  dfcols <- df[,c(regions)]
+  out <- data.frame(name=rowSums(dfcols))
+  return(out)
+}
+
+# combine subregions
+# L thal
+combined_thal_L <- lapply(thal_combine_L, function(x) combine_volumes(df=subcort_all, regions=x)) 
+df_combined_thal_L <- do.call(cbind,combined_thal_L)
+colnames(df_combined_thal_L) <- names(combined_thal_L)
+# R thal
+combined_thal_R <- lapply(thal_combine_R, function(x) combine_volumes(df=subcort_all, regions=x)) 
+df_combined_thal_R <- do.call(cbind,combined_thal_R)
+colnames(df_combined_thal_R) <- names(combined_thal_R)
+# L hip
+combined_hip_L <- lapply(hip_combine_L, function(x) combine_volumes(df=subcort_all, regions=x)) 
+df_combined_hip_L <- do.call(cbind,combined_hip_L)
+colnames(df_combined_hip_L) <- names(combined_hip_L)
+# R hip
+combined_hip_R <- lapply(hip_combine_R, function(x) combine_volumes(df=subcort_all, regions=x)) 
+df_combined_hip_R <- do.call(cbind,combined_hip_R)
+colnames(df_combined_hip_R) <- names(combined_hip_R)
+
+# remove unnecessary columns and add new columns to subcort all
+subcort_all <- subcort_all[,which(!names(subcort_all) %in% all_replace)]
+
+# add new columns
+subcort_all <- cbind(subcort_all, df_combined_thal_L, df_combined_thal_R, df_combined_hip_L, df_combined_hip_R)
+
 # get feature names
 sc_names <- names(subcort_all)[which(names(subcort_all) != "MRI_S_ID")]
-
 ```
 
 histograms for each region
@@ -445,9 +521,11 @@ demo_sc$AGE2 <- demo_sc$AGE^2
 
 impute outliers and excluded data (ComBat can't have NAs in input)
 ```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# list of thalamus regions
+thal_names_final <- names(subcort_all)[grep("Thal",names(subcort_all))]
 # data frame with MRI_S_ID and region names to remove
 # first get all the thalamus ROIs for the subjects with whole thal excluded
-remove_thal <- lapply(thal_exclude, function(n) data.frame(MRI_S_ID = n, variable=thal_names)) %>% do.call(rbind,.)
+remove_thal <- lapply(thal_exclude, function(n) data.frame(MRI_S_ID = n, variable=thal_names_final)) %>% do.call(rbind,.)
 # and add that to the subjects/regions in out_filter
 sparse_remove <- rbind(out_filter[,c("MRI_S_ID","variable")], remove_thal)
 # add site and gene dosage from demo_sc
@@ -565,6 +643,23 @@ subregion_names_normed <- sc_names_normed[which(!sc_names_normed %in% ws_names_n
 
 ```
 
+LME total ICV
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# test random intercept model for ICV
+# first normalize ICV
+td_mean_icv <- filter(demo_combat_normed, gene_dosage==2)$eTIV %>% mean
+td_sd_icv <- filter(demo_combat_normed, gene_dosage==2)$eTIV %>% sd
+demo_combat_normed$eTIVnormed <- (demo_combat_normed$eTIV - td_mean_icv)/td_sd_icv
+
+lme_ICV <- lmerTest::lmer(formula="eTIVnormed ~ gene_dosage + AGE + AGE2 + SEX + site + (1|SUBJECTID)", data=demo_combat_normed, REML=TRUE)
+                            
+ICV_summary <- summary(lme_ICV,ddf="Kenward-Roger")                            
+
+ICV_gene_dosage <- ICV_summary$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]
+ICV_gene_dosage_final <- data.frame(Region="total ICV", Hemi=NA, beta=ICV_gene_dosage[1], p=ICV_gene_dosage[2])
+row.names(ICV_gene_dosage_final) <- NULL
+```
+
 LME for whole thal, hipp, amy
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # test random intercept model at each region
@@ -580,10 +675,11 @@ gene_dosage_effect_ws$Region <- ws_names_normed
 gene_dosage_effect_ws <- gene_dosage_effect_ws[order(gene_dosage_effect_ws$gene_dosage_beta),]
 ```
 
-make table for export with subregion gene dosage effects
+make table for export with whole structure gene dosage effects
 ```{r paged.print=FALSE}
 # read edited lookup table matching freesurfer names to full names
-lut <- read.csv(file.path(project,"lut_names_thal_hip_amy_match.txt"), header=TRUE)
+#lut <- read.csv(file.path(project,"lut_names_thal_hip_amy_match.txt"), header=TRUE)
+lut <- read.csv(file.path(project,"lut_names_thal_hip_amy_match_combine.csv"), header=TRUE)
 lut$region_match <- gsub("-","_",lut$region)
 lut$region_match <- gsub("\\(","_",lut$region_match)
 lut$region_match <- gsub("\\)","_",lut$region_match)
@@ -617,12 +713,15 @@ save_dosage_effect_ws$Name <- gsub("left ","",save_dosage_effect_ws$Name)
 save_dosage_effect_ws$Name <- gsub("right ","",save_dosage_effect_ws$Name)
 save_dosage_effect_ws$Region <- save_dosage_effect_ws$Name
 
-# round
-save_dosage_effect_ws$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
-save_dosage_effect_ws$p %<>% round(., digits=7) %>% sprintf("%.7f",.)
-#save_dosage_effect_ws$`FDR q` %<>% round(., digits=5) %>% sprintf("%.5f",.)
+# add ICV
+save_dosage_effect_ws_final <- rbind(ICV_gene_dosage_final, save_dosage_effect_ws[,c("Region","Hemi","beta","p")])
 
-save_dosage_effect_ws[,c("Region","Hemi","beta","p")]
+# round
+save_dosage_effect_ws_final$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
+save_dosage_effect_ws_final$p %<>% round(., digits=7) %>% sprintf("%.7f",.)
+#save_dosage_effect_ws$p %<>% formatC(., format = "e", digits = 1)
+
+#write.csv(save_dosage_effect_ws_final, file=file.path(project,"figures/gene_dosage/gene_dosage_ws.csv"), row.names = FALSE)
 ```
 
 LME for all subregions
@@ -686,11 +785,16 @@ rownames(save_dosage_effect) <- NULL
 
 # round
 save_dosage_effect$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
-save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
-save_dosage_effect$`FDR q` %<>% round(., digits=5) %>% sprintf("%.5f",.)
+#save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
+save_dosage_effect$p %<>% formatC(., format = "e", digits = 1)
+#save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
+save_dosage_effect$`FDR q` %<>% formatC(., format = "e", digits = 1)
 
-save_dosage_effect[,c("Region","Structure","Hemi","beta","p","FDR q")]
+save_dosage_effect_final <- save_dosage_effect[,c("Region","Structure","Hemi","beta","p","FDR q")]
+
+#write.csv(save_dosage_effect_final, file=file.path(project,"figures/gene_dosage/gene_dosage_subregions.csv"), row.names = FALSE)
 ```
+
 
 volume barplots by gene dosage for select regions
 ```{r}
@@ -737,11 +841,13 @@ plot_Thal_Right_Whole <- ggplot()+
   geom_ribbon(data=Thal_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightgrey", alpha=0.6)+
   geom_line(data=Thal_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
   geom_segment(aes(y=mean(Thal_Right_Whole$fit), yend=mean(Thal_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
-  xlab("22q11.2 CNV dosage")+
-  ylab("volume (mm^3)")+
-  ggtitle("Right Whole Thalamus volume")+
-  labs(fill="gene dosage")+
-  theme_classic()+
+  #xlab("22q11.2 CNV dosage")+
+  #ylab("volume (mm^3)")+
+  xlab("")+
+  ylab("")+
+  ggtitle("R Thalamus")+
+  #labs(fill="gene dosage")+
+  theme_classic(base_size = 13)+
   theme(legend.position="none")
 
 plot_Thal_Right_Whole
@@ -761,11 +867,13 @@ plot_Amy_Right_Whole <- ggplot()+
   geom_ribbon(data=Amy_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightgrey", alpha=0.6)+
   geom_line(data=Amy_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
   geom_segment(aes(y=mean(Amy_Right_Whole$fit), yend=mean(Amy_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
-  xlab("22q11.2 CNV dosage")+
-  ylab("volume (mm^3)")+
-  ggtitle("Right Whole Amygdala volume")+
-  labs(fill="gene dosage")+
-  theme_classic()+
+  #xlab("22q11.2 CNV dosage")+
+  #ylab("volume (mm^3)")+
+  xlab("")+
+  ylab("")+
+  ggtitle("R Amygdala")+
+  #labs(fill="gene dosage")+
+  theme_classic(base_size = 13)+
   theme(legend.position="none")
 
 plot_Amy_Right_Whole
@@ -786,11 +894,13 @@ plot_Hip_Right_Whole <- ggplot()+
   geom_segment(aes(y=mean(Hip_Right_Whole$fit), yend=mean(Hip_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
   geom_ribbon(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
   geom_line(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  xlab("22q11.2 CNV dosage")+
-  ylab("volume (mm^3)")+
-  ggtitle("Right Whole Hippocampus volume")+
-  labs(fill="gene dosage")+
-  theme_classic()+
+  #xlab("22q11.2 CNV dosage")+
+  #ylab("volume (mm^3)")+
+  xlab("")+
+  ylab("")+
+  ggtitle("R Hippocampus")+
+  #labs(fill="gene dosage")+
+  theme_classic(base_size = 13)+
   theme(legend.position="none")
 
 plot_Hip_Right_Whole
@@ -798,35 +908,165 @@ plot_Hip_Right_Whole
 #ggsave(plot=plot_Hip_Right_Whole, filename=file.path(project,"figures/gene_dosage/Hip_Right_Whole.pdf"), width=5, height=6, device = "pdf")
 #ggsave(plot=plot_Hip_Right_Whole, filename=file.path(project,"figures/gene_dosage/Hip_Right_Whole.png"), width=5, height=6, device = "png", dpi=300)
 
+
+# ICV
+ICV <- effect(term="gene_dosage", mod=lme4::lmer(formula="eTIV ~ gene_dosage + AGE + AGE2 + SEX + site + (1|SUBJECTID)", data=demo_combat_normed, REML=TRUE)) %>% as.data.frame
+
+# plot data points and model estimate
+plot_ICV <- ggplot()+
+  geom_half_violin(data=demo_combat_normed,aes(x=gene_dosage, group=gene_dosage, y=eTIV,fill=gene_dosage), fill="lightgrey", side="r", lty="blank")+
+  geom_point(data=demo_combat_normed,aes(x=gene_dosage,y=eTIV, fill=gene_dosage), position=position_jitter(w=0.1,h=0,seed=1), shape=21,color="black")+
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_fill_viridis()+
+  geom_ribbon(data=ICV, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
+  geom_line(data=ICV, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  geom_segment(aes(y=mean(ICV$fit), yend=mean(ICV$fit),x=1, xend=3), lty="dashed", color="grey")+
+  xlab("22q11.2 CNV dosage")+
+  ylab("volume (mm^3)")+
+  #xlab("")+
+  #ylab("")+
+  ggtitle("Total ICV")+
+  #labs(fill="gene dosage")+
+  theme_classic(base_size = 13)+
+  theme(legend.position="none")
+
+plot_ICV
 ```
 
+Create figure with all whole structure lm plots
+```{r}
+# whole structure plots on top, selected subregions second row, panels labeled with bold letters
+#lm_fig_ws <- (plot_Hip_Right_Whole + plot_Thal_Right_Whole + plot_Amy_Right_Whole)+ plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold'))
+
+#lm_fig_ws
+
+#ggsave(plot=lm_fig_ws, filename=file.path(project,"figures/gene_dosage/gene_dosage_ws.pdf"), width=10, height=4, device = "pdf")
+#ggsave(plot=lm_fig_ws, filename=file.path(project,"figures/gene_dosage/gene_dosage_ws.png"), width=10, height=4, device = "png", dpi = 300)
+```
 
 subregion scatterplots 
 ```{r}
 # get model estimates (need to rerun model with lme4 rather than lmertest)
 # https://lmudge13.github.io/sample_code/mixed_effects.html
 
-# Left Thal mediodorsal medial  
-Thal_Left_MDm <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Left_MDm.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+# Left Thal mediodorsal   
+Thal_Left_MD <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Left_MD_all.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
 # plot data points and model estimate
-plot_Thal_Left_MDm <- ggplot()+
-  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+plot_Thal_Left_MD <- ggplot()+
+  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_Left_MD_all.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_Left_MD_all.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
   scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
   scale_fill_viridis()+
-  geom_segment(aes(y=mean(Thal_Left_MDm$fit), yend=mean(Thal_Left_MDm$fit),x=1, xend=3), lty="dashed", color="grey")+
-  geom_ribbon(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", alpha=0.6)+
-  geom_line(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  xlab("22q11.2 CNV dosage")+
-  ylab("volume (mm^3)")+
-  ggtitle("Left Thalamus MDm volume")+
-  labs(fill="gene dosage")+
-  theme_classic()+
+  geom_segment(aes(y=mean(Thal_Left_MD$fit), yend=mean(Thal_Left_MD$fit),x=1, xend=3), lty="dashed", color="grey")+
+  geom_ribbon(data=Thal_Left_MD, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", alpha=0.6)+
+  geom_line(data=Thal_Left_MD, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  #xlab("22q11.2 CNV dosage")+
+  #ylab("volume (mm^3)")+
+  xlab("")+
+  ylab("")+
+  ggtitle("L Thalamus MD")+
+  #labs(fill="gene dosage")+
+  theme_classic(base_size = 13)+
   theme(legend.position="none")
 
-plot_Thal_Left_MDm
-#ggsave(plot=plot_Thal_Left_MDm, filename=file.path(project,"figures/gene_dosage/Thal_Left_MDm.svg"), width=5, height=6, device = "svg")
-#ggsave(plot=plot_Thal_Left_MDm, filename=file.path(project,"figures/gene_dosage/Thal_Left_MDm.png"), width=5, height=6, device = "png", dpi=300)
+plot_Thal_Left_MD
+#ggsave(plot=plot_Thal_Left_MD, filename=file.path(project,"figures/gene_dosage/Thal_Left_MD_all.pdf"), width=5, height=6, device = "pdf")
+#ggsave(plot=plot_Thal_Left_MD, filename=file.path(project,"figures/gene_dosage/Thal_Left_MD_all.png"), width=5, height=6, device = "png", dpi=300)
+
+# Thal Right LGN   
+Thal_Right_LGN <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Right_LGN.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+# plot data points and model estimate
+plot_Thal_Right_LGN <- ggplot()+
+  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_Right_LGN.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_Right_LGN.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_fill_viridis()+
+  geom_segment(aes(y=mean(Thal_Right_LGN$fit), yend=mean(Thal_Right_LGN$fit),x=1, xend=3), lty="dashed", color="grey")+
+  geom_ribbon(data=Thal_Right_LGN, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
+  geom_line(data=Thal_Right_LGN, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  #xlab("22q11.2 CNV dosage")+
+  #ylab("volume (mm^3)")+
+  xlab("")+
+  ylab("")+
+  ggtitle("R Thalamus LGN")+
+  #labs(fill="gene dosage")+
+  theme_classic(base_size = 13)+
+  theme(legend.position="none")
+
+plot_Thal_Right_LGN
+#ggsave(plot=plot_Thal_Right_LGN, filename=file.path(project,"figures/gene_dosage/Thal_Right_LGN.pdf"), width=5, height=6, device = "pdf")
+#ggsave(plot=plot_Thal_Right_LGN, filename=file.path(project,"figures/gene_dosage/Thal_Right_LGN.png"), width=5, height=6, device = "png", dpi=300)
+
+
+# Left Hip tail  
+Hip_Left_tail <- effect(term="gene_dosage", mod=lme4::lmer(formula="Hip_Left_Hippocampal_tail.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+# plot data points and model estimate
+plot_Hip_Left_tail <- ggplot()+
+  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Hip_Left_Hippocampal_tail.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Hip_Left_Hippocampal_tail.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_fill_viridis()+
+  geom_segment(aes(y=mean(Hip_Left_tail$fit), yend=mean(Hip_Left_tail$fit),x=1, xend=3), lty="dashed", color="grey")+
+  geom_ribbon(data=Hip_Left_tail, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
+  geom_line(data=Hip_Left_tail, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  #xlab("22q11.2 CNV dosage")+
+  #ylab("volume (mm^3)")+
+  xlab("")+
+  ylab("")+
+  ggtitle("L Hippocampus Tail")+
+  #labs(fill="gene dosage")+
+  theme_classic(base_size = 13)+
+  theme(legend.position="none")
+
+plot_Hip_Left_tail
+#ggsave(plot=plot_Hip_Left_tail, filename=file.path(project,"figures/gene_dosage/Hip_Left_tail.pdf"), width=5, height=6, device = "pdf")
+#ggsave(plot=plot_Hip_Left_tail, filename=file.path(project,"figures/gene_dosage/Hip_Left_tail.pdf"), width=5, height=6, device = "png", dpi=300)
+
+# Left Amy basal 
+Amy_Left_basal <- effect(term="gene_dosage", mod=lme4::lmer(formula="Amy_Left_Basal_nucleus.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+# plot data points and model estimate
+plot_Amy_Left_basal <- ggplot()+
+  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Amy_Left_Basal_nucleus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Amy_Left_Basal_nucleus.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_fill_viridis()+
+  geom_segment(aes(y=mean(Amy_Left_basal$fit), yend=mean(Amy_Left_basal$fit),x=1, xend=3), lty="dashed", color="grey")+
+  geom_ribbon(data=Amy_Left_basal, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
+  geom_line(data=Amy_Left_basal, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+  #xlab("22q11.2 CNV dosage")+
+  #ylab("volume (mm^3)")+
+  xlab("")+
+  ylab("")+
+  ggtitle("L Amygdala Basal")+
+  #labs(fill="gene dosage")+
+  theme_classic(base_size = 13)+
+  theme(legend.position="none")
+
+plot_Amy_Left_basal
+```
+
+Create figure with all lm plots
+```{r}
+# whole structure plots on top, selected subregions second row, panels labeled with bold letters
+lm_fig_top <- (plot_ICV + plot_Thal_Right_Whole + plot_Amy_Right_Whole + plot_Hip_Right_Whole) +plot_layout(ncol = 4,nrow = 1)
+lm_fig_bottom <- (plot_Thal_Left_MD + plot_Thal_Right_LGN + plot_Amy_Left_basal + plot_Hip_Left_tail) +plot_layout(ncol = 4,nrow = 1)
+
+lm_fig_all <- lm_fig_top/lm_fig_bottom +plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold'))
+
+lm_fig_all
+
+ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.pdf"), width=12, height=8.5, device = "pdf")
+ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.png"), width=12, height=8.5, device = "png", dpi = 300)
+```
+
+```{r}
+# whole structure plots on top, selected subregions second row, panels labeled with bold letters
+#lm_fig_sub <- (plot_Thal_Left_MD + plot_Thal_Right_LGN)/(plot_Hip_Left_tail + plot_Amy_Left_basal) + plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold'))
+
+#lm_fig_sub
+
+#ggsave(plot=lm_fig_sub, filename=file.path(project,"figures/gene_dosage/gene_dosage_subregions.pdf"), width=7, height=7, device = "pdf")
+#ggsave(plot=lm_fig_sub, filename=file.path(project,"figures/gene_dosage/gene_dosage_subregions.png"), width=7, height=7, device = "png", dpi = 300)
 ```
 
 
@@ -863,6 +1103,8 @@ sum(del_dup_vs_hc_merged$fdr_sig.y)
 # get only effects that are significant in both models
 del_dup_vs_hc_merged_sig <- filter(del_dup_vs_hc_merged,fdr_sig.x==TRUE & fdr_sig.y==TRUE)
 #del_dup_vs_hc_sig <- del_dup_vs_hc_sig[order(del_dup_vs_hc_sig$gene_dosage_beta),]
+
+#del_dup_vs_hc_merged_sig
 ```
 
 LME for gene_dosage * Age linear interaction
@@ -880,6 +1122,7 @@ gene_by_age_effect <- gene_by_age_effect[order(gene_by_age_effect$gene_by_age_p)
 
 # get only significant effects
 gene_by_age_effect_sig <- filter(gene_by_age_effect,fdr_sig==TRUE)
+#gene_by_age_effect_sig
 #gene_by_age_effect_sig <- gene_by_age_effect_sig[order(gene_by_age_effect_sig$gene_dosage_beta),]
 
 #write.table(gene_dosage_effect_sig, file="~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/gene_dosage_lme_significant.csv", sep=",", col.names = TRUE, row.names = FALSE)
@@ -916,7 +1159,6 @@ gene_by_age_del_dup_vs_hc$gene_by_age_fdr_q <- p.adjust(gene_by_age_del_dup_vs_h
 
 
 ```
-
 
 
 longitudinal demo table 
@@ -1430,10 +1672,11 @@ get_sips <- function(r,demo,sips){
 demo_table_sips <- lapply(1:nrow(df_demo_table_bl), function(r) get_sips(r=r, demo=df_demo_table_bl, sips=df_all_ucla$SIPS)) %>% do.call(rbind,.)
 
 # merge sips with demo table
-df_demo_table_bl <- merge(x=df_demo_table_bl, y=demo_table_sips[,c("SUBJECTID","CONVERTEDVISITNUM","SIPS_total","SIPS_psspectrum_3")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("SIPS_prodromal" = "SIPS_psspectrum_3")
+df_demo_table_bl <- merge(x=df_demo_table_bl, y=demo_table_sips[,c("SUBJECTID","CONVERTEDVISITNUM","SIPS_total","SIPS_psspectrum_3","SIPS_p_sum")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("SIPS_prodromal" = "SIPS_psspectrum_3")
 # set sips_total to numeric and sips_prodromal to factor
 df_demo_table_bl %<>% mutate_at(vars("SIPS_prodromal"), ~as.logical(.))
 df_demo_table_bl %<>% mutate_at(vars("SIPS_total"), ~as.numeric(.))
+df_demo_table_bl %<>% mutate_at(vars("SIPS_p_sum"), ~as.numeric(.))
 
 
 # also merge full SIPS codes
@@ -1523,7 +1766,7 @@ df_demo_table_bl$avg_interval <- lapply(df_demo_table_bl$SUBJECTID, function(s) 
 
 # vector of variables for demo table
 #vars_use <- c("AGE","SEX","EDUDAD","EDUMOM","EDUYEARS","hand", "percent_BOLD_scrubbed", "IQ_full","WASI_verbal","WASI_matrix", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds")
-vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds","visit_counts","avg_interval")
+vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_p_sum","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds","visit_counts","avg_interval")
 
 # make table
 demo_match_final <- CreateTableOne(data=df_demo_table_bl,vars=vars_use,strata="SUBJECT_IDENTITY",addOverall=F,includeNA=T)
@@ -1531,87 +1774,87 @@ demo_match_final <- CreateTableOne(data=df_demo_table_bl,vars=vars_use,strata="S
 # export tableone
 export_demo_table <- print(demo_match_final, quote=F, noSpaces=F, printToggle=T)
 #export_demo_table
-#write.csv(export_demo_table, file=file.path(project,"table1_demographics.csv"))
+#swrite.csv(export_demo_table, file=file.path(project,"/figures/demographics/table1_demographics.csv"))
 
 ```
 
 partial least squares relating brain volumes to SRS ad SIPS 
 ```{r}
-#df_del_bl <- filter(df_demo_table_bl, SUBJECT_IDENTITY=="PATIENT-DEL")
-#df_dup_bl <- filter(df_demo_table_bl, SUBJECT_IDENTITY=="PATIENT-DUP")
-df_del_dup_bl <- filter(df_demo_table_bl, SUBJECT_IDENTITY=="PATIENT-DEL"|SUBJECT_IDENTITY=="PATIENT-DUP")
-
-
-# create a formula object for the plsr model. multiple response (Y) variables specified with cbind on the left of "~" multiple X separate with "+"
-#ycols <- paste(paste(srs_items, collapse=", "), paste(sips_sev, collapse=", "), sep=", ")
-#plsformula <- as.formula(paste("cbind(",ycols,") ~", paste(sc_names_combat, collapse = " + ")))
-# set up with volumes as Y and symptoms as X to more easily get overall percent symptom variance explained
-ycols <- paste(sc_names_combat, collapse=", ")
-xcols <- paste(paste(srs_items, collapse=" + "), paste(sips_sev, collapse=" + "), sep=" + ")
-plsformula <- as.formula(paste("cbind(",ycols,") ~", xcols))
-
-# need to use cbind to have multiple responses...
-#pls_test <- plsr(formula=plsformula, data=df_del_dup_bl, scale=TRUE, center=TRUE, validation="LOO", na.action="na.omit")
-pls_test <- plsr(formula=plsformula, data=df_demo_table_bl, scale=TRUE, center=TRUE, validation="CV", na.action="na.omit")
-#summary(pls_test)
-
-# plot model RMSE for first 5 components
-#validationplot(pls_test,ncomp =1:5)
-
-# get explained variance in X for first five components
-x_explvar <- explvar(pls_test)[1:5]
-
-# Y loadings, first 5 components
-y_loadings <- as.data.frame(pls_test$Yloadings[,1:5])
-colnames(y_loadings) <- gsub(" ", "",colnames(y_loadings))
-y_loadings$feature <- rownames(y_loadings)
-
-# X loadings, first 5 components
-x_loadings <- as.data.frame(pls_test$loadings[,1:5])
-colnames(x_loadings) <- gsub(" ", "",colnames(x_loadings))
-x_loadings$feature <- rownames(x_loadings)
-
-# add item text to behavior loadings 
-srs_text <- read.delim(file.path(project,"demographics/SRS_item_text.txt"), sep="\t")
-sips_text <- read.delim(file.path(project,"demographics/SIPS_item_text.txt"), sep="\t")
-all_text <- rbind(srs_text, sips_text)
-x_loadings <- merge(x=x_loadings, y=all_text, by.x="feature", by.y="item", all.x=TRUE)
-
-# sort x and y loadings for first 3 compoments
-x1_sort <- x_loadings[order(x_loadings$Comp1),c("feature","Comp1","text")] %>% rename("loading"="Comp1") %>% as.data.frame()
-x2_sort <- x_loadings[order(x_loadings$Comp2),c("feature","Comp2","text")] %>% rename("loading"="Comp2") %>% as.data.frame()
-x3_sort <- x_loadings[order(x_loadings$Comp3),c("feature","Comp3","text")] %>% rename("loading"="Comp3") %>% as.data.frame()
-
-y1_sort <- y_loadings[order(y_loadings$Comp1),c("feature","Comp1")] %>% rename("loading"="Comp1") %>% as.data.frame()
-y2_sort <- y_loadings[order(y_loadings$Comp2),c("feature","Comp2")] %>% rename("loading"="Comp2") %>% as.data.frame()
-y3_sort <- y_loadings[order(y_loadings$Comp3),c("feature","Comp3")] %>% rename("loading"="Comp3") %>% as.data.frame()
-
-# function to take top n loadings by absolute value
-abs_decile <- function(df, n){
-  df$abs <- abs(df$loading)
-  df <- df[order(df$abs, decreasing=TRUE),]
-  out <- df[1:n,]
-  return(out)
-}
-
-# get top 15 X and Y loadings for first 3 components
-x1_top15 <- abs_decile(x1_sort, 15)[,c("feature","loading","text")]
-x2_top15 <- abs_decile(x2_sort, 15)[,c("feature","loading","text")]
-x3_top15 <- abs_decile(x3_sort, 15)[,c("feature","loading","text")]
-
-y1_top15 <- abs_decile(y1_sort, 15)[,c("feature","loading")]
-y2_top15 <- abs_decile(y2_sort, 15)[,c("feature","loading")]
-y3_top15 <- abs_decile(y3_sort, 15)[,c("feature","loading")]
-
-y1_top15
-x1_top15
-
-y2_top15
-x2_top15
-
-y3_top15
-x3_top15
-
+##df_del_bl <- filter(df_demo_table_bl, SUBJECT_IDENTITY=="PATIENT-DEL")
+##df_dup_bl <- filter(df_demo_table_bl, SUBJECT_IDENTITY=="PATIENT-DUP")
+#df_del_dup_bl <- filter(df_demo_table_bl, SUBJECT_IDENTITY=="PATIENT-DEL"|SUBJECT_IDENTITY=="PATIENT-DUP")
+#
+#
+## create a formula object for the plsr model. multiple response (Y) variables specified with cbind on the left of "~" multiple X #separate with "+"
+##ycols <- paste(paste(srs_items, collapse=", "), paste(sips_sev, collapse=", "), sep=", ")
+##plsformula <- as.formula(paste("cbind(",ycols,") ~", paste(sc_names_combat, collapse = " + ")))
+## set up with volumes as Y and symptoms as X to more easily get overall percent symptom variance explained
+#ycols <- paste(sc_names_combat, collapse=", ")
+#xcols <- paste(paste(srs_items, collapse=" + "), paste(sips_sev, collapse=" + "), sep=" + ")
+#plsformula <- as.formula(paste("cbind(",ycols,") ~", xcols))
+#
+## need to use cbind to have multiple responses...
+##pls_test <- plsr(formula=plsformula, data=df_del_dup_bl, scale=TRUE, center=TRUE, validation="LOO", na.action="na.omit")
+#pls_test <- plsr(formula=plsformula, data=df_demo_table_bl, scale=TRUE, center=TRUE, validation="CV", na.action="na.omit")
+##summary(pls_test)
+#
+## plot model RMSE for first 5 components
+##validationplot(pls_test,ncomp =1:5)
+#
+## get explained variance in X for first five components
+#x_explvar <- explvar(pls_test)[1:5]
+#
+## Y loadings, first 5 components
+#y_loadings <- as.data.frame(pls_test$Yloadings[,1:5])
+#colnames(y_loadings) <- gsub(" ", "",colnames(y_loadings))
+#y_loadings$feature <- rownames(y_loadings)
+#
+## X loadings, first 5 components
+#x_loadings <- as.data.frame(pls_test$loadings[,1:5])
+#colnames(x_loadings) <- gsub(" ", "",colnames(x_loadings))
+#x_loadings$feature <- rownames(x_loadings)
+#
+## add item text to behavior loadings 
+#srs_text <- read.delim(file.path(project,"demographics/SRS_item_text.txt"), sep="\t")
+#sips_text <- read.delim(file.path(project,"demographics/SIPS_item_text.txt"), sep="\t")
+#all_text <- rbind(srs_text, sips_text)
+#x_loadings <- merge(x=x_loadings, y=all_text, by.x="feature", by.y="item", all.x=TRUE)
+#
+## sort x and y loadings for first 3 compoments
+#x1_sort <- x_loadings[order(x_loadings$Comp1),c("feature","Comp1","text")] %>% rename("loading"="Comp1") %>% as.data.frame()
+#x2_sort <- x_loadings[order(x_loadings$Comp2),c("feature","Comp2","text")] %>% rename("loading"="Comp2") %>% as.data.frame()
+#x3_sort <- x_loadings[order(x_loadings$Comp3),c("feature","Comp3","text")] %>% rename("loading"="Comp3") %>% as.data.frame()
+#
+#y1_sort <- y_loadings[order(y_loadings$Comp1),c("feature","Comp1")] %>% rename("loading"="Comp1") %>% as.data.frame()
+#y2_sort <- y_loadings[order(y_loadings$Comp2),c("feature","Comp2")] %>% rename("loading"="Comp2") %>% as.data.frame()
+#y3_sort <- y_loadings[order(y_loadings$Comp3),c("feature","Comp3")] %>% rename("loading"="Comp3") %>% as.data.frame()
+#
+## function to take top n loadings by absolute value
+#abs_decile <- function(df, n){
+#  df$abs <- abs(df$loading)
+#  df <- df[order(df$abs, decreasing=TRUE),]
+#  out <- df[1:n,]
+#  return(out)
+#}
+#
+## get top 15 X and Y loadings for first 3 components
+#x1_top15 <- abs_decile(x1_sort, 15)[,c("feature","loading","text")]
+#x2_top15 <- abs_decile(x2_sort, 15)[,c("feature","loading","text")]
+#x3_top15 <- abs_decile(x3_sort, 15)[,c("feature","loading","text")]
+#
+#y1_top15 <- abs_decile(y1_sort, 15)[,c("feature","loading")]
+#y2_top15 <- abs_decile(y2_sort, 15)[,c("feature","loading")]
+#y3_top15 <- abs_decile(y3_sort, 15)[,c("feature","loading")]
+#
+#y1_top15
+#x1_top15
+#
+#y2_top15
+#x2_top15
+#
+#y3_top15
+#x3_top15
+#
 
 ```
 
@@ -1716,104 +1959,104 @@ scatterplots
 
 scatterplots with ASD highlighted
 ```{r}
-# add autism to full dataset (previously only added to baseline)
-# add ASD column based on summPsych
-asd_col_full <- lapply(1:nrow(demo_combat_na), function(r) get_asd(subject=demo_combat_na[r,"SUBJECTID"], summ_psych=summpsych)) %>% do.call(rbind,.) %>% as.data.frame
-colnames(asd_col_full) <- "summPsych_ASD"
-
-# merge summPsych ASD with demo table
-demo_combat_asd <- cbind(demo_combat_na,asd_col_full)
-
-# get sips 
-sips_full <- lapply(1:nrow(demo_combat_na), function(r) get_sips(r=r, demo=demo_combat_na, sips=df_all_ucla$SIPS)) %>% do.call(rbind,.)
-# merge sips with demo table
-demo_combat_dx <- merge(x=demo_combat_asd, y=sips_full[,c("SUBJECTID","CONVERTEDVISITNUM","SIPS_total","SIPS_psspectrum_3")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("SIPS_prodromal" = "SIPS_psspectrum_3")
-demo_combat_dx$SIPS_prodromal <- (demo_combat_dx$SIPS_prodromal == 1)
-
-# Left Thal mediodorsal medial  
-Thal_Left_MDm <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Left_MDm.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
-# plot data points and model estimate
-plot_Thal_Left_MDm_asd <- ggplot()+
-  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, group=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
-  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat, fill=gene_dosage, color=summPsych_ASD),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
-  scale_color_manual(values=c("black","red"))+  
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis()+
-  geom_segment(aes(y=mean(Thal_Left_MDm$fit), yend=mean(Thal_Left_MDm$fit),x=1, xend=3), lty="dashed", color="grey")+
-  geom_ribbon(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", alpha=0.6)+
-  geom_line(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  xlab("22q11.2 CNV dosage")+
-  ylab("volume (mm^3)")+
-  ggtitle("Left Thalamus MDm volume, autism red")+
-  labs(fill="gene dosage")+
-  theme_classic()+
-  theme(legend.position="none")
-
-plot_Thal_Left_MDm_asd
-
-plot_Thal_Left_MDm_pro <- ggplot()+
-  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, group=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
-  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat, fill=gene_dosage, color=SIPS_prodromal),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
-  scale_color_manual(values=c("black","red"))+  
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis()+
-  geom_segment(aes(y=mean(Thal_Left_MDm$fit), yend=mean(Thal_Left_MDm$fit),x=1, xend=3), lty="dashed", color="grey")+
-  geom_ribbon(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", alpha=0.6)+
-  geom_line(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  xlab("22q11.2 CNV dosage")+
-  ylab("volume (mm^3)")+
-  ggtitle("Left Thalamus MDm volume, prodromal red")+
-  labs(fill="gene dosage")+
-  theme_classic()+
-  theme(legend.position="none")
-
-plot_Thal_Left_MDm_pro
-
-
-# Right whole hipp
-Hip_Right_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Hip_Right_Whole_hippocampus.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
-
-# plot data points and model estimate
-plot_Hip_Right_Whole_asd <- ggplot()+
-  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, group=gene_dosage,y=Hip_Right_Whole_hippocampus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
-  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage, color=summPsych_ASD),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
-  scale_color_manual(values=c("black","red"))+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis()+
-  geom_segment(aes(y=mean(Hip_Right_Whole$fit), yend=mean(Hip_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
-  geom_ribbon(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
-  geom_line(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  xlab("22q11.2 CNV dosage")+
-  ylab("volume (mm^3)")+
-  ggtitle("Right Whole Hippocampus volume, autism red")+
-  labs(fill="gene dosage")+
-  theme_classic()+
-  theme(legend.position="none")
-
-plot_Hip_Right_Whole_asd
-
-plot_Hip_Right_Whole_pro <- ggplot()+
-  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, group=gene_dosage,y=Hip_Right_Whole_hippocampus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
-  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage, color=SIPS_prodromal),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
-  scale_color_manual(values=c("black","red"))+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis()+
-  geom_segment(aes(y=mean(Hip_Right_Whole$fit), yend=mean(Hip_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
-  geom_ribbon(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
-  geom_line(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  xlab("22q11.2 CNV dosage")+
-  ylab("volume (mm^3)")+
-  ggtitle("Right Whole Hippocampus volume, prodromal red")+
-  labs(fill="gene dosage")+
-  theme_classic()+
-  theme(legend.position="none")
-
-plot_Hip_Right_Whole_pro
-
+## add autism to full dataset (previously only added to baseline)
+## add ASD column based on summPsych
+#asd_col_full <- lapply(1:nrow(demo_combat_na), function(r) get_asd(subject=demo_combat_na[r,"SUBJECTID"], summ_psych=summpsych)) #%>% do.call(rbind,.) %>% as.data.frame
+#colnames(asd_col_full) <- "summPsych_ASD"
+#
+## merge summPsych ASD with demo table
+#demo_combat_asd <- cbind(demo_combat_na,asd_col_full)
+#
+## get sips 
+#sips_full <- lapply(1:nrow(demo_combat_na), function(r) get_sips(r=r, demo=demo_combat_na, sips=df_all_ucla$SIPS)) %>% #do.call(rbind,.)
+## merge sips with demo table
+#demo_combat_dx <- merge(x=demo_combat_asd, y=sips_full[,c("SUBJECTID","CONVERTEDVISITNUM","SIPS_total","SIPS_psspectrum_3")], #by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("SIPS_prodromal" = "SIPS_psspectrum_3")
+#demo_combat_dx$SIPS_prodromal <- (demo_combat_dx$SIPS_prodromal == 1)
+#
+## Left Thal mediodorsal medial  
+#Thal_Left_MDm <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Left_MDm.combat ~ gene_dosage + AGE + AGE2 + SEX + #eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+## plot data points and model estimate
+#plot_Thal_Left_MDm_asd <- ggplot()+
+#  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, #group=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+#  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, #seed=1),shape=21,color="black")+
+#  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat, fill=gene_dosage, #color=summPsych_ASD),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
+#  scale_color_manual(values=c("black","red"))+  
+#  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+#  scale_fill_viridis()+
+#  geom_segment(aes(y=mean(Thal_Left_MDm$fit), yend=mean(Thal_Left_MDm$fit),x=1, xend=3), lty="dashed", color="grey")+
+#  geom_ribbon(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", #alpha=0.6)+
+#  geom_line(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+#  xlab("22q11.2 CNV dosage")+
+#  ylab("volume (mm^3)")+
+#  ggtitle("Left Thalamus MDm volume, autism red")+
+#  labs(fill="gene dosage")+
+#  theme_classic()+
+#  theme(legend.position="none")
+#
+#plot_Thal_Left_MDm_asd
+#
+#plot_Thal_Left_MDm_pro <- ggplot()+
+#  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, #group=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+#  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat,fill=gene_dosage),position=position_jitter(w=0.1, h=0, #seed=1),shape=21,color="black")+
+#  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Thal_Left_MDm.combat, fill=gene_dosage, #color=SIPS_prodromal),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
+#  scale_color_manual(values=c("black","red"))+  
+#  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+#  scale_fill_viridis()+
+#  geom_segment(aes(y=mean(Thal_Left_MDm$fit), yend=mean(Thal_Left_MDm$fit),x=1, xend=3), lty="dashed", color="grey")+
+#  geom_ribbon(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", #alpha=0.6)+
+#  geom_line(data=Thal_Left_MDm, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+#  xlab("22q11.2 CNV dosage")+
+#  ylab("volume (mm^3)")+
+#  ggtitle("Left Thalamus MDm volume, prodromal red")+
+#  labs(fill="gene dosage")+
+#  theme_classic()+
+#  theme(legend.position="none")
+#
+#plot_Thal_Left_MDm_pro
+#
+#
+## Right whole hipp
+#Hip_Right_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Hip_Right_Whole_hippocampus.combat ~ gene_dosage + AGE + #AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+#
+## plot data points and model estimate
+#plot_Hip_Right_Whole_asd <- ggplot()+
+#  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, #group=gene_dosage,y=Hip_Right_Whole_hippocampus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+#  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, #fill=gene_dosage),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
+#  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage, #color=summPsych_ASD),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
+#  scale_color_manual(values=c("black","red"))+
+#  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+#  scale_fill_viridis()+
+#  geom_segment(aes(y=mean(Hip_Right_Whole$fit), yend=mean(Hip_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
+#  geom_ribbon(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", #alpha=0.6)+
+#  geom_line(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+#  xlab("22q11.2 CNV dosage")+
+#  ylab("volume (mm^3)")+
+#  ggtitle("Right Whole Hippocampus volume, autism red")+
+#  labs(fill="gene dosage")+
+#  theme_classic()+
+#  theme(legend.position="none")
+#
+#plot_Hip_Right_Whole_asd
+#
+#plot_Hip_Right_Whole_pro <- ggplot()+
+#  geom_half_violin(data=demo_combat_dx,aes(x=gene_dosage, #group=gene_dosage,y=Hip_Right_Whole_hippocampus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
+#  #geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, #fill=gene_dosage),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
+#  geom_point(data=demo_combat_dx,aes(x=gene_dosage,y=Hip_Right_Whole_hippocampus.combat, fill=gene_dosage, #color=SIPS_prodromal),position=position_jitter(w=0.1,h=0,seed=1),shape=21)+
+#  scale_color_manual(values=c("black","red"))+
+#  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+#  scale_fill_viridis()+
+#  geom_segment(aes(y=mean(Hip_Right_Whole$fit), yend=mean(Hip_Right_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
+#  geom_ribbon(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", #alpha=0.6)+
+#  geom_line(data=Hip_Right_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
+#  xlab("22q11.2 CNV dosage")+
+#  ylab("volume (mm^3)")+
+#  ggtitle("Right Whole Hippocampus volume, prodromal red")+
+#  labs(fill="gene dosage")+
+#  theme_classic()+
+#  theme(legend.position="none")
+#
+#plot_Hip_Right_Whole_pro
+#
 ```
 
 
@@ -1821,96 +2064,101 @@ plot_Hip_Right_Whole_pro
 ## Sx vs brain volumes
 LME to test effect of psychosis on combat adjusted features in only patient groups
 ```{r warning=FALSE}
-# filter demographics+volumes for only Del/Dup patients
-df_demo_pt <- filter(df_demo, SUBJECT_IDENTITY != "CONTROL")
-df_demo_pt %<>% droplevels()
-
-# test random intercept model at each region
-lme_prodromal <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("SIPS_prodromal","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=df_demo_pt, REML=TRUE))
-names(lme_prodromal) <- sc_names_combat
-
-# get p-val for gene dosage effect
-prodromal_effect <- lapply(lme_prodromal, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SIPS_prodromalTRUE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
-colnames(prodromal_effect) <- c("prodromal_beta","prodromal_p")
-prodromal_effect$prodromal_fdr_q <- p.adjust(prodromal_effect$prodromal_p, method="fdr")
-prodromal_effect$Region <- sc_names_combat
-prodromal_effect$fdr_sig <- prodromal_effect$prodromal_fdr_q < 0.05
-
-# get only significant effects
-prodromal_effect_sig <- filter(prodromal_effect,fdr_sig==TRUE)
-prodromal_effect_sig <- prodromal_effect_sig[order(prodromal_effect_sig$prodromal_beta),]
+## filter demographics+volumes for only Del/Dup patients
+#df_demo_pt <- filter(df_demo, SUBJECT_IDENTITY != "CONTROL")
+#df_demo_pt %<>% droplevels()
+#
+## test random intercept model at each region
+#lme_prodromal <- lapply(sc_names_combat, function(r) #lmerTest::lmer(formula=reformulate(c("SIPS_prodromal","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), #response=r),data=df_demo_pt, REML=TRUE))
+#names(lme_prodromal) <- sc_names_combat
+#
+## get p-val for gene dosage effect
+#prodromal_effect <- lapply(lme_prodromal, function(l) #summary(l,ddf="Kenward-Roger")$coefficients["SIPS_prodromalTRUE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% #as.data.frame
+#colnames(prodromal_effect) <- c("prodromal_beta","prodromal_p")
+#prodromal_effect$prodromal_fdr_q <- p.adjust(prodromal_effect$prodromal_p, method="fdr")
+#prodromal_effect$Region <- sc_names_combat
+#prodromal_effect$fdr_sig <- prodromal_effect$prodromal_fdr_q < 0.05
+#
+## get only significant effects
+#prodromal_effect_sig <- filter(prodromal_effect,fdr_sig==TRUE)
+#prodromal_effect_sig <- prodromal_effect_sig[order(prodromal_effect_sig$prodromal_beta),]
 ```
 
 same for autism
 ```{r warning=FALSE}
-# test random intercept model at each region
-lme_asd <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("summPsych_ASD","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=df_demo_pt, REML=TRUE))
-names(lme_asd) <- sc_names_combat
-
-# get p-val for gene dosage effect
-asd_effect <- lapply(lme_asd, function(l) summary(l,ddf="Kenward-Roger")$coefficients["summPsych_ASDTRUE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
-colnames(asd_effect) <- c("asd_beta","asd_p")
-asd_effect$asd_fdr_q <- p.adjust(asd_effect$asd_p, method="fdr")
-asd_effect$Region <- sc_names_combat
-asd_effect$fdr_sig <- asd_effect$asd_fdr_q < 0.05
-
-# get only significant effects
-asd_effect_sig <- filter(asd_effect,fdr_sig==TRUE)
-asd_effect_sig <- asd_effect_sig[order(asd_effect_sig$asd_beta),]
+## test random intercept model at each region
+#lme_asd <- lapply(sc_names_combat, function(r) #lmerTest::lmer(formula=reformulate(c("summPsych_ASD","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), #response=r),data=df_demo_pt, REML=TRUE))
+#names(lme_asd) <- sc_names_combat
+#
+## get p-val for gene dosage effect
+#asd_effect <- lapply(lme_asd, function(l) #summary(l,ddf="Kenward-Roger")$coefficients["summPsych_ASDTRUE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
+#colnames(asd_effect) <- c("asd_beta","asd_p")
+#asd_effect$asd_fdr_q <- p.adjust(asd_effect$asd_p, method="fdr")
+#asd_effect$Region <- sc_names_combat
+#asd_effect$fdr_sig <- asd_effect$asd_fdr_q < 0.05
+#
+## get only significant effects
+#asd_effect_sig <- filter(asd_effect,fdr_sig==TRUE)
+#asd_effect_sig <- asd_effect_sig[order(asd_effect_sig$asd_beta),]
 ```
 
 same for SIPS total
 ```{r warning=FALSE}
-# test random intercept model at each region
-lme_sips_total <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("SIPS_total","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=df_demo_pt, REML=TRUE))
-names(lme_sips_total) <- sc_names_combat
-
-# get p-val for gene dosage effect
-sips_total_effect <- lapply(lme_sips_total, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SIPS_total",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
-colnames(sips_total_effect) <- c("sips_total_beta","sips_total_p")
-sips_total_effect$sips_total_fdr_q <- p.adjust(sips_total_effect$sips_total_p, method="fdr")
-sips_total_effect$Region <- sc_names_combat
-sips_total_effect$fdr_sig <- sips_total_effect$sips_total_fdr_q < 0.05
-
-# get only significant effects
-sips_total_effect_sig <- filter(sips_total_effect,fdr_sig==TRUE)
-sips_total_effect_sig <- sips_total_effect_sig[order(sips_total_effect_sig$sips_total_beta),]
+## test random intercept model at each region
+#lme_sips_total <- lapply(sc_names_combat, function(r) #lmerTest::lmer(formula=reformulate(c("SIPS_total","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=df_demo_pt, #REML=TRUE))
+#names(lme_sips_total) <- sc_names_combat
+#
+## get p-val for gene dosage effect
+#sips_total_effect <- lapply(lme_sips_total, function(l) #summary(l,ddf="Kenward-Roger")$coefficients["SIPS_total",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
+#colnames(sips_total_effect) <- c("sips_total_beta","sips_total_p")
+#sips_total_effect$sips_total_fdr_q <- p.adjust(sips_total_effect$sips_total_p, method="fdr")
+#sips_total_effect$Region <- sc_names_combat
+#sips_total_effect$fdr_sig <- sips_total_effect$sips_total_fdr_q < 0.05
+#
+## get only significant effects
+#sips_total_effect_sig <- filter(sips_total_effect,fdr_sig==TRUE)
+#sips_total_effect_sig <- sips_total_effect_sig[order(sips_total_effect_sig$sips_total_beta),]
 ```
 
 same for IQ 
 ```{r warning=FALSE}
-# test random intercept model at each region
-lme_IQ <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("IQ_full","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=df_demo_pt, REML=TRUE))
-names(lme_IQ) <- sc_names_combat
-
-# get p-val for gene dosage effect
-IQ_effect <- lapply(lme_IQ, function(l) summary(l,ddf="Kenward-Roger")$coefficients["IQ_full",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
-colnames(IQ_effect) <- c("IQ_beta","IQ_p")
-IQ_effect$IQ_fdr_q <- p.adjust(IQ_effect$IQ_p, method="fdr")
-IQ_effect$Region <- sc_names_combat
-IQ_effect$fdr_sig <- IQ_effect$IQ_fdr_q < 0.05
-
-# get only significant effects
-IQ_effect_sig <- filter(IQ_effect,fdr_sig==TRUE)
-IQ_effect_sig <- IQ_effect_sig[order(IQ_effect_sig$IQ_beta),]
+## test random intercept model at each region
+#lme_IQ <- lapply(sc_names_combat, function(r) #lmerTest::lmer(formula=reformulate(c("IQ_full","AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=df_demo_pt, #REML=TRUE))
+#names(lme_IQ) <- sc_names_combat
+#
+## get p-val for gene dosage effect
+#IQ_effect <- lapply(lme_IQ, function(l) summary(l,ddf="Kenward-Roger")$coefficients["IQ_full",c("Estimate","Pr(>|t|)")]) %>% #do.call(rbind,.) %>% as.data.frame
+#colnames(IQ_effect) <- c("IQ_beta","IQ_p")
+#IQ_effect$IQ_fdr_q <- p.adjust(IQ_effect$IQ_p, method="fdr")
+#IQ_effect$Region <- sc_names_combat
+#IQ_effect$fdr_sig <- IQ_effect$IQ_fdr_q < 0.05
+#
+## get only significant effects
+#IQ_effect_sig <- filter(IQ_effect,fdr_sig==TRUE)
+#IQ_effect_sig <- IQ_effect_sig[order(IQ_effect_sig$IQ_beta),]
 ```
+
 
 ## Non-linear age effects, full sample
 GAMMs in each group at every ROI
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, include=FALSE}
 # subjectID must be factor. Site and sex should be numeric
-demo_combat_na_gam <- demo_combat_na 
+#demo_combat_na_gam <- demo_combat_na 
+demo_combat_na_gam <- demo_combat_normed 
 demo_combat_na_gam$SUBJECTID %<>% as.factor
 demo_combat_na_gam$site <- demo_combat_na_gam$site %>% gsub("T","0",.) %>% gsub("P","1",.) %>% as.numeric 
 demo_combat_na_gam$SEX <- demo_combat_na_gam$SEX %>% gsub("F","0",.) %>% gsub("M","1",.) %>% as.numeric 
 
 # test random intercept GAMM at each region
-#gamm_combat <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=gene_dosage)","gene_dosage","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na, selection=TRUE,method="REML", na.action="na.omit"))
+# original
+#gamm_combat <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na_gam, selection=TRUE,method="REML", na.action="na.omit"))
 
-gamm_combat <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na_gam, selection=TRUE,method="REML", na.action="na.omit"))
+# try with set k (try k=4 which maria used)
+gamm_combat <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, k=4)", "SUBJECT_IDENTITY", "SEX", "eTIVscaled", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response=r), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit"))
 
 
-names(gamm_combat) <- sc_names_combat
+#names(gamm_combat) <- sc_names_combat
+names(gamm_combat) <- sc_names_normed
 
 stables <- lapply(gamm_combat,function(g) summary(g, freq=T)$s.table)
 
@@ -1937,7 +2185,8 @@ out_age_pvals <- all_age_pvals[,c("SUBJECT_IDENTITY","Region","F","age_p_val","a
 rownames(out_age_pvals) <- NULL
 out_age_pvals <- rename(out_age_pvals, "p"="age_p_val","FDR_q"="age_p_val_fdr", "Group"="SUBJECT_IDENTITY")
 out_age_pvals$Group <- out_age_pvals$Group %>% gsub("CONTROL","TD",.) %>% gsub("PATIENT-DEL","22qDel",.) %>% gsub("PATIENT-DUP","22qDup",.)
-out_age_pvals$Region <- gsub(".combat","",out_age_pvals$Region)
+#out_age_pvals$Region <- gsub(".combat","",out_age_pvals$Region)
+out_age_pvals$Region <- gsub(".combat.norm","",out_age_pvals$Region)
 out_age_pvals$F %<>% round(., digits=2) %>% sprintf("%.4f",.)
 out_age_pvals$p %<>% signif(., digits=2) %>% sprintf("%.3f",.)
 out_age_pvals$FDR_q %<>% signif(., digits=3) %>% sprintf("%.4f",.)
@@ -1964,7 +2213,8 @@ smooth_estimates_se <- function(gamm,smooth,n){
 
 # smooth estimate
 smooth_all_combat <- lapply(gamm_combat, function(g) smooth_estimates_se(gamm=g, smooth="s(AGE)", n=1000))
-names(smooth_all_combat) <- sc_names_combat
+#names(smooth_all_combat) <- sc_names_combat
+names(smooth_all_combat) <- sc_names_normed
 
 ```
 
@@ -2017,14 +2267,16 @@ plot_gamm_resid <- function(name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23)){
     theme(axis.title.y = element_text(angle = 0,vjust=0.5))+
     ylab(ylab)+
     xlab(xlab)+
-    ggtitle(paste(gsub("_"," ",gsub(".combat","",name)),"Volume"))
+    #ggtitle(paste(gsub("_"," ",gsub(".combat","",name)),"Volume"))
+    ggtitle(paste(gsub("_"," ",gsub(".combat.norm","",name)),"Volume"))
 }
 
 
 
 #plot_gamm_resid_tc(name="Frontoparietal.combat",xlab="Age",ylab="TCC")
 #plot_gamm_resid_tc(name="Somatomotor.combat",xlab="Age",ylab="TCC")
-lapply(sc_names_combat,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
+#lapply(sc_names_combat,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
+lapply(sc_names_normed,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
 
 ```
 ```{r}
@@ -2090,102 +2342,194 @@ lapply(sc_names_combat,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volum
 ## Non-linear age effects, Age < 30
 GAMMs in each group at every ROI for only subjects under 30 years old
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-
-demo_combat_na_gam_u30 <- filter(demo_combat_na_gam, AGE<=30)
-
-# test random intercept GAMM at each region
-#gamm_combat <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na_gam, selection=TRUE,method="REML", na.action="na.omit"))
-
-gamm_combat_u30 <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na_gam_u30, selection=TRUE,method="REML", na.action="na.omit"))
-
-names(gamm_combat_u30) <- sc_names_combat
-
-stables_u30 <- lapply(gamm_combat_u30,function(g) summary(g, freq=T)$s.table)
-
-# get p-vals
-del_age_pvals_u30 <- lapply(stables_u30, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DEL",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
-del_age_pvals_u30$Region <- rownames(del_age_pvals_u30)
-del_age_pvals_u30$SUBJECT_IDENTITY <- "PATIENT-DEL"
-
-dup_age_pvals_u30 <- lapply(stables_u30, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DUP",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
-dup_age_pvals_u30$Region <- rownames(dup_age_pvals_u30)
-dup_age_pvals_u30$SUBJECT_IDENTITY <- "PATIENT-DUP"
-
-hcs_age_pvals_u30 <- lapply(stables_u30, function(s)s["s(AGE):SUBJECT_IDENTITYCONTROL",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame  %>% rename("age_p_val"="p.value")
-hcs_age_pvals_u30$Region <- rownames(hcs_age_pvals_u30)
-hcs_age_pvals_u30$SUBJECT_IDENTITY <- "CONTROL"
-
-# correct for multiple comparisons (one test for age effects per group per network)
-all_age_pvals_u30 <- rbind(del_age_pvals_u30,dup_age_pvals_u30,hcs_age_pvals_u30)
-all_age_pvals_u30$age_p_val_fdr <- all_age_pvals_u30$age_p_val %>% p.adjust(., method="fdr")
-all_age_pvals_u30
-
-# make pretty table for export
-out_age_pvals_u30 <- all_age_pvals_u30[,c("SUBJECT_IDENTITY","Region","F","age_p_val","age_p_val_fdr")]
-rownames(out_age_pvals_u30) <- NULL
-out_age_pvals_u30 <- rename(out_age_pvals_u30, "p"="age_p_val","FDR_q"="age_p_val_fdr", "Group"="SUBJECT_IDENTITY")
-out_age_pvals_u30$Group <- out_age_pvals_u30$Group %>% gsub("CONTROL","TD",.) %>% gsub("PATIENT-DEL","22qDel",.) %>% gsub("PATIENT-DUP","22qDup",.)
-out_age_pvals_u30$Region <- gsub(".combat","",out_age_pvals_u30$Region)
-out_age_pvals_u30$F %<>% round(., digits=2) %>% sprintf("%.4f",.)
-out_age_pvals_u30$p %<>% signif(., digits=2) %>% sprintf("%.3f",.)
-out_age_pvals_u30$FDR_q %<>% signif(., digits=3) %>% sprintf("%.4f",.)
-
-# get only significant results
-out_age_pvals_u30_sig <- filter(out_age_pvals_u30, FDR_q<0.05)
-out_age_pvals_u30_sig
-
-# get smooth estimates shifted by GAMM intercept to allow plotting over original data
-#smooth_estimates_se_b0 <- function(gamm,smooth,n){
+#
+#demo_combat_na_gam_u30 <- filter(demo_combat_na_gam, AGE<=30)
+#
+## test random intercept GAMM at each region
+##gamm_combat <- lapply(sc_names_combat, function(r) #gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), #response=r),data=demo_combat_na_gam, selection=TRUE,method="REML", na.action="na.omit"))
+#
+#gamm_combat_u30 <- lapply(sc_names_combat, function(r) #gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), #response=r),data=demo_combat_na_gam_u30, selection=TRUE,method="REML", na.action="na.omit"))
+#
+#names(gamm_combat_u30) <- sc_names_combat
+#
+#stables_u30 <- lapply(gamm_combat_u30,function(g) summary(g, freq=T)$s.table)
+#
+## get p-vals
+#del_age_pvals_u30 <- lapply(stables_u30, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DEL",c("F","p-value")]) %>% #do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
+#del_age_pvals_u30$Region <- rownames(del_age_pvals_u30)
+#del_age_pvals_u30$SUBJECT_IDENTITY <- "PATIENT-DEL"
+#
+#dup_age_pvals_u30 <- lapply(stables_u30, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DUP",c("F","p-value")]) %>% #do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
+#dup_age_pvals_u30$Region <- rownames(dup_age_pvals_u30)
+#dup_age_pvals_u30$SUBJECT_IDENTITY <- "PATIENT-DUP"
+#
+#hcs_age_pvals_u30 <- lapply(stables_u30, function(s)s["s(AGE):SUBJECT_IDENTITYCONTROL",c("F","p-value")]) %>% do.call(rbind,.) #%>% data.frame  %>% rename("age_p_val"="p.value")
+#hcs_age_pvals_u30$Region <- rownames(hcs_age_pvals_u30)
+#hcs_age_pvals_u30$SUBJECT_IDENTITY <- "CONTROL"
+#
+## correct for multiple comparisons (one test for age effects per group per network)
+#all_age_pvals_u30 <- rbind(del_age_pvals_u30,dup_age_pvals_u30,hcs_age_pvals_u30)
+#all_age_pvals_u30$age_p_val_fdr <- all_age_pvals_u30$age_p_val %>% p.adjust(., method="fdr")
+#all_age_pvals_u30
+#
+## make pretty table for export
+#out_age_pvals_u30 <- all_age_pvals_u30[,c("SUBJECT_IDENTITY","Region","F","age_p_val","age_p_val_fdr")]
+#rownames(out_age_pvals_u30) <- NULL
+#out_age_pvals_u30 <- rename(out_age_pvals_u30, "p"="age_p_val","FDR_q"="age_p_val_fdr", "Group"="SUBJECT_IDENTITY")
+#out_age_pvals_u30$Group <- out_age_pvals_u30$Group %>% gsub("CONTROL","TD",.) %>% gsub("PATIENT-DEL","22qDel",.) %>% #gsub("PATIENT-DUP","22qDup",.)
+#out_age_pvals_u30$Region <- gsub(".combat","",out_age_pvals_u30$Region)
+#out_age_pvals_u30$F %<>% round(., digits=2) %>% sprintf("%.4f",.)
+#out_age_pvals_u30$p %<>% signif(., digits=2) %>% sprintf("%.3f",.)
+#out_age_pvals_u30$FDR_q %<>% signif(., digits=3) %>% sprintf("%.4f",.)
+#
+## get only significant results
+#out_age_pvals_u30_sig <- filter(out_age_pvals_u30, FDR_q<0.05)
+#out_age_pvals_u30_sig
+#
+## get smooth estimates shifted by GAMM intercept to allow plotting over original data
+##smooth_estimates_se_b0 <- function(gamm,smooth,n){
+##  out <- smooth_estimates(gamm,smooth,n=n, partial_match = T)
+##  out$est <- out$est + gamm$coefficients["(Intercept)"]
+##  out$selo <- out$est - out$se
+##  out$sehi <- out$est + out$se
+##  return(out)
+##}
+#
+#smooth_estimates_se <- function(gamm,smooth,n){
 #  out <- smooth_estimates(gamm,smooth,n=n, partial_match = T)
-#  out$est <- out$est + gamm$coefficients["(Intercept)"]
 #  out$selo <- out$est - out$se
 #  out$sehi <- out$est + out$se
 #  return(out)
 #}
-
-smooth_estimates_se <- function(gamm,smooth,n){
-  out <- smooth_estimates(gamm,smooth,n=n, partial_match = T)
-  out$selo <- out$est - out$se
-  out$sehi <- out$est + out$se
-  return(out)
-}
-
-# smooth estimate
-smooth_all_combat_u30 <- lapply(gamm_combat_u30, function(g) smooth_estimates_se(gamm=g, smooth="s(AGE)", n=1000))
-names(smooth_all_combat_u30) <- sc_names_combat
-
+#
+## smooth estimate
+#smooth_all_combat_u30 <- lapply(gamm_combat_u30, function(g) smooth_estimates_se(gamm=g, smooth="s(AGE)", n=1000))
+#names(smooth_all_combat_u30) <- sc_names_combat
+#
 ```
 
 compare u30 with whole sample
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+## split data frames by group
+#sig_del <- filter(out_age_pvals_sig, Group=="22qDel")
+#sig_dup <- filter(out_age_pvals_sig, Group=="22qDup")
+#sig_hcs <- filter(out_age_pvals_sig, Group=="TD")
+#sig_del_u30 <- filter(out_age_pvals_u30_sig, Group=="22qDel")
+#sig_dup_u30 <- filter(out_age_pvals_u30_sig, Group=="22qDup")
+#sig_hcs_u30 <- filter(out_age_pvals_u30_sig, Group=="TD")
+#
+## list of unique regions with significance in 22q or TD, whole sample or under 30
+#sig_regions_compare <- data.frame(Region=sort(unique(c(out_age_pvals_u30_sig$Region,out_age_pvals_sig$Region))))
+#row.names(sig_regions_compare) <- sig_regions_compare$Region
+#
+#for (region in sig_regions_compare$Region){
+#  sig_regions_compare[region,"Del_all"] <- region %in% sig_del$Region
+#  sig_regions_compare[region,"Del_u30"] <- region %in% sig_del_u30$Region
+#  sig_regions_compare[region,"Dup_all"] <- region %in% sig_dup$Region
+#  sig_regions_compare[region,"Dup_u30"] <- region %in% sig_dup_u30$Region
+#  sig_regions_compare[region,"TD_all"]<- region %in% sig_hcs$Region
+#  sig_regions_compare[region,"TD_u30"] <- region %in% sig_hcs_u30$Region
+#}
+##sig_regions_compare
+#
+## create new column with TRUE if not also significant in TD
+#sig_regions_compare$TD_sig <- NA
+#for (r in 1:nrow(sig_regions_compare)){
+#  td <- sig_regions_compare[r,"TD_all"]
+#  td30 <- sig_regions_compare[r,"TD_u30"]
+#  if (td==TRUE | td30==TRUE){
+#    sig_regions_compare[r,"TD_sig"] <- TRUE
+#  }else{
+#    sig_regions_compare[r,"TD_sig"] <- FALSE
+#  }
+#}
+#
+## create long df for plotting
+#setDT(sig_regions_compare)
+#idvars=c("Region","TD_sig")
+#compare_long <- melt.data.table(sig_regions_compare, id.vars = idvars, measure.vars = #names(sig_regions_compare)[which(!names(sig_regions_compare) %in% idvars)])
+#compare_long$Region %<>% as.factor
+#
+## order by region, then group
+#setorder(compare_long, Region, variable)
+#
+## for plotting, create new column with TRUE if the value at row r is equal to row r-1 (excluding rows where variable is #del_all)
+#compare_long$postmatch <- NA
+#for (r in 1:(nrow(compare_long)-1)){
+#  val <- compare_long[r,"value"]
+#  postval <- compare_long[(r+1),"value"]
+#  if (val==TRUE & postval==TRUE){
+#    compare_long[r,"postmatch"] <- TRUE
+#  }else{
+#    compare_long[r,"postmatch"] <- FALSE
+#  }
+#}
+## set to NA group that will be rightmost column of plot
+#groups <- levels(compare_long$variable)
+#last_group <- groups[length(groups)]
+#compare_long[which(compare_long$variable==last_group),"postmatch"] <- NA
+#
+## create column with TRUE if pt group is significant but TD are not
+#compare_long$pt_sig_only <- NA
+#for (r in 1:(nrow(compare_long))){
+#  if(compare_long[r,"TD_sig"]==FALSE & compare_long[r,"value"]==TRUE){
+#    compare_long[r,"pt_sig_only"] <- TRUE
+#  }
+#  if(compare_long[r,"variable"]=="TD_all" | compare_long[r,"variable"]=="TD_u30"){
+#    compare_long[r,"pt_sig_only"] <- NA
+#  }
+#}
+#
+## plot
+#ggplot(data=compare_long, aes(y=Region, x=variable))+
+#  geom_line(aes(group=Region, color=postmatch), show.legend = FALSE)+
+#  scale_color_manual(values=c("white", "black"))+
+#  new_scale_color()+
+#  geom_point(aes(shape=value, size=value, color=pt_sig_only))+
+#  scale_shape_manual(values=c(1,16))+
+#  scale_size_manual(values=c(1,3))+
+#  scale_color_manual(values = c("red","black"), na.value = "black")+
+#  labs(shape="Sig. age effect",size="Sig. age effect", color="Sig. in patients only")+
+#  scale_x_discrete(position = "top")+
+#  xlab("Cohort")+
+#  ylab("Region")+
+#  ggtitle("Significant age effects by cohort")+
+#  theme_bw()
+#  
+#       
+```
+
+plot summary of GAMM results (full age range)
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # split data frames by group
 sig_del <- filter(out_age_pvals_sig, Group=="22qDel")
 sig_dup <- filter(out_age_pvals_sig, Group=="22qDup")
 sig_hcs <- filter(out_age_pvals_sig, Group=="TD")
-sig_del_u30 <- filter(out_age_pvals_u30_sig, Group=="22qDel")
-sig_dup_u30 <- filter(out_age_pvals_u30_sig, Group=="22qDup")
-sig_hcs_u30 <- filter(out_age_pvals_u30_sig, Group=="TD")
+#sig_del_u30 <- filter(out_age_pvals_u30_sig, Group=="22qDel")
+#sig_dup_u30 <- filter(out_age_pvals_u30_sig, Group=="22qDup")
+#sig_hcs_u30 <- filter(out_age_pvals_u30_sig, Group=="TD")
 
 # list of unique regions with significance in 22q or TD, whole sample or under 30
-sig_regions_compare <- data.frame(Region=sort(unique(c(out_age_pvals_u30_sig$Region,out_age_pvals_sig$Region))))
+#sig_regions_compare <- data.frame(Region=sort(unique(c(out_age_pvals_u30_sig$Region,out_age_pvals_sig$Region))))
+sig_regions_compare <- data.frame(Region=sort(unique(out_age_pvals_sig$Region)))
 row.names(sig_regions_compare) <- sig_regions_compare$Region
 
 for (region in sig_regions_compare$Region){
-  sig_regions_compare[region,"Del_all"] <- region %in% sig_del$Region
-  sig_regions_compare[region,"Del_u30"] <- region %in% sig_del_u30$Region
-  sig_regions_compare[region,"Dup_all"] <- region %in% sig_dup$Region
-  sig_regions_compare[region,"Dup_u30"] <- region %in% sig_dup_u30$Region
-  sig_regions_compare[region,"TD_all"]<- region %in% sig_hcs$Region
-  sig_regions_compare[region,"TD_u30"] <- region %in% sig_hcs_u30$Region
+  sig_regions_compare[region,"22qDel"] <- region %in% sig_del$Region
+  #sig_regions_compare[region,"Del_u30"] <- region %in% sig_del_u30$Region
+  sig_regions_compare[region,"22qDup"] <- region %in% sig_dup$Region
+  #sig_regions_compare[region,"Dup_u30"] <- region %in% sig_dup_u30$Region
+  sig_regions_compare[region,"TD"]<- region %in% sig_hcs$Region
+  #sig_regions_compare[region,"TD_u30"] <- region %in% sig_hcs_u30$Region
 }
 #sig_regions_compare
 
 # create new column with TRUE if not also significant in TD
 sig_regions_compare$TD_sig <- NA
 for (r in 1:nrow(sig_regions_compare)){
-  td <- sig_regions_compare[r,"TD_all"]
-  td30 <- sig_regions_compare[r,"TD_u30"]
-  if (td==TRUE | td30==TRUE){
+  td <- sig_regions_compare[r,"TD"]
+  #td30 <- sig_regions_compare[r,"TD_u30"]
+  if (td==TRUE){
     sig_regions_compare[r,"TD_sig"] <- TRUE
   }else{
     sig_regions_compare[r,"TD_sig"] <- FALSE
@@ -2221,29 +2565,67 @@ compare_long[which(compare_long$variable==last_group),"postmatch"] <- NA
 compare_long$pt_sig_only <- NA
 for (r in 1:(nrow(compare_long))){
   if(compare_long[r,"TD_sig"]==FALSE & compare_long[r,"value"]==TRUE){
+  #if(compare_long[r,"TD"]==FALSE & compare_long[r,"value"]==TRUE){
     compare_long[r,"pt_sig_only"] <- TRUE
   }
-  if(compare_long[r,"variable"]=="TD_all" | compare_long[r,"variable"]=="TD_u30"){
+  #if(compare_long[r,"variable"]=="TD_all" | compare_long[r,"variable"]=="TD_u30"){
+  if(compare_long[r,"variable"]=="TD_all"){
     compare_long[r,"pt_sig_only"] <- NA
   }
 }
+# replace NA with FALSE
+compare_long <- replace_na(compare_long, list(pt_sig_only=FALSE))
+
+# edit region names to remove trailing underscore and "_all", replace other underscores with space, and capitalize first letter without editing subsequent letters
+compare_long$Region_edit <- compare_long$Region %>% gsub("_$","",.) %>% gsub("_all","",.) %>% gsub("_"," ",.) %>% gsub("\\b([a-z])", "\\U\\1",., perl=TRUE)
 
 # plot
-ggplot(data=compare_long, aes(y=Region, x=variable))+
+gamm_compare <- ggplot(data=compare_long, aes(y=Region_edit, x=variable))+
   geom_line(aes(group=Region, color=postmatch), show.legend = FALSE)+
   scale_color_manual(values=c("white", "black"))+
   new_scale_color()+
   geom_point(aes(shape=value, size=value, color=pt_sig_only))+
   scale_shape_manual(values=c(1,16))+
   scale_size_manual(values=c(1,3))+
-  scale_color_manual(values = c("red","black"), na.value = "black")+
-  labs(shape="Sig. age effect",size="Sig. age effect", color="Sig. in patients only")+
+  scale_color_manual(values = c("black","red"), na.value = "black")+
+  labs(shape="Age: FDR q < 0.05",size="Age: FDR q < 0.05", color="Significant in\nPatients only")+
+  guides(shape = guide_legend(order = 1),
+         size  = guide_legend(order = 1),
+         color  = guide_legend(order = 2))+
   scale_x_discrete(position = "top")+
   xlab("Cohort")+
   ylab("Region")+
-  ggtitle("Significant age effects by cohort")+
-  theme_bw()
+  ggtitle("Significant Age Effects by Cohort")+
+  theme_bw(base_size = 12)
   
-       
+gamm_compare
+
+ggsave(plot=gamm_compare, filename=file.path(project,"figures/age/age_gamm_group_compare.pdf"), width=7, height=6, device = "pdf")
+ggsave(plot=gamm_compare, filename=file.path(project,"figures/age/age_gamm_group_compare.png"), width=7, height=6, device = "png", dpi = 300)
 ```
 
+plot all GAMMS with significant effects in at least one group
+```{r}
+#gamms_to_plot <- paste0(out_age_pvals_sig$Region,".combat") %>% unique %>% sort
+gamms_to_plot <- paste0(filter(compare_long, pt_sig_only==TRUE)$Region,".combat.norm") %>% unique %>% sort
+lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
+```
+
+
+plot age GAMMS with effects in all three groups
+```{r}
+gamms_to_plot <- c("Thal_Left_MGN.combat.norm","Thal_Left_MD_all.combat.norm")
+lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
+```
+
+plot age GAMMS for left and right thal reuniens (only 22qDup have significant effect)
+```{r}
+gamms_to_plot <- c("Thal_Right_MV_Re_.combat.norm","Thal_Left_MV_Re_.combat.norm")
+lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
+```
+
+plot age GAMMS for left hipp tail (only 22qDel have significant effect)
+```{r}
+gamms_to_plot <- c("Hip_Left_Hippocampal_tail.combat.norm")
+lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
+```

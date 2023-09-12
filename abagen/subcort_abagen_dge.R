@@ -26,7 +26,7 @@ if(length(list.files(hoffman)) == 0){system(mntcommand)}else{print(paste(hoffman
 
 
 # list packages to load
-packages <- c("devtools","conflicted","here","magrittr", "dplyr", "tidyr", "ggplot2","ggpubr","RColorBrewer", "ciftiTools","tableone", "data.table", "reshape2","neuroCombat")
+packages <- c("devtools","conflicted","here","magrittr", "dplyr", "tidyr", "ggplot2","ggpubr","RColorBrewer", "ciftiTools","tableone", "data.table", "reshape2","neuroCombat","limma")
 
 # install packages if not yet installed
 # note: ciftiTools install fails if R is started without enough memory on cluster (try 16G)
@@ -41,7 +41,8 @@ invisible(lapply(packages, library, character.only = TRUE))
 conflict_prefer("filter", "dplyr")
 
 # get path to project repo directory
-project <- here()
+#project <- here()
+project <- "/Users/charlie/Dropbox/github/22q_subcort_volumes/"
 print(paste("Project directory:", project))
 
 
@@ -97,9 +98,11 @@ colnames(abagen_mdm_lgn) <- paste0(colnames(abagen_mdm_lgn),"_", donors)
 # rows corresponding to genes and columns to samples
 abagen_mdm_lgn_subset <- subset(abagen_mdm_lgn, select=-c(Left_LGN_10021,Left_MDm_15697))
 
+# consider alternative normalization methods
+# gil amy gen: "variance stabilized normalization" first normalize variance across genes and then robust line regression
 # log transform, first adding 1 to all data to avoid log(0)
-#exp <- log(abagen_mdm_lgn_subset)
-exp <- abagen_mdm_lgn_subset
+exp <- log(abagen_mdm_lgn_subset)
+#exp <- abagen_mdm_lgn_subset
 
 # get donor block from column names by removing everything before final underscore
 donor_block <- colnames(exp) %>% gsub("^.*\\_","",.) %>% as.numeric
@@ -120,8 +123,14 @@ volcanoplot(fit.b,coef=2,highlight=0, names=fit.b$genes)
 top_genes <- topTable(fit.b, coef=2, number=10, adjust.method="BH", sort.by = "p")
 top_genes
 
+# look into other post-mortem thalamic studies
+# check model with statistician
+# try different normalization, look into outliers
+# look into preproc
+# look within donors
+# restrict to hypothesis gene set
 
-
+########################################################################################
 # example with sim data from lmFit help
 sd <- 0.3*sqrt(4/rchisq(100,df=4))
 y <- matrix(rnorm(100*6,sd=sd),100,6)

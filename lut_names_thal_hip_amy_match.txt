@@ -12,7 +12,7 @@ thalamus,ventral lateral anterior,Left-VLa,8128,Left-VLa,85,170,0,0
 thalamus,pulvinar anterior,Left-PuA,8120,Left-PuA,0,170,255,0
 thalamus,mediodorsal medial,Left-MDm,8113,Left-MDm,170,170,127,0
 thalamus,parafascicular,Left-Pf,8118,Left-Pf,0,85,255,0
-thalamus,ventral anterior,Left-VAmc,8127,Left-VAmc,255,85,0,0
+thalamus,ventral anterior mc,Left-VAmc,8127,Left-VAmc,255,85,0,0
 thalamus,mediodorsal lateral,Left-MDl,8112,Left-MDl,0,170,127,0
 thalamus,central medial,Left-CeM,8104,Left-CeM,170,85,0,0
 thalamus,ventral anterior,Left-VA,8126,Left-VA,85,85,0,0
@@ -34,7 +34,7 @@ thalamus,ventral lateral anterior,Right-VLa,8228,Right-VLa,85,170,0,0
 thalamus,pulvinar anterior,Right-PuA,8220,Right-PuA,0,170,255,0
 thalamus,mediodorsal medial,Right-MDm,8213,Right-MDm,170,170,127,0
 thalamus,parafascicular,Right-Pf,8218,Right-Pf,0,85,255,0
-thalamus,ventral anterior,Right-VAmc,8227,Right-VAmc,255,85,0,0
+thalamus,ventral anterior mc,Right-VAmc,8227,Right-VAmc,255,85,0,0
 thalamus,mediodorsal lateral,Right-MDl,8212,Right-MDl,0,170,127,0
 thalamus,vental anterior,Right-VA,8226,Right-VA,85,85,0,0
 thalamus,medial ventral (reuniens),Right-MV(Re),8216,Right-MV(Re),0,0,255,0
