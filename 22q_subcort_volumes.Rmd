@@ -696,7 +696,11 @@ save_dosage_effect$Hemi <- gsub("Left","L",save_dosage_effect$Hemi)
 
 # merge with full names
 save_dosage_effect <- merge(x=save_dosage_effect, y=lut[c("Structure","Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
-save_dosage_effect <- save_dosage_effect[order(save_dosage_effect$beta),]
+
+# set order
+save_dosage_effect$struct_order <- save_dosage_effect$Structure %>% gsub("thal",1,.) %>% gsub("hip",2,.) %>% gsub("amy",3,.)
+
+save_dosage_effect <- save_dosage_effect[with(save_dosage_effect, order(struct_order,beta)),]
 
 save_dosage_effect$Structure <- gsub("thalamus","thal",save_dosage_effect$Structure)
 save_dosage_effect$Structure <- gsub("hippocampus","hip",save_dosage_effect$Structure)
@@ -711,7 +715,7 @@ save_dosage_effect$p %<>% formatC(., format = "e", digits = 1)
 #save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
 save_dosage_effect$`FDR q` %<>% formatC(., format = "e", digits = 1)
 
-save_dosage_effect_final <- save_dosage_effect[,c("Region","Structure","Hemi","beta","p","FDR q")]
+save_dosage_effect_final <- save_dosage_effect[,c("Structure","Region","Hemi","beta","p","FDR q")]
 
 #write.csv(save_dosage_effect_final, file=file.path(project,"figures/gene_dosage/gene_dosage_subregions.csv"), row.names = FALSE)
 ```
