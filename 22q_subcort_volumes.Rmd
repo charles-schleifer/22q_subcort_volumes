@@ -396,11 +396,15 @@ waterfall <- ggplot(ucla_demo_waterfall, aes(x=(AGEMONTH/12), y=as.factor(age1) 
   geom_point(aes(shape=Scanner), color="black",alpha=0.7) + 
   scale_shape_manual(values = c(24,21)) + 
   theme_classic() + 
-  theme(text=element_text(family="Arial"))+
+  #theme(text=element_text(family="Arial"))+
   theme(axis.text.y=element_blank(), axis.ticks.x=element_blank(),axis.ticks.y=element_blank()) + 
   geom_line(aes(group=SUBJECTID,color=SUBJECT_IDENTITY),alpha=0.7) +
-  scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
-  scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
+  scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3]), labels = c("Control", "22qDel", "22qDup")) +
+  scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3]), labels = c("Control", "22qDel", "22qDup")) +
+  #guides(color  = guide_legend(order =1, override.aes = list(color=c(viridis(3)[2],viridis(3)[1],viridis(3)[3]))))+
+  guides(fill  = guide_legend(order = 1, override.aes = list(shape=21, size=2,alpha=0.9, fill=c(viridis(3)[2],viridis(3)[1],viridis(3)[3]))),
+         color = guide_legend(order=1),
+         shape = guide_legend(order = 2))+
   ylab("Individual") +
   xlab("Age") +
   xlim(5,50)+
@@ -409,7 +413,7 @@ waterfall <- ggplot(ucla_demo_waterfall, aes(x=(AGEMONTH/12), y=as.factor(age1) 
 
 waterfall
 
-#ggsave(plot=waterfall, filename=file.path(project,"figures/demographics/waterfall_subcort_age.svg"), width=6, height=6, device = "svg")
+#ggsave(plot=waterfall, filename=file.path(project,"figures/demographics/waterfall_subcort_age.pdf"), width=6, height=6, device = "pdf")
 #ggsave(plot=waterfall, filename=file.path(project,"figures/demographics/waterfall_subcort_age.png"), width=6, height=6, device = "png")
 
 
@@ -1173,11 +1177,6 @@ df_demo <- cbind(df_demo,asd_col)
 # remove SCID_ASD column, redundant with summPsych
 dx_use <- dx_use[dx_use != "SCID_ASD"]
 
-# add IQ and merge with demo table
-# TO-DO figure out neuropsych test date matching
-#neurocog <- df_all$neurocogTest[,c("SUBJECTID","CONVERTEDVISITNUM","IQ_SCORE","VOCA_TSCORE","MATRIX_TSCORE")]
-#df_demo_table_full <- merge(x=df_demo_table_full, y=neurocog, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T)
-
 
 # function to get psychosis status from SIPS
 # to be applied to the row indices of a demographics df, and also given the SIPS df
@@ -1740,3 +1739,25 @@ plot age GAMMS for left hipp tail (only 22qDel have significant effect)
 gamms_to_plot <- c("Hip_Left_Hippocampal_tail.combat.norm")
 lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
 ```
+verbal IQ comparison with hippocampal tail (Latreche et al 2023)
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10476015/
+```{r}
+demo_sx_mri <- merge(x=demo_combat_na_gam, y=df_demo[,c("MRI_S_ID","WASI_verbal","WASI_matrix","IQ_full")], by="MRI_S_ID")
+
+# function to test formula on data
+test_sx_lmm <- function(formula, data){
+  mod <- lmerTest::lmer(formula, data=data, REML=TRUE, na.action="na.omit")
+  modsum <- summary(mod)
+  out <- modsum$coefficients
+  return(out)
+}
+
+test_sx_lmm(formula="WASI_verbal ~ Hip_Left_Hippocampal_tail.combat.norm + SEX + site + as.numeric(as.character(visit_index)) + (1|SUBJECTID)", data=filter(demo_sx_mri, SUBJECT_IDENTITY=="PATIENT-DEL"))
+
+#lm_viq_lhtail <- lmerTest::lmer("WASI_verbal ~ Hip_Left_Hippocampal_tail.combat.norm + WASI_matrix + SEX + site + as.numeric(as.character(visit_index)) + (1|SUBJECTID)", REML=TRUE, na.action="na.omit", data=filter(demo_sx_mri, SUBJECT_IDENTITY=="PATIENT-DEL"))
+#summary(lm_viq_lhtail)
+```
+
+
+
+
