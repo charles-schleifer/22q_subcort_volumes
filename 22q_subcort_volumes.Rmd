@@ -28,7 +28,7 @@ rm(list = ls(all.names = TRUE))
 # list packages to load
 # ciftiTools dependency rgl may need XQuartz installed in order to visualize surfaces
 #packages <- c("conflicted", "here", "magrittr", "mgcv", "gratia", "lme4", "lmerTest", "invgamma", "longCombat", "ciftiTools", "readxl", "dplyr", "data.table", "DescTools","tableone", "tibble", "reshape2", "viridis", "scico", "ggplot2", "gridExtra", "ggpubr","stringr")
-packages <- c("conflicted", "here", "magrittr", "dplyr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","pls","mgcv","gratia","tidymv", "itsadug")
+packages <- c("conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","pls","mgcv","gratia","tidymv", "itsadug")
 
 # install packages if not yet installed
 all_packages <- rownames(installed.packages())
