@@ -609,14 +609,6 @@ for (r in 1:nrow(demo_combat_normed)){
   }
 }
 
-# list names of whole structures
-#ws_names_normed <- c("Thal_Right_Whole_thalamus.combat.norm","Thal_Left_Whole_thalamus.combat.norm","Hip_Right_Whole_hippocampus.combat.norm","Hip_Left_Whole_hippocampus.combat.norm","Amy_Right_Whole_amygdala.combat.norm","Amy_Left_Whole_amygdala.combat.norm")
-ws_names_normed <- c("Thal_Whole_thalamus.combat.norm","Hip_Whole_hippocampus.combat.norm","Amy_Whole_amygdala.combat.norm")
-
-
-# get names of only subregions
-subregion_names_normed <- sc_names_normed[which(!sc_names_normed %in% ws_names_normed)]
-
 ```
 
 LME total ICV
@@ -632,26 +624,38 @@ lme_ICV <- lmerTest::lmer(formula="eTIVnormed ~ gene_dosage + AGE + AGE2 + SEX +
 ICV_summary <- summary(lme_ICV,ddf="Kenward-Roger")                            
 
 ICV_gene_dosage <- ICV_summary$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]
-ICV_gene_dosage_final <- data.frame(Region="total ICV", Hemi=NA, beta=ICV_gene_dosage[1], p=ICV_gene_dosage[2])
+ICV_gene_dosage_final <- data.frame(Region="total ICV", Hemi=NA, gene_dosage_beta=ICV_gene_dosage[1], gene_dosage_p=ICV_gene_dosage[2])
 row.names(ICV_gene_dosage_final) <- NULL
 ```
 
-LME for whole thal, hipp, amy
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+LME for all subregions
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 # test random intercept model at each region
-#lme_combat_ws <- lapply(ws_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","AGE2","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_na, REML=TRUE))
-lme_combat_ws <- lapply(ws_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","AGE2","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_normed, REML=TRUE))
-names(lme_combat_ws) <- ws_names_normed
+lme_combat <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=demo_combat_normed, REML=TRUE))
+names(lme_combat) <- sc_names_normed
+
 
 # get p-val for gene dosage effect
-gene_dosage_effect_ws <- lapply(lme_combat_ws, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
-colnames(gene_dosage_effect_ws) <- c("gene_dosage_beta","gene_dosage_p")
-gene_dosage_effect_ws$Region <- ws_names_normed
-# order by betas
-gene_dosage_effect_ws <- gene_dosage_effect_ws[order(gene_dosage_effect_ws$gene_dosage_beta),]
+gene_dosage_effect <- lapply(lme_combat, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_dosage_effect) <- c("gene_dosage_beta","gene_dosage_p")
+gene_dosage_effect$Region <- sc_names_normed
+
+# add total ICV
+gene_dosage_effect <- rbind(gene_dosage_effect[,c("Region","gene_dosage_beta","gene_dosage_p")], ICV_gene_dosage_final[,c("Region","gene_dosage_beta","gene_dosage_p")])
+
+# FDR correct
+gene_dosage_effect$gene_dosage_fdr_q <- p.adjust(gene_dosage_effect$gene_dosage_p, method="fdr")
+gene_dosage_effect$fdr_sig <- gene_dosage_effect$gene_dosage_fdr_q < 0.05
+
+# get only significant effects
+gene_dosage_effect_sig <- filter(gene_dosage_effect,fdr_sig==TRUE)
+gene_dosage_effect_sig <- gene_dosage_effect_sig[order(gene_dosage_effect_sig$gene_dosage_beta),]
+
+#write.table(gene_dosage_effect_sig, file="~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/gene_dosage_lme_significant.csv", sep=",", col.names = TRUE, row.names = FALSE)
 ```
 
-make table for export with whole structure gene dosage effects
+make table for export with subregion gene dosage effects
 ```{r paged.print=FALSE}
 # read edited lookup table matching freesurfer names to full names
 #lut <- read.csv(file.path(project,"lut_names_thal_hip_amy_match.txt"), header=TRUE)
@@ -668,105 +672,32 @@ lut_bilat_n <- lut_bilat[,c("bilat_name","bilat_match","Structure")]
 lut_unique <- lut_bilat_n[!duplicated(lut_bilat_n),]
 
 # create data frame for export
-save_dosage_effect_ws <- gene_dosage_effect_ws[,c("gene_dosage_beta","gene_dosage_p")]
-colnames(save_dosage_effect_ws) <- c("beta","p")
+save_dosage_effect <- gene_dosage_effect_sig[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")]
+# add whole amydgala and thalamus despite no FDR significance
+save_dosage_effect <- rbind(save_dosage_effect, gene_dosage_effect[c("Thal_Whole_thalamus.combat.norm","Amy_Whole_amygdala.combat.norm"),c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")])
+colnames(save_dosage_effect) <- c("beta","p","FDR q","Region")
 
 # get region names for matching
-save_dosage_effect_ws$Region <- gsub(".combat.norm","",gene_dosage_effect_ws$Region)
-save_dosage_effect_ws$Region <- gsub("Thal_","",save_dosage_effect_ws$Region)
-save_dosage_effect_ws$Region <- gsub("Amy_","",save_dosage_effect_ws$Region)
-save_dosage_effect_ws$Region <- gsub("Hip_","",save_dosage_effect_ws$Region)
-#save_dosage_effect_ws$Region <- gsub("Hip_Left_","",save_dosage_effect_ws$Region)
-#save_dosage_effect_ws$Region <- gsub("Hip_Right_","",save_dosage_effect_ws$Region)
-#save_dosage_effect_ws$Region <- gsub("Amy_Left_","",save_dosage_effect_ws$Region)
-#save_dosage_effect_ws$Region <- gsub("Amy_Right_","",save_dosage_effect_ws$Region)
-
-# get hemisphere
-#save_dosage_effect_ws$Hemi <- gsub(".combat.norm","",gene_dosage_effect_ws$Region)
-#save_dosage_effect_ws$Hemi <- gsub("Thal_","",save_dosage_effect_ws$Hemi)
-#save_dosage_effect_ws$Hemi <- gsub("Hip_","",save_dosage_effect_ws$Hemi)
-#save_dosage_effect_ws$Hemi <- gsub("Amy_","",save_dosage_effect_ws$Hemi)
-#save_dosage_effect_ws$Hemi <- gsub("_.*","",save_dosage_effect_ws$Hemi)
-#save_dosage_effect_ws$Hemi <- gsub("Right","R",save_dosage_effect_ws$Hemi)
-#save_dosage_effect_ws$Hemi <- gsub("Left","L",save_dosage_effect_ws$Hemi)
-
-# merge with full names
-#save_dosage_effect_ws <- merge(x=save_dosage_effect_ws, y=lut[c("Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
-save_dosage_effect_ws <- merge(x=save_dosage_effect_ws, y=lut_unique[c("bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE, all.y=FALSE)
-save_dosage_effect_ws <- save_dosage_effect_ws[order(save_dosage_effect_ws$beta),]
-rownames(save_dosage_effect_ws) <- NULL
-save_dosage_effect_ws$bilat_name <- gsub("left ","",save_dosage_effect_ws$bilat_name)
-save_dosage_effect_ws$bilat_name <- gsub("right ","",save_dosage_effect_ws$bilat_name)
-save_dosage_effect_ws$Region <- save_dosage_effect_ws$bilat_name
-
-# add ICV
-save_dosage_effect_ws_final <- rbind(ICV_gene_dosage_final[,c("Region","beta","p")], save_dosage_effect_ws[,c("Region","beta","p")])
-
-# round
-save_dosage_effect_ws_final$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
-save_dosage_effect_ws_final$p %<>% round(., digits=7) %>% sprintf("%.7f",.)
-#save_dosage_effect_ws$p %<>% formatC(., format = "e", digits = 1)
-
-#write.csv(save_dosage_effect_ws_final, file=file.path(project,"figures/gene_dosage/gene_dosage_ws.csv"), row.names = FALSE)
-```
-
-LME for all subregions
-```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-# test random intercept model at each region
-lme_combat <- lapply(subregion_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","AGE2","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_normed, REML=TRUE))
-names(lme_combat) <- subregion_names_normed
-
-# get p-val for gene dosage effect
-gene_dosage_effect <- lapply(lme_combat, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
-colnames(gene_dosage_effect) <- c("gene_dosage_beta","gene_dosage_p")
-gene_dosage_effect$gene_dosage_fdr_q <- p.adjust(gene_dosage_effect$gene_dosage_p, method="fdr")
-gene_dosage_effect$Region <- subregion_names_normed
-gene_dosage_effect$fdr_sig <- gene_dosage_effect$gene_dosage_fdr_q < 0.05
-
-# get only significant effects
-gene_dosage_effect_sig <- filter(gene_dosage_effect,fdr_sig==TRUE)
-gene_dosage_effect_sig <- gene_dosage_effect_sig[order(gene_dosage_effect_sig$gene_dosage_beta),]
-
-#write.table(gene_dosage_effect_sig, file="~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/gene_dosage_lme_significant.csv", sep=",", col.names = TRUE, row.names = FALSE)
-```
-
-make table for export with subregion gene dosage effects
-```{r paged.print=FALSE}
-# read edited lookup table matching freesurfer names to full names
-#lut <- read.csv(file.path(project,"lut_names_thal_hip_amy_match.txt"), header=TRUE)
-#lut$region_match <- gsub("-","_",lut$region)
-#lut$region_match <- gsub("\\(","_",lut$region_match)
-#lut$region_match <- gsub("\\)","_",lut$region_match)
-
-# create data frame for export
-save_dosage_effect <- gene_dosage_effect_sig[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q")]
-colnames(save_dosage_effect) <- c("beta","p","FDR q")
-
-# get region names for matching
-save_dosage_effect$Region <- gsub(".combat.norm","",gene_dosage_effect_sig$Region)
+save_dosage_effect$Region <- gsub(".combat.norm","",save_dosage_effect$Region)
 save_dosage_effect$Region <- gsub("Thal_","",save_dosage_effect$Region)
 save_dosage_effect$Region <- gsub("Amy_","",save_dosage_effect$Region)
 save_dosage_effect$Region <- gsub("Hip_","",save_dosage_effect$Region)
-#save_dosage_effect$Region <- gsub("Hip_Left_","",save_dosage_effect$Region)
-#save_dosage_effect$Region <- gsub("Hip_Right_","",save_dosage_effect$Region)
-#save_dosage_effect$Region <- gsub("Amy_Left_","",save_dosage_effect$Region)
-#save_dosage_effect$Region <- gsub("Amy_Right_","",save_dosage_effect$Region)
-
-# get hemisphere
-#save_dosage_effect$Hemi <- gsub(".combat.norm","",gene_dosage_effect_sig$Region)
-#save_dosage_effect$Hemi <- gsub("Thal_","",save_dosage_effect$Hemi)
-#save_dosage_effect$Hemi <- gsub("Hip_","",save_dosage_effect$Hemi)
-#save_dosage_effect$Hemi <- gsub("Amy_","",save_dosage_effect$Hemi)
-#save_dosage_effect$Hemi <- gsub("_.*","",save_dosage_effect$Hemi)
-#save_dosage_effect$Hemi <- gsub("Right","R",save_dosage_effect$Hemi)
-#save_dosage_effect$Hemi <- gsub("Left","L",save_dosage_effect$Hemi)
 
 # merge with full names
 #save_dosage_effect <- merge(x=save_dosage_effect, y=lut[c("Structure","Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
 save_dosage_effect <- merge(x=save_dosage_effect, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
 
+# edit structure label
+save_dosage_effect$Structure <- paste(save_dosage_effect$Structure, "subregions") 
+
+# add total ICV name
+save_dosage_effect[which(save_dosage_effect$Region=="total ICV"),c("Structure","bilat_name")] <-  c("gross volumes","total ICV")
+
+# change structure label for whole thal, hip, amy
+save_dosage_effect[which(save_dosage_effect$Region %in% c("Whole_amygdala","Whole_thalamus","Whole_hippocampus")),"Structure"] <-  "gross volumes"
+
 # set order
-save_dosage_effect$struct_order <- save_dosage_effect$Structure %>% gsub("thal",1,.) %>% gsub("hip",2,.) %>% gsub("amy",3,.)
+save_dosage_effect$struct_order <- save_dosage_effect$Structure %>% gsub("gross volumes",1,.) %>% gsub("thalamus subregions",2,.) %>% gsub("hippocampus subregions",3,.) %>% gsub("amygdala subregions",4,.)
 
 save_dosage_effect <- save_dosage_effect[with(save_dosage_effect, order(struct_order,beta)),]
 
@@ -782,10 +713,10 @@ save_dosage_effect$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
 #save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
 save_dosage_effect$p %<>% formatC(., format = "e", digits = 1)
 #save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
-save_dosage_effect$`FDR q` %<>% formatC(., format = "e", digits = 1)
+# g option formats as scientific only when saves space
+save_dosage_effect$`FDR q` %<>% formatC(., format = "g", digits = 2)
 
 # edit structure names
-save_dosage_effect$Structure <- paste(save_dosage_effect$Structure, "subregions")
 structure_dup <- duplicated(save_dosage_effect$Structure)
 for(i in 1:length(structure_dup)){
   if(structure_dup[i]==TRUE){
@@ -794,21 +725,11 @@ for(i in 1:length(structure_dup)){
 }
 
 save_dosage_effect_final <- save_dosage_effect[,c("Structure","Region","beta","p","FDR q")]
+save_dosage_effect_final
 
 #write.csv(save_dosage_effect_final, file=file.path(project,"figures/gene_dosage/gene_dosage_subregions.csv"), row.names = FALSE)
 ```
 
-combine with whole structures table to make one single results table
-```{r paged.print=FALSE}
-save_dosage_effect_ws_combine <- save_dosage_effect_ws_final
-save_dosage_effect_ws_combine$`FDR q` <- ""
-save_dosage_effect_ws_combine$Structure <- ""
-save_dosage_effect_ws_combine[1,"Structure"] <- "gross volumes"
-
-gene_dosage_results <- rbind(save_dosage_effect_ws_combine[,c("Structure","Region","beta","p","FDR q")], save_dosage_effect_final) 
-gene_dosage_results
-#write.csv(gene_dosage_results, file=file.path(project,"figures/gene_dosage/gene_dosage_complete.csv"), row.names = FALSE)
-```
 
 whole structure scatterplots
 ```{r}
@@ -1908,9 +1829,9 @@ gamms_to_plot <- c("Hip_Whole_hippocampus.combat.norm","Hip_Hippocampal_tail.com
 lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
 ```
 
-plot age GAMMS hip CA
+plot age GAMMS thal MD and MGN
 ```{r}
-gamms_to_plot <- c("Hip_CA1.combat.norm","Hip_CA3.combat.norm","Hip_CA4.combat.norm")
+gamms_to_plot <- c("Thal_MD_all.combat.norm","Thal_MGN.combat.norm")
 lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
 ```
 
