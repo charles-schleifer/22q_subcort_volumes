@@ -26,7 +26,7 @@ rm(list = ls(all.names = TRUE))
 #remotes::install_github("cran/DMwR")
 
 # list packages to load
-packages <- c("conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","pls","mgcv","gratia","tidymv", "itsadug")
+packages <- c("conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat",,"mgcv","gratia","tidymv", "itsadug")
 
 # install packages if not yet installed
 all_packages <- rownames(installed.packages())
