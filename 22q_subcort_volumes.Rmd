@@ -2032,6 +2032,7 @@ all_iq_plot
 #ggsave(plot=all_iq_plot, filename=file.path(project,"figures/cognition/hip_tail_iq.png"), width=9, height=7, device = "png", dpi = 300)
 ```
 
+
 save workspace
 ```{r paged.print=FALSE}
 # save list of packages
