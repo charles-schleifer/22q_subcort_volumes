@@ -69,7 +69,7 @@ hippocampus,CA4 head,CA4-head,241,CA4-head,120,90,50,0
 hippocampus,CA4 body,CA4-body,242,CA4-body,196,160,128,0
 hippocampus,fimbria,fimbria,212,fimbria,204,153,204,0
 hippocampus,CA3 head,CA3-head,239,CA3-head,0,80,0,0
-hippocampus,hippocampal amydgala transition area,HATA,211,HATA,128,255,128,0
+hippocampus,hippocampal amygdala transition area,HATA,211,HATA,128,255,128,0
 hippocampus,whole hippocampus,Whole_hippocampus,NA,NA,NA,NA,NA,NA
 hippocampus,whole hippocampus body,Whole_hippocampal_body,NA,NA,NA,NA,NA,NA
 hippocampus,whole hippocampus head,Whole_hippocampal_head,NA,NA,NA,NA,NA,NA
@@ -92,7 +92,7 @@ thalamus,ventral lateral,Right_VL_all,NA,NA,NA,NA,NA,NA
 thalamus,ventral anterior,Right_VA_all,NA,NA,NA,NA,NA,NA
 thalamus,pulvinar,Right_Pu_part,NA,NA,NA,NA,NA,NA
 hippocampus,CA1,CA1,NA,NA,NA,NA,NA,NA
-hippocampus,CA3,CA3,NA,NA,NA,NA,NA,NA
+hippocampus,CA2/3,CA3,NA,NA,NA,NA,NA,NA
 hippocampus,CA4,CA4,NA,NA,NA,NA,NA,NA
 hippocampus,GC ML DG,GC_ML_DG,NA,NA,NA,NA,NA,NA
 hippocampus,molecular layer,molecular_layer_HP,NA,NA,NA,NA,NA,NA

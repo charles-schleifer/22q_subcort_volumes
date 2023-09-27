@@ -26,8 +26,6 @@ rm(list = ls(all.names = TRUE))
 #remotes::install_github("cran/DMwR")
 
 # list packages to load
-# ciftiTools dependency rgl may need XQuartz installed in order to visualize surfaces
-#packages <- c("conflicted", "here", "magrittr", "mgcv", "gratia", "lme4", "lmerTest", "invgamma", "longCombat", "ciftiTools", "readxl", "dplyr", "data.table", "DescTools","tableone", "tibble", "reshape2", "viridis", "scico", "ggplot2", "gridExtra", "ggpubr","stringr")
 packages <- c("conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","pls","mgcv","gratia","tidymv", "itsadug")
 
 # install packages if not yet installed
@@ -50,23 +48,11 @@ print(paste("Project directory:", project))
 ## read data
 ```{r}
 # path to data (organized with subject directories containing only the relevant files)
-#dpath <- "~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/"
 dpath <- file.path(project,"volume_data")
 
 # get files
 sessions_all <- list.files(path=dpath, pattern="Q_[0-9]")
 
-# function to read text file and change rows to columns
-#read_fssubcort <- function(path, sesh, name){
-#  file <- file.path(dpath,sesh,name)
-#  orig <- read.table(file)
-#  out <- as.data.frame(t(orig$V2))
-#  names(out) <- orig$V1
-#  #out$MRI_S_ID <- sesh
-#  # for longitudinal 
-#  out$MRI_S_ID <- gsub(".long.*","", sesh)
-#  return(out)
-#}
 
 read_fssubcort_long <- function(path, sesh, name){
   file <- file.path(dpath,sesh,name)
@@ -945,14 +931,81 @@ Create figure with all lm plots
 lm_fig_top <- (plot_ICV + plot_Thal_Whole + plot_Amy_Whole + plot_Hip_Whole) +plot_layout(ncol = 4,nrow = 1)
 lm_fig_bottom <- (plot_Thal_MD + plot_Thal_MV + plot_Amy_basal + plot_Hip_tail) +plot_layout(ncol = 4,nrow = 1)
 
-lm_fig_all <- lm_fig_top/lm_fig_bottom +plot_annotation(tag_levels = 'A') & theme(plot.tag = element_text(face = 'bold'))
+lm_fig_all <- lm_fig_top/lm_fig_bottom + plot_annotation(tag_levels = 'A', title="Volume Predicted by Gene Dosage") & theme(plot.tag = element_text(face = 'bold'),plot.title = element_text(size = 18,hjust = 0))
+
 
 lm_fig_all
 
 #ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.pdf"), width=12, height=8.5, device = "pdf")
 #ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.png"), width=12, height=8.5, device = "png", dpi = 300)
 ```
+sex interactions
+```{r}
+# test random intercept model at each region
+lme_combat_sexint <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*SEX","AGE", "AGE2","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=demo_combat_normed, REML=TRUE))
+names(lme_combat_sexint) <- sc_names_normed
 
+# get p-val for gene dosage effect
+sexint <- lapply(lme_combat_sexint, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage:SEXM",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(sexint) <- c("sexint_beta","sexint_p")
+sexint$Region <- sc_names_normed
+
+# FDR correct
+sexint$sexint_fdr_q <- p.adjust(sexint$sexint_p, method="fdr")
+sexint$fdr_sig <- sexint$sexint_fdr_q < 0.05
+```
+
+sex main effects
+```{r}
+# get p-val for gene dosage effect
+sex_main <- lapply(lme_combat, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SEXM",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(sex_main) <- c("sex_beta","sex_p")
+sex_main$Region <- sc_names_normed
+
+# FDR correct
+sex_main$sex_fdr_q <- p.adjust(sex_main$sex_p, method="fdr")
+sex_main$fdr_sig <- sex_main$sex_fdr_q < 0.05
+
+# create data frame for export
+save_sex_effect <- sex_main[,c("Region","sex_beta","sex_p","sex_fdr_q","fdr_sig","Region")]
+
+# get region names for matching
+save_sex_effect$Region <- gsub(".combat.norm","",save_sex_effect$Region)
+save_sex_effect$Region <- gsub("Thal_","",save_sex_effect$Region)
+save_sex_effect$Region <- gsub("Amy_","",save_sex_effect$Region)
+save_sex_effect$Region <- gsub("Hip_","",save_sex_effect$Region)
+
+# merge with full names
+save_sex_effect <- merge(x=save_sex_effect, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
+
+# set order
+save_sex_effect$struct_order <- save_sex_effect$Structure %>% gsub("thalamus",2,.) %>% gsub("hippocampus",3,.) %>% gsub("amygdala",4,.)
+
+save_sex_effect <- save_sex_effect[with(save_sex_effect, order(struct_order,sex_beta)),]
+
+save_sex_effect$Region <- save_sex_effect$bilat_name
+save_sex_effect$Region <- save_sex_effect$Region %>% gsub("hippocampal amygdala transition area", "HATA", .)
+rownames(save_sex_effect) <- NULL
+
+# get only significant
+save_sex_effect_final <- filter(save_sex_effect[,c("Structure","Region","sex_beta","sex_p","sex_fdr_q")], sex_fdr_q < 0.05)
+colnames(save_sex_effect_final) <-c("Structure","Region","beta","p","FDR q")
+
+# edit structure names
+structure_dup <- duplicated(save_sex_effect_final$Structure)
+for(i in 1:length(structure_dup)){
+  if(structure_dup[i]==TRUE){
+    save_sex_effect_final[i,"Structure"] <- ""
+  }
+}
+
+# round
+save_sex_effect_final$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
+save_sex_effect_final$p %<>% formatC(., format = "e", digits = 1)
+save_sex_effect_final$`FDR q` %<>% formatC(., format = "g", digits = 2)
+
+#write.csv(save_sex_effect_final, file=file.path(project,"figures/sex/sex_main_effect.csv"), row.names = FALSE)
+```
 
 To test for group differences, not just gene dosage effects (e.g. Dup and Del both decreased), use a model with a binary variable for each group? or two separate case/control models? 
 ```{r warning=FALSE}
@@ -1519,7 +1572,7 @@ demo_combat_na_gam$SEX <- demo_combat_na_gam$SEX %>% gsub("F","0",.) %>% gsub("M
 #gamm_combat <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na_gam, selection=TRUE,method="REML", na.action="na.omit"))
 
 # try with set k (try k=4 which maria used)
-gamm_combat <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, k=4)", "SUBJECT_IDENTITY", "SEX", "eTIVscaled", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response=r), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit"))
+gamm_combat <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, k=4)", "SUBJECT_IDENTITY", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response=r), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit"))
 
 
 #names(gamm_combat) <- sc_names_combat
@@ -1585,7 +1638,12 @@ names(smooth_all_combat) <- sc_names_normed
 
 plot all age smooths with partial residuals
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-plot_gamm_resid <- function(name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23)){
+plot_gamm_resid <- function(name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23), title=""){
+  if(title==""){
+    plot_title <- paste(gsub("_"," ",gsub(".combat.norm","",name)),"Volume")
+  }else{
+    plot_title <- title
+  }
   #resid <- add_partial_residuals(data=demo_combat_na,model=gamm_combat[[name]])
   resid <- add_partial_residuals(data=gamm_combat[[name]]$model,model=gamm_combat[[name]])
   resid_del <- filter(resid, SUBJECT_IDENTITY=="PATIENT-DEL")
@@ -1595,14 +1653,28 @@ plot_gamm_resid <- function(name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23)){
   resid_hcs <- filter(resid, SUBJECT_IDENTITY=="CONTROL")
   resid_hcs$yvar <- resid_hcs$`s(AGE):SUBJECT_IDENTITYCONTROL`
   ggplot()+
-    geom_point(data=resid_hcs, aes(x=AGE, y=yvar), color=viridis(3)[2]) +
-    geom_point(data=resid_del, aes(x=AGE, y=yvar), color=viridis(3)[1]) +
-    geom_point(data=resid_dup, aes(x=AGE, y=yvar), color=viridis(3)[3]) +
+    geom_point(data=resid_del, aes(x=AGE, y=yvar), alpha=0.8,shape=21, color="gray20", fill=viridis(3)[1]) +
+    geom_point(data=resid_hcs, aes(x=AGE, y=yvar), alpha=0.8, shape=21, color="gray20", fill=viridis(3)[2]) +
+    geom_point(data=resid_dup, aes(x=AGE, y=yvar), alpha=0.8, shape=21, color="gray20", fill=viridis(3)[3]) +
     #scale_shape_manual(values = c(17, 16))+
-    geom_ribbon(data = smooth_all_combat[[name]],aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .18, linetype = 0)+
-    geom_line(data = smooth_all_combat[[name]],aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
-    scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
-    scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3])) +
+    # td 
+    geom_ribbon(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="CONTROL"),
+                aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .3, linetype = 0)+
+    geom_line(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="CONTROL"),
+              aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
+    # dup
+    geom_ribbon(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DUP"),
+                aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .6, linetype = 0)+
+    geom_line(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DUP"),
+              aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
+        # del
+    geom_ribbon(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DEL"),
+                aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .3, linetype = 0)+
+    geom_line(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DEL"),
+              aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
+    #scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" ="black"), labels=c("Control","22qDel","22qDup")) +
+    scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" =viridis(3)[3]), labels=c("Control","22qDel","22qDup")) +
+    scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3]), labels=c("Control","22qDel","22qDup")) +
     #scale_x_continuous(limits=xlim,expand=c(0,0))+
     #scale_y_continuous(limits=ylim,expand=c(0,0))+
     theme_classic() + 
@@ -1611,7 +1683,7 @@ plot_gamm_resid <- function(name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23)){
     ylab(ylab)+
     xlab(xlab)+
     #ggtitle(paste(gsub("_"," ",gsub(".combat","",name)),"Volume"))
-    ggtitle(paste(gsub("_"," ",gsub(".combat.norm","",name)),"Volume"))
+    ggtitle(plot_title)
 }
 
 
@@ -1619,8 +1691,7 @@ plot_gamm_resid <- function(name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23)){
 #plot_gamm_resid_tc(name="Frontoparietal.combat",xlab="Age",ylab="TCC")
 #plot_gamm_resid_tc(name="Somatomotor.combat",xlab="Age",ylab="TCC")
 #lapply(sc_names_combat,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
-lapply(sc_names_normed,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
-
+#lapply(sc_names_normed,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
 ```
 
 get difference with TD smooth
@@ -1673,6 +1744,29 @@ age_group_tf <- (age_group_diffs %>% as.matrix %>% nchar) !=0
 age_group_tf <- data.frame(age_group_tf)
 age_group_tf$Region <- age_group_diffs$Region
 age_group_tf$either <- age_group_tf$td_del == TRUE | age_group_tf$td_dup == TRUE
+```
+
+make table of age differences for export
+```{r paged.print=FALSE}
+age_group_export <- age_group_diffs
+age_group_export$bilat_match <- age_group_export$Region %>% gsub("Thal_","",.) %>% gsub("Hip_","",.) %>% gsub("Amy_","",.)
+age_group_export  <- merge(x=age_group_export, y=lut_unique, by="bilat_match")
+
+age_group_export_final <- age_group_export[,c("Structure","bilat_name","td_del","td_dup")]
+colnames(age_group_export_final) <- c("Structure","Region","diff_TD_22qDel","diff_TD_22qDup") 
+age_group_export_final$struct_order <- age_group_export_final$Structure %>% gsub("thalamus",1,.) %>% gsub("hippocampus",2,.) %>% gsub("amygdala",3,.)
+age_group_export_final <- age_group_export_final[with(age_group_export_final, order(struct_order,Region)),]
+
+# edit structure names
+structure_dup <- duplicated(age_group_export_final$Structure)
+for(i in 1:length(structure_dup)){
+  if(structure_dup[i]==TRUE){
+    age_group_export_final[i,"Structure"] <- ""
+  }
+}
+
+#write.csv(age_group_export_final[,c("Structure","Region","diff_TD_22qDel","diff_TD_22qDup")], file=file.path(project,"figures/age/age_differences.csv"), row.names = FALSE)
+
 ```
 
 plot summary of GAMM results (full age range)
@@ -1753,7 +1847,7 @@ compare_long <- replace_na(compare_long, list(pt_sig_only=FALSE))
 compare_long$bilat_match <- compare_long$Region %>% gsub("Thal_","",.) %>% gsub("Hip_","",.) %>% gsub("Amy_","",.)
 compare_long <- merge(x=compare_long, y=lut_unique[,c("bilat_name","bilat_match","Structure")], by="bilat_match", all.x=TRUE)
 #compare_long$Region_edit <- paste(compare_long$Structure, compare_long$bilat_name)
-compare_long$Region_edit1 <- compare_long$bilat_name %>% gsub("hippocampal amydgala transition area","HATA",.) %>% gsub("hippocampus","",.) %>% gsub("thalamus","",.) %>% gsub("amygdala","",.) %>% gsub(" $","",.)
+compare_long$Region_edit1 <- compare_long$bilat_name %>% gsub("hippocampal amygdala transition area","HATA",.) %>% gsub("hippocampus","",.) %>% gsub("thalamus","",.) %>% gsub("amygdala","",.) %>% gsub(" $","",.) %>% gsub("  "," ",.)
 
 region_edit_df <- data.frame(col1=compare_long$Region_edit1, col2=compare_long$Structure)
 region_edit_df <- region_edit_df[!duplicated(region_edit_df),]
@@ -1762,7 +1856,7 @@ region_levels<- paste(region_edit_df$col1, region_edit_df$col2)
 
 compare_long$Region_edit <- factor(x=paste(compare_long$Region_edit1, compare_long$Structure), levels=region_levels)
 #compare_long$Region_edit <- paste(compare_long$Structure, compare_long$Region_edit1)
-
+#compare_long$Region_edit <- compare_long$Region_edit %>% gsub("hippocampal  transition area hippocampus", "HATA hippocampus",.) %>% gsub("  "," ",.)
 
 # add column with true if there is a group difference between patients and controls
 #compare_long <- merge(x=compare_long, y=age_group_tf[,c("Region","either")], by="Region")
@@ -1807,7 +1901,7 @@ gamm_compare <- ggplot(data=compare_long, aes(y=Region_edit, x=variable))+
   ylab("Region")+
   ggtitle("Significant Age Effects by Cohort")+
   theme_bw(base_size = 12)+
-  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.ticks.x=element_blank())
   
 gamm_compare
 
@@ -1822,31 +1916,29 @@ gamms_to_plot <- paste0(filter(compare_long, pt_sig_only==TRUE)$Region,".combat.
 lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
 ```
 
-
-plot age GAMMS whole hipp and tail
+plot chosen gamms
 ```{r}
-gamms_to_plot <- c("Hip_Whole_hippocampus.combat.norm","Hip_Hippocampal_tail.combat.norm")
-lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
+
+thal_av <- plot_gamm_resid(name="Thal_AV.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Anteroventral Thalamus")
+hip_ca3 <- plot_gamm_resid(name="Hip_CA3.combat.norm",xlab="",ylab="", title="CA2/3 Hippocampus")
+amy_whole <- plot_gamm_resid(name="Amy_Whole_amygdala.combat.norm",xlab="",ylab="", title="Whole Amygdala")
+thal_md <- plot_gamm_resid(name="Thal_MD_all.combat.norm",xlab="",ylab="", title="Mediodorsal Thalamus")
+thal_mvre <- plot_gamm_resid(name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
+hip_ca4 <- plot_gamm_resid(name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
+#amy_aaa <- plot_gamm_resid(name="Amy_Anterior_amygdaloid_area_AAA.combat.norm",xlab="Age",ylab="Volume")
+#thal_lgn <- plot_gamm_resid(name="Thal_LGN.combat.norm",xlab="Age",ylab="Volume")
+#thal_mgn <- plot_gamm_resid(name="Thal_MGN.combat.norm",xlab="Age",ylab="Volume")
+#hip_ca1 <- plot_gamm_resid(name="Hip_CA1.combat.norm",xlab="",ylab="", title="CA1 Hippocampus")
+
+
+plot_age <- (thal_av + hip_ca3 + hip_ca4) / (thal_md + thal_mvre + amy_whole) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories") & theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
+
+plot_age
+
+#ggsave(plot=plot_age, filename=file.path(project,"figures/age/age_gamms_curves.pdf"), width=12, height=7, device = "pdf")
+#ggsave(plot=plot_age, filename=file.path(project,"figures/age/age_gamms_curves.png"), width=12, height=7, device = "png", dpi = 300)
 ```
 
-plot age GAMMS thal MD and MGN
-```{r}
-gamms_to_plot <- c("Thal_MD_all.combat.norm","Thal_MGN.combat.norm")
-lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
-```
-
-plot age GAMMS with effects in all three groups
-```{r}
-gamms_to_plot <- c("Thal_Left_MGN.combat.norm","Thal_Left_MD_all.combat.norm")
-lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
-```
-
-
-plot age GAMMS for left hipp tail (only 22qDel have significant effect)
-```{r}
-gamms_to_plot <- c("Hip_Left_Hippocampal_tail.combat.norm")
-lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
-```
 verbal IQ comparison with hippocampal tail (Latreche et al 2023)
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10476015/
 ```{r}
@@ -1860,12 +1952,109 @@ test_sx_lmm <- function(formula, data){
   return(out)
 }
 
-test_sx_lmm(formula="WASI_verbal ~ Hip_Left_Hippocampal_tail.combat.norm + SEX + site + as.numeric(as.character(visit_index)) + (1|SUBJECTID)", data=filter(demo_sx_mri, SUBJECT_IDENTITY=="PATIENT-DEL"))
+# verbal IQ vs hipp tail in each group
+print("Verbal IQ:")
+groups <- c("PATIENT-DEL","PATIENT-DUP","CONTROL")
+hipp_tail_viq <- lapply(groups, function(g) test_sx_lmm(formula="WASI_verbal ~ Hip_Hippocampal_tail.combat.norm + SEX + site  + (1|SUBJECTID)", data=filter(demo_sx_mri, SUBJECT_IDENTITY==g)))
+names(hipp_tail_viq) <- groups
+hipp_tail_viq
 
-#lm_viq_lhtail <- lmerTest::lmer("WASI_verbal ~ Hip_Left_Hippocampal_tail.combat.norm + WASI_matrix + SEX + site + as.numeric(as.character(visit_index)) + (1|SUBJECTID)", REML=TRUE, na.action="na.omit", data=filter(demo_sx_mri, SUBJECT_IDENTITY=="PATIENT-DEL"))
-#summary(lm_viq_lhtail)
+# matrix IQ vs hipp tail in each group
+print("Matrix IQ:")
+groups <- c("PATIENT-DEL","PATIENT-DUP","CONTROL")
+hipp_tail_miq <- lapply(groups, function(g) test_sx_lmm(formula="WASI_matrix ~ Hip_Hippocampal_tail.combat.norm + SEX + site  + (1|SUBJECTID)", data=filter(demo_sx_mri, SUBJECT_IDENTITY==g)))
+names(hipp_tail_miq) <- groups
+hipp_tail_miq
+
+# verbal controlling for matrix IQ vs hipp tail in each group
+print("Verbal controlling for Matrix IQ:")
+groups <- c("PATIENT-DEL","PATIENT-DUP","CONTROL")
+hipp_tail_ciq <- lapply(groups, function(g) test_sx_lmm(formula="WASI_verbal ~ Hip_Hippocampal_tail.combat.norm + WASI_matrix + SEX + site  + (1|SUBJECTID)", data=filter(demo_sx_mri, SUBJECT_IDENTITY==g)))
+names(hipp_tail_ciq) <- groups
+hipp_tail_ciq
+
 ```
 
+plot verbal IQ vs hippocampus tail
+```{r}
+dat <- demo_sx_mri
+# function to plot lmm on top of data
+scatterplot_lmm <- function(group, x, y, title="", xlab="", ylab="", linecol="black", pval="missing"){
+  dat <- filter(demo_sx_mri, SUBJECT_IDENTITY==group)
+  # get predicted values for model
+  mod <- effect(term=x, mod=lme4::lmer(formula=as.formula(paste(y,"~",x,"+ SEX + site + (1|SUBJECTID)")),data=dat, REML=TRUE)) %>% as.data.frame
+  # plot 
+  ggplot(data=dat, aes_string(x=x, y=y))+
+    geom_point()+
+    geom_ribbon(data=mod, inherit.aes = FALSE, aes_string(x=x, ymin="lower", ymax="upper"), fill="grey", alpha=0.6)+
+    geom_line(data=mod, inherit.aes = FALSE, aes_string(x=x, y="fit", group=NA), color=linecol)+
+    ggtitle(title)+
+    xlab(xlab)+
+    ylim(10,85)+
+    xlim(300,800)+
+    #scale_y_continuous(breaks=seq(20,80, by=20))+
+    ylab(ylab)+
+    theme_classic()+
+    annotate(geom = "text", x=400, y = 83, label = paste0("p=",pval), size = 4, color = "black")
+}
 
+del_viq_plot <- scatterplot_lmm(group="PATIENT-DEL", x="Hip_Hippocampal_tail.combat", y="WASI_verbal", title="22qDel", xlab="Hippocampal tail volume", ylab="Verbal IQ", linecol="blue", pval=round(hipp_tail_viq$`PATIENT-DEL`["Hip_Hippocampal_tail.combat.norm","Pr(>|t|)"],digits=3))
 
+dup_viq_plot <- scatterplot_lmm(group="PATIENT-DUP", x="Hip_Hippocampal_tail.combat", y="WASI_verbal", title="22qDup", pval=round(hipp_tail_viq$`PATIENT-DUP`["Hip_Hippocampal_tail.combat.norm","Pr(>|t|)"],digits=3))
 
+td_viq_plot <- scatterplot_lmm(group="CONTROL", x="Hip_Hippocampal_tail.combat", y="WASI_verbal", title="Control", pval=round(hipp_tail_viq$`CONTROL`["Hip_Hippocampal_tail.combat.norm","Pr(>|t|)"],digits=3))
+
+all_viq_plot <- del_viq_plot + dup_viq_plot + td_viq_plot + plot_annotation(tag_levels = 'A')& theme(plot.tag = element_text(face = 'bold'))
+all_viq_plot
+#all_viq_plot
+
+#ggsave(plot=all_viq_plot, filename=file.path(project,"figures/cognition/hip_tail_verbal_iq.pdf"), width=9, height=5, device = "pdf")
+#ggsave(plot=all_viq_plot, filename=file.path(project,"figures/cognition/hip_tail_verbal_iq.png"), width=9, height=5, device = "png", dpi = 300)
+```
+
+same for matrix IQ
+```{r}
+del_miq_plot <- scatterplot_lmm(group="PATIENT-DEL", x="Hip_Hippocampal_tail.combat", y="WASI_matrix", title="", xlab="Hippocampal tail volume", ylab="Matrix IQ", pval=round(hipp_tail_miq$`PATIENT-DEL`["Hip_Hippocampal_tail.combat.norm","Pr(>|t|)"],digits=3))
+
+dup_miq_plot <- scatterplot_lmm(group="PATIENT-DUP", x="Hip_Hippocampal_tail.combat", y="WASI_matrix", title="", pval=round(hipp_tail_miq$`PATIENT-DUP`["Hip_Hippocampal_tail.combat.norm","Pr(>|t|)"],digits=3))
+
+td_miq_plot <- scatterplot_lmm(group="CONTROL", x="Hip_Hippocampal_tail.combat", y="WASI_matrix", title="", pval=round(hipp_tail_miq$`CONTROL`["Hip_Hippocampal_tail.combat.norm","Pr(>|t|)"],digits=3))
+
+all_miq_plot <- del_miq_plot + dup_miq_plot + td_miq_plot + plot_annotation(tag_levels = 'A')& theme(plot.tag = element_text(face = 'bold'))
+#all_miq_plot
+
+```
+plot both together
+```{r}
+all_iq_plot <- all_viq_plot / all_miq_plot + plot_annotation(tag_levels = 'A')& theme(plot.tag = element_text(face = 'bold'))
+all_iq_plot
+#ggsave(plot=all_iq_plot, filename=file.path(project,"figures/cognition/hip_tail_iq.pdf"), width=9, height=7, device = "pdf")
+#ggsave(plot=all_iq_plot, filename=file.path(project,"figures/cognition/hip_tail_iq.png"), width=9, height=7, device = "png", dpi = 300)
+```
+
+save workspace
+```{r paged.print=FALSE}
+# save list of packages
+setwd(project)
+sink("package_versions.txt")
+sessionInfo()
+sink()
+
+# clear data to make saved image smaller
+combat_input <- NULL
+input_all_ucla <- NULL
+oplots <- NULL
+all_iq_plot <- NULL
+all_miq_plot <- NULL
+all_viq_plot <- NULL
+lme_combat_agegene <- NULL
+lme_combat_agegene_del <- NULL
+lme_combat_agegene_dup <- NULL
+lme_combat_dup <- NULL
+lme_combat_del <- NULL
+lme_combat_sexint <- NULL
+gamm_combat <- NULL
+
+# save image
+save.image(file=file.path(project,"demographics/subcort_volumes_data.Rdata"),compress = "bzip2")
+```
