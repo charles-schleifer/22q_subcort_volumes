@@ -26,7 +26,7 @@ rm(list = ls(all.names = TRUE))
 #remotes::install_github("cran/DMwR")
 
 # list packages to load
-packages <- c("conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat",,"mgcv","gratia","tidymv", "itsadug")
+packages <- c("conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","mgcv","gratia","tidymv", "itsadug")
 
 # install packages if not yet installed
 all_packages <- rownames(installed.packages())
@@ -412,9 +412,9 @@ waterfall <- ggplot(ucla_demo_waterfall, aes(x=(AGEMONTH/12), y=as.factor(age1) 
   scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3]), labels = c("Control", "22qDel", "22qDup")) +
   scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3]), labels = c("Control", "22qDel", "22qDup")) +
   #guides(color  = guide_legend(order =1, override.aes = list(color=c(viridis(3)[2],viridis(3)[1],viridis(3)[3]))))+
-  guides(fill  = guide_legend(order = 1, override.aes = list(shape=21, size=2,alpha=0.9, fill=c(viridis(3)[2],viridis(3)[1],viridis(3)[3]))),
+  guides(fill  = guide_legend(order = 1, override.aes = list(shape=21, size=2.4,alpha=0.9, fill=c(viridis(3)[2],viridis(3)[1],viridis(3)[3]))),
          color = guide_legend(order=1),
-         shape = guide_legend(order = 2))+
+         shape = guide_legend(order = 2, override.aes = list(size=2.5)))+
   ylab("Individual") +
   xlab("Age") +
   xlim(5,50)+
@@ -2046,27 +2046,27 @@ all_iq_plot
 
 save workspace
 ```{r paged.print=FALSE}
-# save list of packages
-setwd(project)
-sink("package_versions.txt")
-sessionInfo()
-sink()
-
-# clear data to make saved image smaller
-combat_input <- NULL
-input_all_ucla <- NULL
-oplots <- NULL
-all_iq_plot <- NULL
-all_miq_plot <- NULL
-all_viq_plot <- NULL
-lme_combat_agegene <- NULL
-lme_combat_agegene_del <- NULL
-lme_combat_agegene_dup <- NULL
-lme_combat_dup <- NULL
-lme_combat_del <- NULL
-lme_combat_sexint <- NULL
-gamm_combat <- NULL
-
-# save image
-save.image(file=file.path(project,"demographics/subcort_volumes_data.Rdata"),compress = "bzip2")
+## save list of packages
+#setwd(project)
+#sink("package_versions.txt")
+#sessionInfo()
+#sink()
+#
+## clear data to make saved image smaller
+#combat_input <- NULL
+#input_all_ucla <- NULL
+#oplots <- NULL
+#all_iq_plot <- NULL
+#all_miq_plot <- NULL
+#all_viq_plot <- NULL
+#lme_combat_agegene <- NULL
+#lme_combat_agegene_del <- NULL
+#lme_combat_agegene_dup <- NULL
+#lme_combat_dup <- NULL
+#lme_combat_del <- NULL
+#lme_combat_sexint <- NULL
+#gamm_combat <- NULL
+#
+## save image
+#save.image(file=file.path(project,"demographics/subcort_volumes_data.Rdata"),compress = "bzip2")
 ```
