@@ -725,7 +725,7 @@ Thal_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Whole_thal
 # plot data points and model estimate
 plot_Thal_Whole <- ggplot()+
   geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_Whole_thalamus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_Whole_thalamus.combat, fill=factor(gene_dosage)),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_Whole_thalamus.combat, fill=factor(gene_dosage)),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="grey10", alpha=0.7)+
   scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
   scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
   guides(fill = guide_legend(override.aes = list(size=7)))+
@@ -752,7 +752,7 @@ Amy_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Amy_Whole_amygda
 # plot data points and model estimate
 plot_Amy_Whole <- ggplot()+
   geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Amy_Whole_amygdala.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Amy_Whole_amygdala.combat, fill=factor(gene_dosage)),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Amy_Whole_amygdala.combat, fill=factor(gene_dosage)),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="grey10", alpha=0.7)+
   scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
   scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
   guides(fill = guide_legend(override.aes = list(size=7)))+
@@ -780,7 +780,7 @@ Hip_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Hip_Whole_hippoc
 # plot data points and model estimate
 plot_Hip_Whole <- ggplot()+
   geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Hip_Whole_hippocampus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Hip_Whole_hippocampus.combat, fill=factor(gene_dosage)),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Hip_Whole_hippocampus.combat, fill=factor(gene_dosage)),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="grey10", alpha=0.7)+
   scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
   scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
   guides(fill = guide_legend(override.aes = list(size=7)))+
@@ -808,7 +808,7 @@ ICV <- effect(term="gene_dosage", mod=lme4::lmer(formula="eTIV ~ gene_dosage + A
 # plot data points and model estimate
 plot_ICV <- ggplot()+
   geom_half_violin(data=demo_combat_normed,aes(x=gene_dosage, group=gene_dosage, y=eTIV,fill=gene_dosage), fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_normed,aes(x=gene_dosage,y=eTIV, fill=factor(gene_dosage)), position=position_jitter(w=0.1,h=0,seed=1), shape=21,color="black")+
+  geom_point(data=demo_combat_normed,aes(x=gene_dosage,y=eTIV, fill=factor(gene_dosage)), position=position_jitter(w=0.1,h=0,seed=1), shape=21,color="grey10", alpha=0.7)+
   scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
   scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
   guides(fill = guide_legend(override.aes = list(size=7)))+
@@ -838,7 +838,7 @@ Thal_MD <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_MD_all.combat
 # plot data points and model estimate
 plot_Thal_MD <- ggplot()+
   geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_MD_all.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_MD_all.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_MD_all.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="grey10", alpha=0.7)+
   scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
   scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
   guides(fill = guide_legend(override.aes = list(size=7)))+
@@ -863,7 +863,7 @@ Thal_MV <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_MV_Re_.combat
 # plot data points and model estimate
 plot_Thal_MV <- ggplot()+
   geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_MV_Re_.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_MV_Re_.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_MV_Re_.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="grey10", alpha=0.7)+
   scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
   scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
   guides(fill = guide_legend(override.aes = list(size=7)))+
@@ -889,7 +889,7 @@ Hip_tail <- effect(term="gene_dosage", mod=lme4::lmer(formula="Hip_Hippocampal_t
 # plot data points and model estimate
 plot_Hip_tail <- ggplot()+
   geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Hip_Hippocampal_tail.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Hip_Hippocampal_tail.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Hip_Hippocampal_tail.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="grey10", alpha=0.7)+
   scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
   scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
   guides(fill = guide_legend(override.aes = list(size=7)))+
@@ -909,12 +909,12 @@ plot_Hip_tail
 #ggsave(plot=plot_Hip_tail, filename=file.path(project,"figures/gene_dosage/Hip_tail.pdf"), width=5, height=6, device = "pdf")
 #ggsave(plot=plot_Hip_tail, filename=file.path(project,"figures/gene_dosage/Hip_tail.pdf"), width=5, height=6, device = "png", dpi=300)
 
-# Left Amy basal 
+# Amy basal 
 Amy_basal <- effect(term="gene_dosage", mod=lme4::lmer(formula="Amy_Basal_nucleus.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
 # plot data points and model estimate
 plot_Amy_basal <- ggplot()+
   geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Amy_Basal_nucleus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Amy_Basal_nucleus.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="black")+
+  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Amy_Basal_nucleus.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="grey10", alpha=0.7)+
   scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
   scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
   guides(fill = guide_legend(override.aes = list(size=7)))+
@@ -947,8 +947,8 @@ lm_fig_all <- lm_fig_top/lm_fig_bottom  + plot_layout(guides = "collect") + plot
 
 lm_fig_all
 
-ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.pdf"), width=12, height=8.5, device = "pdf")
-ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.png"), width=12, height=8.5, device = "png", dpi = 300)
+#ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.pdf"), width=12, height=8.5, device = "pdf")
+#ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.png"), width=12, height=8.5, device = "png", dpi = 300)
 ```
 sex interactions
 ```{r}
