@@ -809,7 +809,7 @@ ICV <- effect(term="gene_dosage", mod=lme4::lmer(formula="eTIV ~ gene_dosage + A
 plot_ICV <- ggplot()+
   geom_half_violin(data=demo_combat_normed,aes(x=gene_dosage, group=gene_dosage, y=eTIV,fill=gene_dosage), fill="lightgrey", side="r", lty="blank")+
   geom_point(data=demo_combat_normed,aes(x=gene_dosage,y=eTIV, fill=factor(gene_dosage)), position=position_jitter(w=0.1,h=0,seed=1), shape=21,color="grey10", alpha=0.7)+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
+  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), labels=c("22qDel (1)","TD (2)","22qDup (3)"), minor_breaks = NULL)+
   scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
   guides(fill = guide_legend(override.aes = list(size=7)))+
   geom_ribbon(data=ICV, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
