@@ -638,8 +638,8 @@ save_dosage_effect_ws$Region <- save_dosage_effect_ws$Name
 save_dosage_effect_ws_final <- rbind(ICV_gene_dosage_final, save_dosage_effect_ws[,c("Region","Hemi","beta","p")])
 
 # round
-save_dosage_effect_ws_final$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
-save_dosage_effect_ws_final$p %<>% round(., digits=7) %>% sprintf("%.7f",.)
+#save_dosage_effect_ws_final$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
+#save_dosage_effect_ws_final$p %<>% round(., digits=7) %>% sprintf("%.7f",.)
 #save_dosage_effect_ws$p %<>% formatC(., format = "e", digits = 1)
 
 #write.csv(save_dosage_effect_ws_final, file=file.path(project,"figures/gene_dosage/gene_dosage_ws.csv"), row.names = FALSE)
@@ -708,17 +708,46 @@ save_dosage_effect$Structure <- gsub("amygdala","amy",save_dosage_effect$Structu
 save_dosage_effect$Region <- save_dosage_effect$Name
 rownames(save_dosage_effect) <- NULL
 
-# round
-save_dosage_effect$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
-#save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
-save_dosage_effect$p %<>% formatC(., format = "e", digits = 1)
-#save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
-save_dosage_effect$`FDR q` %<>% formatC(., format = "e", digits = 1)
-
 save_dosage_effect_final <- save_dosage_effect[,c("Structure","Region","Hemi","beta","p","FDR q")]
 
-#write.csv(save_dosage_effect_final, file=file.path(project,"figures/gene_dosage/gene_dosage_subregions.csv"), row.names = FALSE)
+# combine with whole structure
+save_dosage_effect_ws_final$Structure <- "whole volumes"
+save_dosage_effect_ws_final$`FDR q` <- NA
+save_dosage_effect_all <- rbind(save_dosage_effect_ws_final[,c("Structure","Region","Hemi","beta","p","FDR q")],save_dosage_effect_final[,c("Structure","Region","Hemi","beta","p","FDR q")])
+
+# recompute FDR q
+save_dosage_effect_all$`FDR q` <- p.adjust(save_dosage_effect_all$p, method = "fdr")
+  
+# round
+save_dosage_effect_all$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
+#save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
+save_dosage_effect_all$p %<>% formatC(., format = "g", digits = 2)
+#save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
+save_dosage_effect_all$`FDR q` %<>% formatC(., format = "g", digits = 2)
+
+
+# edit structure names
+save_dosage_effect_all$Structure <- save_dosage_effect_all$Structure %>% gsub("thal","thalamus subregions",.) %>% gsub("hip","hippocampus subregions",.) %>% gsub("amy","amygdala subregions",.)
+structure_dup <- duplicated(save_dosage_effect_all$Structure)
+for(i in 1:length(structure_dup)){
+  if(structure_dup[i]==TRUE){
+    save_dosage_effect_all[i,"Structure"] <- ""
+  }
+}
+
+#write.csv(save_dosage_effect_all, file=file.path(project,"figures/gene_dosage/gene_dosage_subregions_bilat.csv"), row.names = FALSE)
 ```
+
+
+
+
+
+
+
+
+
+
+
 
 
 whole structure scatterplots
