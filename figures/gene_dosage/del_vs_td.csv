@@ -1,0 +1,44 @@
+Structure,Region,beta,p,FDR q
+thalamus,lateral geniculate,-0.74,3.60E-07,6.20E-06
+,medial ventral (reuniens),-0.61,7.50E-05,0.00065
+,medial geniculate,-0.32,0.0053,0.033
+,parafascicular,-0.32,0.0067,0.036
+,ventral lateral,0.28,0.018,0.081
+,mediodorsal,0.29,0.031,0.12
+,lateral posterior,-0.23,0.11,0.33
+,central medial,-0.23,0.14,0.39
+,paracentral,0.2,0.18,0.4
+,limitans (suprageniculate),0.18,0.19,0.42
+,anteroventral,-0.18,0.19,0.42
+,laterodorsal,0.14,0.31,0.57
+,ventral anterior,-0.07,0.53,0.78
+, whole thalamus,-0.05,0.67,0.88
+,pulvinar,-0.05,0.71,0.88
+,paratenial,-0.05,0.73,0.88
+,ventral posterolateral,-0.04,0.74,0.88
+,ventromedial,-0.02,0.85,0.94
+,centromedian,-0.02,0.87,0.94
+,central lateral,-0.01,0.92,0.96
+hippocampus,subiculum,-0.91,3.60E-11,3.10E-09
+,hippocampal tail,-0.99,1.80E-10,7.80E-09
+,molecular layer,-0.87,2.40E-08,6.80E-07
+,whole hippocampus,-0.8,4.10E-08,8.80E-07
+,GC ML DG,-0.73,7.80E-07,1.10E-05
+,CA4,-0.7,1.80E-06,2.20E-05
+,CA1,-0.73,4.50E-06,4.90E-05
+,hippocampal fissure,-0.58,6.20E-05,0.00059
+,presubiculum,-0.22,0.13,0.36
+,parasubiculum,0.23,0.15,0.39
+,CA2/3,-0.2,0.16,0.4
+,hippocampal amygdala transition area,0.2,0.18,0.4
+,fimbria,-0.14,0.35,0.59
+amygdala,basal nucleus,-0.52,0.00016,0.0012
+,paralaminar nucleus,-0.48,0.00051,0.0037
+,medial nucleus,-0.46,0.00098,0.0065
+,accessory basal nucleus,-0.38,0.0064,0.036
+,whole amygdala,-0.33,0.012,0.059
+,cortical nucleus,-0.33,0.021,0.089
+,central nucleus,-0.31,0.034,0.13
+,lateral nucleus,-0.15,0.26,0.54
+,anterior amygdaloid area,-0.12,0.34,0.59
+,corticoamygdaloid transition,0.12,0.39,0.62

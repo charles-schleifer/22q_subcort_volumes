@@ -950,6 +950,7 @@ lm_fig_all
 #ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.pdf"), width=12, height=8.5, device = "pdf")
 #ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.png"), width=12, height=8.5, device = "png", dpi = 300)
 ```
+
 sex interactions
 ```{r}
 # test random intercept model at each region
@@ -1021,19 +1022,19 @@ save_sex_effect_final$`FDR q` %<>% formatC(., format = "g", digits = 2)
 To test for group differences, not just gene dosage effects (e.g. Dup and Del both decreased), use a model with a binary variable for each group? or two separate case/control models? 
 ```{r warning=FALSE}
 # test random intercept model at each region separately in Del and Dup
-lme_combat_del <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage", "AGE", "AGE2", "SEX", "eTIVscaled", "site", "(1|SUBJECTID)"), response=r),data=filter(demo_combat_na, gene_dosage %in% c(1,2)), REML=TRUE))
+lme_combat_del <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("SUBJECT_IDENTITY", "AGE", "AGE2", "SEX", "eTIVscaled", "site", "(1|SUBJECTID)"), response=r),data=filter(demo_combat_normed, SUBJECT_IDENTITY %in% c("CONTROL","PATIENT-DEL")), REML=TRUE))
 
-lme_combat_dup <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE", "AGE2", "SEX", "eTIVscaled", "site", "(1|SUBJECTID)"), response=r),data=filter(demo_combat_na, gene_dosage %in% c(2,3)), REML=TRUE))
+lme_combat_dup <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("SUBJECT_IDENTITY","AGE", "AGE2", "SEX", "eTIVscaled", "site", "(1|SUBJECTID)"), response=r),data=filter(demo_combat_normed, SUBJECT_IDENTITY %in% c("CONTROL","PATIENT-DUP")), REML=TRUE))
 
 # get p-val for gene dosage effect
-gene_dosage_effect_del <- lapply(lme_combat_del, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+gene_dosage_effect_del <- lapply(lme_combat_del, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SUBJECT_IDENTITYPATIENT-DEL",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
 colnames(gene_dosage_effect_del) <- c("gene_dosage_beta","gene_dosage_p")
-gene_dosage_effect_del$Region <- sc_names_combat
+gene_dosage_effect_del$Region <- sc_names_normed
 gene_dosage_effect_del$model <- "Del"
 
-gene_dosage_effect_dup <- lapply(lme_combat_dup, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+gene_dosage_effect_dup <- lapply(lme_combat_dup, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SUBJECT_IDENTITYPATIENT-DUP",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
 colnames(gene_dosage_effect_dup) <- c("gene_dosage_beta","gene_dosage_p")
-gene_dosage_effect_dup$Region <- sc_names_combat
+gene_dosage_effect_dup$Region <- sc_names_normed
 gene_dosage_effect_dup$model <- "Dup"
 
 del_dup_vs_hc <- rbind(gene_dosage_effect_del,gene_dosage_effect_dup)
@@ -1054,6 +1055,63 @@ del_dup_vs_hc_merged_sig <- filter(del_dup_vs_hc_merged,fdr_sig.x==TRUE & fdr_si
 
 #del_dup_vs_hc_merged_sig
 ```
+
+export results of individual group comparisons 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+group_compare_sort <- del_dup_vs_hc
+group_compare_sort$Group <- group_compare_sort$model %>% gsub("Del","22qDel",.) %>% gsub("Dup","22qDup",.)
+
+# get region names for matching
+group_compare_sort$Region <- gsub(".combat.norm","",group_compare_sort$Region)
+group_compare_sort$Region <- gsub("Thal_","",group_compare_sort$Region)
+group_compare_sort$Region <- gsub("Amy_","",group_compare_sort$Region)
+group_compare_sort$Region <- gsub("Hip_","",group_compare_sort$Region)
+
+# merge with full names
+group_compare_sort <- merge(x=group_compare_sort, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
+
+# set order
+group_compare_sort$struct_order <- group_compare_sort$Structure %>% gsub("thalamus",1,.) %>% gsub("hippocampus",2,.) %>% gsub("amygdala",3,.)
+setorder(group_compare_sort, model, struct_order, gene_dosage_p)
+
+# round
+group_compare_sort$gene_dosage_beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
+#save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
+group_compare_sort$gene_dosage_p %<>% formatC(., format = "g", digits = 2)
+#save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
+# g option formats as scientific only when saves space
+group_compare_sort$gene_dosage_fdr_q %<>% formatC(., format = "g", digits = 2)
+
+group_compare_out <- data.frame(Group=group_compare_sort$Group,
+                                Structure=group_compare_sort$Structure,
+                                Region=group_compare_sort$bilat_name,
+                                beta=group_compare_sort$gene_dosage_beta,
+                                p=group_compare_sort$gene_dosage_p,
+                                FDR_q=group_compare_sort$gene_dosage_fdr_q)
+
+group_compare_del <- filter(group_compare_out, Group=="22qDel")
+group_compare_dup <- filter(group_compare_out, Group=="22qDup")
+
+# edit structure names
+structure_dup <- duplicated(group_compare_del$Structure)
+for(i in 1:length(structure_dup)){
+  if(structure_dup[i]==TRUE){
+    group_compare_del[i,"Structure"] <- ""
+  }
+}
+
+structure_dup <- duplicated(group_compare_dup$Structure)
+for(i in 1:length(structure_dup)){
+  if(structure_dup[i]==TRUE){
+    group_compare_dup[i,"Structure"] <- ""
+  }
+}
+
+write.csv(group_compare_del[,c("Structure","Region","beta","p","FDR_q")], file=file.path(project,"figures/gene_dosage/del_vs_td.csv"), row.names = FALSE)
+write.csv(group_compare_dup[,c("Structure","Region","beta","p","FDR_q")], file=file.path(project,"figures/gene_dosage/dup_vs_td.csv"), row.names = FALSE)
+
+```
+
 
 LME for gene_dosage * Age linear interaction
 ```{r warning=FALSE}
