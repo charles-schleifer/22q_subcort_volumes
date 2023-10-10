@@ -1089,6 +1089,7 @@ group_compare_out <- data.frame(Group=group_compare_sort$Group,
                                 p=group_compare_sort$gene_dosage_p,
                                 FDR_q=group_compare_sort$gene_dosage_fdr_q)
 
+# save groups separately
 group_compare_del <- filter(group_compare_out, Group=="22qDel")
 group_compare_dup <- filter(group_compare_out, Group=="22qDup")
 
@@ -1107,8 +1108,8 @@ for(i in 1:length(structure_dup)){
   }
 }
 
-write.csv(group_compare_del[,c("Structure","Region","beta","p","FDR_q")], file=file.path(project,"figures/gene_dosage/del_vs_td.csv"), row.names = FALSE)
-write.csv(group_compare_dup[,c("Structure","Region","beta","p","FDR_q")], file=file.path(project,"figures/gene_dosage/dup_vs_td.csv"), row.names = FALSE)
+#write.csv(group_compare_del[,c("Structure","Region","beta","p","FDR_q")], file=file.path(project,"figures/gene_dosage/del_vs_td.csv"), row.names = FALSE)
+#write.csv(group_compare_dup[,c("Structure","Region","beta","p","FDR_q")], file=file.path(project,"figures/gene_dosage/dup_vs_td.csv"), row.names = FALSE)
 
 ```
 
