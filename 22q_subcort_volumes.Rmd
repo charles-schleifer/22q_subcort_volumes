@@ -1388,20 +1388,6 @@ df_demo <- merge(x=df_demo, y=ucla_neuro[,c("SUBJECTID","CONVERTEDVISITNUM","IQ_
 df_demo$IQ_measure <- NA
 df_demo$IQ_measure[!is.na(df_demo$IQ_full)] <- "WASI_full_scale"
 
-
-# get number of longitudinal visits per subject
-# apply to list of subjects ids in baseline df
-get_n_visits <- function(subject,full_df){
-  sub_all <- filter(full_df, SUBJECTID == subject)
-  n_sesh <- nrow(sub_all)
-  return(n_sesh)
-}
-
-#df_demo$visit_counts <- lapply(df_demo$SUBJECTID, function(s) get_n_visits(subject=s, full_df=ucla_demo_hcs_del)) %>% do.call(rbind,.) %>% as.data.frame %>% rename("visit_counts"="V1")
-
-df_demo$visit_counts <- lapply(df_demo$SUBJECTID, function(s) get_n_visits(subject=s, full_df=demo_combat)) %>% do.call(rbind,.) %>% as.vector
-df_demo$visit_counts %<>% as.numeric
-
 # get subjects missing TESTDATE
 missing_date <- filter(demo_combat_na, is.na(TESTDATE))
 
@@ -1419,37 +1405,10 @@ demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0529_07202022"),"TESTDATE"] <- 
 demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0561_11032022"),"TESTDATE"] <- "11/03/2022"
 demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0568_10252022"),"TESTDATE"] <- "10/25/2022"
 
-# get inter-visit interval
-# apply to list of subjects ids in baseline df
-get_avg_interval <- function(subject,full_df){
-  dates_initial <- filter(full_df, SUBJECTID == subject)$TESTDATE
-  dates_all <- sort(as.Date(dates_initial,format="%m/%d/%Y"))
-  intervals<-NULL
-  ndates<-length(dates_all)
-  # NA if only one visit
-  if(ndates==1){
-    intervals<-NA
-    avg_interval<-NA
-  }else if (ndates>1){
-    # starting with the second visit, get all intervals between date i and i-1
-    for (i in 2:ndates){
-      #diff <- difftime(as.Date(dates_all[i], format="%m/%d/%Y" ), as.Date(dates_all[i-1], format="%m/%d/%Y"), units="days") %>% as.numeric
-      diff <- difftime(dates_all[i], dates_all[i-1], units="days") %>% as.numeric
-      intervals <- c(intervals,diff)
-    }
-    avg_interval <- mean(intervals)
-  }
-  return(avg_interval)
-}
-#get_avg_interval(subject="q_0001", full_df=demo_combat)
-
-#df_demo$avg_interval <- lapply(df_demo$SUBJECTID, function(s) get_avg_interval(subject=s, full_df=ucla_demo_hcs_del)) %>% do.call(rbind,.) %>% as.data.frame %>% rename("avg_interval"="V1")
-
-df_demo$avg_interval <- lapply(df_demo$SUBJECTID, function(s) get_avg_interval(subject=s, full_df=demo_combat_na)) %>% do.call(rbind,.) %>% as.vector
 
 # vector of variables for demo table
 #vars_use <- c("AGE","SEX","EDUDAD","EDUMOM","EDUYEARS","hand", "percent_BOLD_scrubbed", "IQ_full","WASI_verbal","WASI_matrix", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds")
-vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds","visit_counts","avg_interval")
+vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds")
 
 # make table
 demo_match_final <- CreateTableOne(data=df_demo,vars=vars_use,strata="SUBJECT_IDENTITY",addOverall=F,includeNA=T)
@@ -1587,6 +1546,13 @@ df_demo_table_bl$IQ_measure[!is.na(df_demo_table_bl$IQ_full)] <- "WASI_full_scal
 
 
 # visit counts
+# get number of longitudinal visits per subject
+# apply to list of subjects ids in baseline df
+get_n_visits <- function(subject,full_df){
+  sub_all <- filter(full_df, SUBJECTID == subject)
+  n_sesh <- nrow(sub_all)
+  return(n_sesh)
+}
 df_demo_table_bl$visit_counts <- lapply(df_demo_table_bl$SUBJECTID, function(s) get_n_visits(subject=s, full_df=demo_combat)) %>% do.call(rbind,.) %>% as.vector
 df_demo_table_bl$visit_counts %<>% as.numeric
 
@@ -1608,6 +1574,28 @@ demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0561_11032022"),"TESTDATE"] <- 
 demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0568_10252022"),"TESTDATE"] <- "10/25/2022"
 
 # visit interval
+# get inter-visit interval
+# apply to list of subjects ids in baseline df
+get_avg_interval <- function(subject,full_df){
+  dates_initial <- filter(full_df, SUBJECTID == subject)$TESTDATE
+  dates_all <- sort(as.Date(dates_initial,format="%m/%d/%Y"))
+  intervals<-NULL
+  ndates<-length(dates_all)
+  # NA if only one visit
+  if(ndates==1){
+    intervals<-NA
+    avg_interval<-NA
+  }else if (ndates>1){
+    # starting with the second visit, get all intervals between date i and i-1
+    for (i in 2:ndates){
+      #diff <- difftime(as.Date(dates_all[i], format="%m/%d/%Y" ), as.Date(dates_all[i-1], format="%m/%d/%Y"), units="days") %>% as.numeric
+      diff <- difftime(dates_all[i], dates_all[i-1], units="days") %>% as.numeric
+      intervals <- c(intervals,diff)
+    }
+    avg_interval <- mean(intervals)
+  }
+  return(avg_interval)
+}
 df_demo_table_bl$avg_interval <- lapply(df_demo_table_bl$SUBJECTID, function(s) get_avg_interval(subject=s, full_df=demo_combat_na)) %>% do.call(rbind,.) %>% as.vector
 
 # vector of variables for demo table
