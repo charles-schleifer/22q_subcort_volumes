@@ -2116,4 +2116,5 @@ save workspace
 #
 ## save image
 #save.image(file=file.path(project,"demographics/subcort_volumes_data.Rdata"),compress = "bzip2")
+#load("~/Dropbox/github/22q_subcort_volumes/demographics/subcort_volumes_data.Rdata")
 ```
