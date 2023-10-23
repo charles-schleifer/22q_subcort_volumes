@@ -2184,9 +2184,11 @@ test model of SIPS scores vs volume in 22qDel
 ```{r}
 # test random intercept model of SIPS positive score in only 22qDel
 demo_normed_sips <- merge(x=demo_combat_normed, y=df_demo[,c("MRI_S_ID","SIPS_p_sum","SIPS_prodromal")], by="MRI_S_ID")
-sipsp_model <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("SIPS_p_sum","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=filter(demo_normed_sips, SUBJECT_IDENTITY=="PATIENT-DEL"), REML=TRUE))
+#sipsp_model <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("SIPS_p_sum","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=filter(demo_normed_sips, SUBJECT_IDENTITY=="PATIENT-DEL"), REML=TRUE))
+sipsp_model <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=as.formula(paste("SIPS_p_sum ~ AGE + AGE2 + SEX + eTIVnormed + site + (1|SUBJECTID) +",r)),data=filter(demo_normed_sips, SUBJECT_IDENTITY=="PATIENT-DEL"), REML=TRUE))
 names(sipsp_model) <- sc_names_normed
-sipsp_effect <- lapply(sipsp_model, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SIPS_p_sum",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+#sipsp_effect <- lapply(sipsp_model, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SIPS_p_sum",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+sipsp_effect <- lapply(names(sipsp_model), function(l) summary(sipsp_model[[l]],ddf="Kenward-Roger")$coefficients[l,c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
 colnames(sipsp_effect) <- c("beta","p")
 sipsp_effect$Region <- sc_names_normed
 sipsp_effect$fdr_q <- p.adjust(sipsp_effect$p, method="fdr")
@@ -2196,28 +2198,28 @@ sipsp_effect$fdr_sig <- sipsp_effect$fdr_q < 0.05
 
 save workspace
 ```{r paged.print=FALSE}
-## save list of packages
-#setwd(project)
-#sink("package_versions.txt")
-#sessionInfo()
-#sink()
-#
-## clear data to make saved image smaller
-#combat_input <- NULL
-#input_all_ucla <- NULL
-#oplots <- NULL
-#all_iq_plot <- NULL
-#all_miq_plot <- NULL
-#all_viq_plot <- NULL
-#lme_combat_agegene <- NULL
-#lme_combat_agegene_del <- NULL
-#lme_combat_agegene_dup <- NULL
-#lme_combat_dup <- NULL
-#lme_combat_del <- NULL
-#lme_combat_sexint <- NULL
-#gamm_combat <- NULL
-#
-## save image
-#save.image(file=file.path(project,"demographics/subcort_volumes_data.Rdata"),compress = "bzip2")
+# # save list of packages
+# setwd(project)
+# sink("package_versions.txt")
+# sessionInfo()
+# sink()
+# 
+# # clear data to make saved image smaller
+# combat_input <- NULL
+# input_all_ucla <- NULL
+# oplots <- NULL
+# all_iq_plot <- NULL
+# all_miq_plot <- NULL
+# all_viq_plot <- NULL
+# lme_combat_agegene <- NULL
+# lme_combat_agegene_del <- NULL
+# lme_combat_agegene_dup <- NULL
+# lme_combat_dup <- NULL
+# lme_combat_del <- NULL
+# lme_combat_sexint <- NULL
+# gamm_combat <- NULL
+# 
+# # save image
+# save.image(file=file.path(project,"demographics/subcort_volumes_data.Rdata"),compress = "bzip2")
 #load("~/Dropbox/github/22q_subcort_volumes/demographics/subcort_volumes_data.Rdata")
 ```
