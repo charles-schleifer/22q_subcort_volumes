@@ -1368,11 +1368,12 @@ get_sips <- function(r,demo,sips){
 demo_table_sips <- lapply(1:nrow(df_demo), function(r) get_sips(r=r, demo=df_demo, sips=df_all_ucla$SIPS)) %>% do.call(rbind,.)
 
 # merge sips with demo table
-df_demo <- merge(x=df_demo, y=demo_table_sips[,c("SUBJECTID","CONVERTEDVISITNUM","SIPS_total","SIPS_psspectrum_3")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("SIPS_prodromal" = "SIPS_psspectrum_3")
+df_demo <- merge(x=df_demo, y=demo_table_sips[,c("SUBJECTID","CONVERTEDVISITNUM","SIPS_total","SIPS_psspectrum_3","SIPS_p_sum")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T) %>% rename("SIPS_prodromal" = "SIPS_psspectrum_3")
 
 # set sips_total to numeric and sips_prodromal to factor
 df_demo %<>% mutate_at(vars("SIPS_prodromal"), ~as.logical(.))
-df_demo %<>% mutate_at(vars("SIPS_total"), ~as.numeric(.))
+df_demo %<>% mutate_at(vars("SIPS_total","SIPS_p_sum"), ~as.numeric(.))
+
 
 # get IQ
 # WASI, WISC-IV, DKEFS and trail making all under df_all$DKEFS for trio data
@@ -1408,7 +1409,7 @@ demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0568_10252022"),"TESTDATE"] <- 
 
 # vector of variables for demo table
 #vars_use <- c("AGE","SEX","EDUDAD","EDUMOM","EDUYEARS","hand", "percent_BOLD_scrubbed", "IQ_full","WASI_verbal","WASI_matrix", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds")
-vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds")
+vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_p_sum","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds")
 
 # make table
 demo_match_final <- CreateTableOne(data=df_demo,vars=vars_use,strata="SUBJECT_IDENTITY",addOverall=F,includeNA=T)
@@ -2090,6 +2091,108 @@ all_iq_plot
 #ggsave(plot=all_iq_plot, filename=file.path(project,"figures/cognition/hip_tail_iq.png"), width=9, height=7, device = "png", dpi = 300)
 ```
 
+antipsychotic drug analysis
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# get t/f column for antipsychotic drug
+df_demo$APD <- df_demo$psych_meds == "antipsychotic"
+
+demo_normed_apd <- merge(x=demo_combat_normed, y=df_demo[,c("MRI_S_ID","APD")], by="MRI_S_ID")
+
+# test random intercept model including APD at each region
+lme_combat_ap <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","APD","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=demo_normed_apd, REML=TRUE))
+names(lme_combat_ap) <- sc_names_normed
+
+
+# get p-val for gene dosage effect
+gene_dosage_effect_ap <- lapply(lme_combat_ap, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_dosage_effect_ap) <- c("gene_dosage_beta","gene_dosage_p")
+gene_dosage_effect_ap$Region <- sc_names_normed
+
+# FDR correct
+gene_dosage_effect_ap$gene_dosage_fdr_q <- p.adjust(gene_dosage_effect_ap$gene_dosage_p, method="fdr")
+gene_dosage_effect_ap$fdr_sig <- gene_dosage_effect_ap$gene_dosage_fdr_q < 0.05
+
+# get only significant effects
+gene_dosage_effect_sig_ap <- filter(gene_dosage_effect_ap,fdr_sig==TRUE)
+gene_dosage_effect_sig_ap <- gene_dosage_effect_sig_ap[order(gene_dosage_effect_sig_ap$gene_dosage_beta),]
+
+
+# create data frame for export
+save_dosage_effect_ap <- gene_dosage_effect_sig_ap[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")]
+# add whole amydgala and thalamus despite no FDR significance
+#save_dosage_effect <- rbind(save_dosage_effect, gene_dosage_effect[c("Thal_Whole_thalamus.combat.norm","Amy_Whole_amygdala.combat.norm"),c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")])
+#colnames(save_dosage_effect) <- c("beta","p","FDR q","Region")
+
+# get region names for matching
+save_dosage_effect_ap$Region <- gsub(".combat.norm","",save_dosage_effect_ap$Region)
+save_dosage_effect_ap$Region <- gsub("Thal_","",save_dosage_effect_ap$Region)
+save_dosage_effect_ap$Region <- gsub("Amy_","",save_dosage_effect_ap$Region)
+save_dosage_effect_ap$Region <- gsub("Hip_","",save_dosage_effect_ap$Region)
+
+# merge with full names
+#save_dosage_effect <- merge(x=save_dosage_effect, y=lut[c("Structure","Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
+save_dosage_effect_ap <- merge(x=save_dosage_effect_ap, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
+
+# set order
+save_dosage_effect_ap$struct_order <- save_dosage_effect_ap$Structure %>% gsub("thalamus",1,.) %>% gsub("hippocampus",2,.) %>% gsub("amygdala",3,.)
+
+save_dosage_effect_ap <- save_dosage_effect_ap[with(save_dosage_effect_ap, order(struct_order,gene_dosage_beta)),]
+
+#save_dosage_effect$Structure <- gsub("thalamus","thal",save_dosage_effect$Structure)
+#save_dosage_effect$Structure <- gsub("hippocampus","hip",save_dosage_effect$Structure)
+#save_dosage_effect$Structure <- gsub("amygdala","amy",save_dosage_effect$Structure)
+#save_dosage_effect$Region <- save_dosage_effect$Name
+save_dosage_effect_ap$Region <- save_dosage_effect_ap$bilat_name
+save_dosage_effect_ap$beta <- save_dosage_effect_ap$gene_dosage_beta
+save_dosage_effect_ap$p <- save_dosage_effect_ap$gene_dosage_p
+save_dosage_effect_ap$`FDR q` <- save_dosage_effect_ap$gene_dosage_fdr_q
+rownames(save_dosage_effect_ap) <- NULL
+
+# round
+save_dosage_effect_ap$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
+#save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
+save_dosage_effect_ap$p %<>% formatC(., format = "e", digits = 1)
+#save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
+# g option formats as scientific only when saves space
+save_dosage_effect_ap$`FDR q` %<>% formatC(., format = "g", digits = 2)
+
+# edit structure names
+structure_dup <- duplicated(save_dosage_effect_ap$Structure)
+for(i in 1:length(structure_dup)){
+  if(structure_dup[i]==TRUE){
+    save_dosage_effect_ap[i,"Structure"] <- ""
+  }
+}
+
+save_dosage_effect_ap_final <- save_dosage_effect_ap[,c("Structure","Region","beta","p","FDR q")]
+save_dosage_effect_ap_final
+#write.csv(save_dosage_effect_ap_final, file=file.path(project,"figures/gene_dosage/gene_dosage_subregions_apd.csv"), row.names = FALSE)
+
+# test random intercept model of APD in only 22qDel
+ap_model <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("APD","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=filter(demo_normed_apd, SUBJECT_IDENTITY=="PATIENT-DEL"), REML=TRUE))
+names(ap_model) <- sc_names_normed
+ap_effect <- lapply(ap_model, function(l) summary(l,ddf="Kenward-Roger")$coefficients["APDTRUE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(ap_effect) <- c("beta","p")
+ap_effect$Region <- sc_names_normed
+ap_effect$fdr_q <- p.adjust(ap_effect$p, method="fdr")
+ap_effect$fdr_sig <- ap_effect$fdr_q < 0.05
+# no regions with FDR q < 0.05
+
+```
+
+test model of SIPS scores vs volume in 22qDel
+```{r}
+# test random intercept model of SIPS positive score in only 22qDel
+demo_normed_sips <- merge(x=demo_combat_normed, y=df_demo[,c("MRI_S_ID","SIPS_p_sum","SIPS_prodromal")], by="MRI_S_ID")
+sipsp_model <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("SIPS_p_sum","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=filter(demo_normed_sips, SUBJECT_IDENTITY=="PATIENT-DEL"), REML=TRUE))
+names(sipsp_model) <- sc_names_normed
+sipsp_effect <- lapply(sipsp_model, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SIPS_p_sum",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(sipsp_effect) <- c("beta","p")
+sipsp_effect$Region <- sc_names_normed
+sipsp_effect$fdr_q <- p.adjust(sipsp_effect$p, method="fdr")
+sipsp_effect$fdr_sig <- sipsp_effect$fdr_q < 0.05
+
+```
 
 save workspace
 ```{r paged.print=FALSE}

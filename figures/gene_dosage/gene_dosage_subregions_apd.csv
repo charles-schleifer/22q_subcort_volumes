@@ -1,0 +1,18 @@
+Structure,Region,beta,p,FDR q
+thalamus,mediodorsal,-0.33,6.80E-05,0.00029
+,ventral lateral,-0.26,5.00E-04,0.0016
+,medial geniculate,0.18,1.40E-02,0.039
+,lateral posterior,0.22,1.80E-02,0.045
+,lateral geniculate,0.36,6.50E-05,0.00029
+,medial ventral (reuniens),0.39,7.60E-05,0.0003
+hippocampus,GC ML DG,0.43,2.70E-06,1.50E-05
+,CA4,0.44,1.60E-06,1.10E-05
+,CA1,0.47,2.10E-06,1.30E-05
+,whole hippocampus,0.48,1.20E-07,1.30E-06
+,subiculum,0.5,8.70E-09,1.20E-07
+,molecular layer,0.51,1.50E-07,1.30E-06
+,hippocampal fissure,0.53,7.70E-09,1.20E-07
+,hippocampal tail,0.6,4.50E-10,1.90E-08
+amygdala,accessory basal nucleus,0.24,7.90E-03,0.023
+,paralaminar nucleus,0.27,1.80E-03,0.0056
+,basal nucleus,0.32,2.20E-04,0.0008
