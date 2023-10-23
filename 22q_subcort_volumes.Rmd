@@ -2193,6 +2193,17 @@ colnames(sipsp_effect) <- c("beta","p")
 sipsp_effect$Region <- sc_names_normed
 sipsp_effect$fdr_q <- p.adjust(sipsp_effect$p, method="fdr")
 sipsp_effect$fdr_sig <- sipsp_effect$fdr_q < 0.05
+# no significant results
+
+# test random intercept model of SIPS prodromal status
+sipspr_model <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("SIPS_prodromal","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=filter(demo_normed_sips, SUBJECT_IDENTITY=="PATIENT-DEL"), REML=TRUE))
+names(sipspr_model) <- sc_names_normed
+sipspr_effect <- lapply(sipspr_model, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SIPS_prodromalTRUE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(sipspr_effect) <- c("beta","p")
+sipspr_effect$Region <- sc_names_normed
+sipspr_effect$fdr_q <- p.adjust(sipspr_effect$p, method="fdr")
+sipspr_effect$fdr_sig <- sipspr_effect$fdr_q < 0.05
+# no significant results
 
 ```
 
