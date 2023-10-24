@@ -2235,3 +2235,25 @@ save workspace
 #load("~/Dropbox/github/22q_subcort_volumes/demographics/subcort_volumes_data.Rdata")
 ```
 
+```{r}
+#lapply(lme_combat, plot)
+
+plot_var_resid <- function(modlist, variable, region, df){
+  mod <- modlist[[region]]
+  df$testcol <- df[,region]
+  var <- filter(df, !is.na(testcol))[,variable]
+  res <- residuals(mod,type="pearson")
+  dat <- data.frame(variable=var, residual=res)
+  plot <- ggplot(dat, aes(x=variable, y=residual))+
+    geom_point()+
+    geom_hline(yintercept = 0)+
+    ggtitle(region)+
+    xlab(variable)+
+    theme_classic()
+  return(plot)
+}
+
+#plot_var_resid(modlist=lme_combat, variable="gene_dosage", region="Hip_Whole_hippocampus.combat.norm",df=demo_combat_normed)
+
+lapply(sc_names_normed, function(n) plot_var_resid(modlist=lme_combat, variable="gene_dosage", region=n, df=demo_combat_normed))
+```
