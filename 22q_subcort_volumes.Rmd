@@ -2097,18 +2097,23 @@ verbal learning
 cvlt <- df_all_ucla$CVLT
 demo_cvlt <- merge(x=demo_combat_normed, y=cvlt[,c("SUBJECTID","CONVERTEDVISITNUM","T1_5_T")], by=c("SUBJECTID","CONVERTEDVISITNUM"))
 
-# verbal IQ vs hipp tail in each group
-#cvlt_del <- lapply(sc_names_normed, function(r) test_sx_lmm(formula=as.formula(paste("T1_5_T ~ SEX + (1|SUBJECTID) +",r)), data=filter(demo_cvlt, SUBJECT_IDENTITY=="PATIENT-DEL")))
-#cvlt_del_p <- lapply(sc_names_normed, function(r) cvlt_del[r,c("Estimate","Pr(>|t|)")]
-
-# verbal IQ vs hipp tail in each group
 print("CVLT:")
 groups <- c("PATIENT-DEL","CONTROL")
 cvlt_mod <- lapply(groups, function(g) test_sx_lmm(formula="T1_5_T ~ Hip_Hippocampal_tail.combat.norm + SEX + (1|SUBJECTID)", data=filter(demo_cvlt, SUBJECT_IDENTITY==g)))
 names(cvlt_mod) <- groups
 cvlt_mod
 
+# PENN CNB
+vmem <- read.csv(file.path(project,"demographics/vmem_dat.csv"))
+# get convertedvisitnum 1=2.0, 2=2.12, 3=2.24
+vmem$CONVERTEDVISITNUM <- factor(vmem$LOCALID,levels=c(1,2,3),labels=c(2.0,2.12,2.24)) %>% as.character %>% as.numeric
+demo_vmem <- merge(x=demo_combat_normed, y=vmem[,c("SUBJECTID","CONVERTEDVISITNUM","KCPW_A_CR_new")], by=c("SUBJECTID","CONVERTEDVISITNUM"))
 
+print("VMEM:")
+groups <- c("PATIENT-DEL","CONTROL")
+vmem_mod <- lapply(groups, function(g) test_sx_lmm(formula="KCPW_A_CR_new ~ Hip_Hippocampal_tail.combat.norm + SEX + (1|SUBJECTID)", data=filter(demo_vmem, SUBJECT_IDENTITY==g)))
+names(vmem_mod) <- groups
+vmem_mod
 ```
 
 
