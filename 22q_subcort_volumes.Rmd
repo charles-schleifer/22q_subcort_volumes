@@ -2091,6 +2091,27 @@ all_iq_plot
 #ggsave(plot=all_iq_plot, filename=file.path(project,"figures/cognition/hip_tail_iq.png"), width=9, height=7, device = "png", dpi = 300)
 ```
 
+verbal learning
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# CVLT
+cvlt <- df_all_ucla$CVLT
+demo_cvlt <- merge(x=demo_combat_normed, y=cvlt[,c("SUBJECTID","CONVERTEDVISITNUM","T1_5_T")], by=c("SUBJECTID","CONVERTEDVISITNUM"))
+
+# verbal IQ vs hipp tail in each group
+#cvlt_del <- lapply(sc_names_normed, function(r) test_sx_lmm(formula=as.formula(paste("T1_5_T ~ SEX + (1|SUBJECTID) +",r)), data=filter(demo_cvlt, SUBJECT_IDENTITY=="PATIENT-DEL")))
+#cvlt_del_p <- lapply(sc_names_normed, function(r) cvlt_del[r,c("Estimate","Pr(>|t|)")]
+
+# verbal IQ vs hipp tail in each group
+print("CVLT:")
+groups <- c("PATIENT-DEL","CONTROL")
+cvlt_mod <- lapply(groups, function(g) test_sx_lmm(formula="T1_5_T ~ Hip_Hippocampal_tail.combat.norm + SEX + (1|SUBJECTID)", data=filter(demo_cvlt, SUBJECT_IDENTITY==g)))
+names(cvlt_mod) <- groups
+cvlt_mod
+
+
+```
+
+
 antipsychotic drug analysis
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # get t/f column for antipsychotic drug
@@ -2181,7 +2202,7 @@ ap_effect$fdr_sig <- ap_effect$fdr_q < 0.05
 ```
 
 test model of SIPS scores vs volume in 22qDel
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # test random intercept model of SIPS positive score in only 22qDel
 demo_normed_sips <- merge(x=demo_combat_normed, y=df_demo[,c("MRI_S_ID","SIPS_p_sum","SIPS_prodromal")], by="MRI_S_ID")
 #sipsp_model <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("SIPS_p_sum","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=filter(demo_normed_sips, SUBJECT_IDENTITY=="PATIENT-DEL"), REML=TRUE))
@@ -2208,7 +2229,7 @@ sipspr_effect$fdr_sig <- sipspr_effect$fdr_q < 0.05
 ```
 
 save workspace
-```{r paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # # save list of packages
 # setwd(project)
 # sink("package_versions.txt")
@@ -2235,7 +2256,7 @@ save workspace
 #load("~/Dropbox/github/22q_subcort_volumes/demographics/subcort_volumes_data.Rdata")
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 #lapply(lme_combat, plot)
 
 plot_var_resid <- function(modlist, variable, region, df){
@@ -2254,6 +2275,39 @@ plot_var_resid <- function(modlist, variable, region, df){
 }
 
 #plot_var_resid(modlist=lme_combat, variable="gene_dosage", region="Hip_Whole_hippocampus.combat.norm",df=demo_combat_normed)
+#lapply(sc_names_normed, function(n) plot_var_resid(modlist=lme_combat, variable="gene_dosage", region=n, df=demo_combat_normed))
 
-lapply(sc_names_normed, function(n) plot_var_resid(modlist=lme_combat, variable="gene_dosage", region=n, df=demo_combat_normed))
+get_group_avg_resid <- function(modlist, group, region, df){
+  mod <- modlist[[region]]
+  df$testcol <- df[,region]
+  dff <- filter(df, !is.na(testcol))
+  dff$res <- residuals(mod,type="pearson")
+  dfg <- filter(dff, SUBJECT_IDENTITY==group)
+  mn <- round(mean(dfg$res), digits = 3)
+  #md <- round(median(dfg$res), digits = 3)
+  #out <- data.frame(mean=mn, median=md)
+  out <- data.frame(mean=mn)
+  return(out)
+}
+
+resids_del <- lapply(sc_names_normed, function(n) get_group_avg_resid(modlist=lme_combat, group="PATIENT-DEL", region=n,df=demo_combat_normed)) %>% do.call(rbind,.)
+resids_td <- lapply(sc_names_normed, function(n) get_group_avg_resid(modlist=lme_combat, group="CONTROL", region=n,df=demo_combat_normed)) %>% do.call(rbind,.)
+resids_dup <- lapply(sc_names_normed, function(n) get_group_avg_resid(modlist=lme_combat, group="PATIENT-DUP", region=n,df=demo_combat_normed)) %>% do.call(rbind,.)
+resids_all <- cbind(resids_del, resids_td, resids_dup)
+colnames(resids_all) <- c("22qDel_mean_resid","TD_mean_resid","22qDup_mean_resid")
+resids_all$r <- sc_names_normed
+
+# get region names for matching
+resids_all$r <- gsub(".combat.norm","",resids_all$r)
+resids_all$r <- gsub("Thal_","",resids_all$r)
+resids_all$r <- gsub("Amy_","",resids_all$r)
+resids_all$r <- gsub("Hip_","",resids_all$r)
+
+# merge with full names
+resids_all <- merge(x=resids_all, y=lut_unique[,c("bilat_name","bilat_match")], by.x="r",by.y="bilat_match", all.x=TRUE)
+
+# merge with final gene dosage table
+resids_merge <- merge(x=save_dosage_effect_final, y=resids_all[,c("bilat_name","22qDel_mean_resid","TD_mean_resid","22qDup_mean_resid")], by.x="Region", by.y="bilat_name")
 ```
+
+
