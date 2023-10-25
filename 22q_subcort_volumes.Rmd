@@ -2233,33 +2233,6 @@ sipspr_effect$fdr_sig <- sipspr_effect$fdr_q < 0.05
 
 ```
 
-save workspace
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-# # save list of packages
-# setwd(project)
-# sink("package_versions.txt")
-# sessionInfo()
-# sink()
-# 
-# # clear data to make saved image smaller
-# combat_input <- NULL
-# input_all_ucla <- NULL
-# oplots <- NULL
-# all_iq_plot <- NULL
-# all_miq_plot <- NULL
-# all_viq_plot <- NULL
-# lme_combat_agegene <- NULL
-# lme_combat_agegene_del <- NULL
-# lme_combat_agegene_dup <- NULL
-# lme_combat_dup <- NULL
-# lme_combat_del <- NULL
-# lme_combat_sexint <- NULL
-# gamm_combat <- NULL
-# 
-# # save image
-# save.image(file=file.path(project,"demographics/subcort_volumes_data.Rdata"),compress = "bzip2")
-#load("~/Dropbox/github/22q_subcort_volumes/demographics/subcort_volumes_data.Rdata")
-```
 
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 #lapply(lme_combat, plot)
@@ -2315,4 +2288,30 @@ resids_all <- merge(x=resids_all, y=lut_unique[,c("bilat_name","bilat_match")], 
 resids_merge <- merge(x=save_dosage_effect_final, y=resids_all[,c("bilat_name","22qDel_mean_resid","TD_mean_resid","22qDup_mean_resid")], by.x="Region", by.y="bilat_name")
 ```
 
-
+save workspace
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# # save list of packages
+# setwd(project)
+# sink("package_versions.txt")
+# sessionInfo()
+# sink()
+# 
+# # clear data to make saved image smaller
+# combat_input <- NULL
+# input_all_ucla <- NULL
+# oplots <- NULL
+# all_iq_plot <- NULL
+# all_miq_plot <- NULL
+# all_viq_plot <- NULL
+# lme_combat_agegene <- NULL
+# lme_combat_agegene_del <- NULL
+# lme_combat_agegene_dup <- NULL
+# lme_combat_dup <- NULL
+# lme_combat_del <- NULL
+# lme_combat_sexint <- NULL
+# gamm_combat <- NULL
+# 
+# # save image
+# save.image(file=file.path(project,"demographics/subcort_volumes_data.Rdata"),compress = "bzip2")
+#load("~/Dropbox/github/22q_subcort_volumes/demographics/subcort_volumes_data.Rdata")
+```
