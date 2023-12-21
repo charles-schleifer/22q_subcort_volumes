@@ -26,7 +26,7 @@ rm(list = ls(all.names = TRUE))
 #remotes::install_github("cran/DMwR")
 
 # list packages to load
-packages <- c("conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","mgcv","gratia","tidymv", "itsadug")
+packages <- c("conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","gt","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","mgcv","gratia","tidymv", "itsadug")
 
 # install packages if not yet installed
 all_packages <- rownames(installed.packages())
@@ -291,8 +291,6 @@ lut_unique <- lut_bilat_n[!duplicated(lut_bilat_n),]
 
 ```
 
-
-
 ## load sistat data and get lists of scans to use
 all sistat tables should be exported as CSVs into a single directory
 the next several chunks deal with reading, cleaning and annotating the data exported from sistat, and then age matching
@@ -325,7 +323,6 @@ ucla_demo$SUBJECT_IDENTITY <- ucla_demo$SUBJECT_IDENTITY %>% sub("FAMILY MEMBER"
 ucla_demo$SEX <- factor(ucla_demo$SEX,levels=c(0,1),labels=c("F","M"))
 ```
 
-# TEMPORARY
 read temporary csv with several subjects not yet in sistat
 ```{r}
 # TODO: this chunk is temporary until sistat is updated 
@@ -481,7 +478,6 @@ demo_sc$AGE2 <- demo_sc$AGE^2
 # update feature names to bilateral columns
 sc_names <- names(subcort_bilat)[which(names(subcort_bilat) != "MRI_S_ID")]
 ```
-
 
 impute outliers and excluded data (ComBat can't have NAs in input)
 ```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
@@ -1106,8 +1102,8 @@ export_demo_table_bl <- print(demo_match_final_bl, quote=F, noSpaces=F, printTog
 ```
 
 
-## Non-linear age effects, full sample
-GAMMs in each group at every ROI
+## GAMMs
+GAMMs in at every ROI with a factor-smooth term for age by group
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE, include=FALSE}
 # subjectID must be factor. Site and sex should be numeric
 #demo_combat_na_gam <- demo_combat_na 
@@ -1116,18 +1112,155 @@ demo_combat_na_gam$SUBJECTID %<>% as.factor
 demo_combat_na_gam$site <- demo_combat_na_gam$site %>% gsub("T","0",.) %>% gsub("P","1",.) %>% as.numeric 
 demo_combat_na_gam$SEX <- demo_combat_na_gam$SEX %>% gsub("F","0",.) %>% gsub("M","1",.) %>% as.numeric 
 
-# test random intercept GAMM at each region
-# original
-#gamm_combat <- lapply(sc_names_combat, function(r) gam(formula=reformulate(c("s(AGE,by=SUBJECT_IDENTITY)","SUBJECT_IDENTITY","SEX","eTIVscaled","site","s(SUBJECTID, bs=\"re\")"), response=r),data=demo_combat_na_gam, selection=TRUE,method="REML", na.action="na.omit"))
 
 # per reviewer suggestion, run with fixed DoF by setting k and using fx=TRUE
 # try two DoF because most estimated were between 1 and 3 and want to prevent overfitting on linear data
-gamm_combat <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "SUBJECT_IDENTITY", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response=r), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit"))
+gamm_combat <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response=r), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit"))
 
-
-#names(gamm_combat) <- sc_names_combat
+# name gamm list
 names(gamm_combat) <- sc_names_normed
 
+# add a GAMM for eTIVnormed that doesnt already contain it as a covariate
+gamm_etiv <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="eTIVnormed"), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit")
+
+# add eTIVnormed to gamm list
+gamm_combat$eTIVnormed <-  gamm_etiv
+
+# add eTIVnormed to list of names
+all_names_normed <- c(sc_names_normed,"eTIVnormed")
+
+```
+
+same GAMM for restricted age range (<37)
+```{r}
+gamm_combat_young <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)","gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response=r), data=filter(demo_combat_na_gam, AGE < 37), selection=TRUE, method="REML", na.action="na.omit"))
+
+# name gamm list
+names(gamm_combat_young) <- sc_names_normed
+
+# add a GAMM for eTIVnormed that doesnt already contain it as a covariate
+gamm_etiv_young <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="eTIVnormed"), data=filter(demo_combat_na_gam, AGE < 37), selection=TRUE, method="REML", na.action="na.omit")
+
+# add eTIVnormed to gamm list
+gamm_combat_young$eTIVnormed <-  gamm_etiv_young
+```
+
+# Gene dosage analysis from GAMMs
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# get p-values for linear effect of gene dosage
+gene_dosage_effect <- lapply(gamm_combat, function(l) summary(l)$p.table["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame
+colnames(gene_dosage_effect) <- c("gene_dosage_beta","gene_dosage_p")
+gene_dosage_effect$Region <- all_names_normed
+
+# FDR correct
+gene_dosage_effect$gene_dosage_fdr_q <- p.adjust(gene_dosage_effect$gene_dosage_p, method="fdr")
+gene_dosage_effect$fdr_sig <- gene_dosage_effect$gene_dosage_fdr_q < 0.05
+
+# Bonferroni correct
+gene_dosage_effect$gene_dosage_bonf_p <- p.adjust(gene_dosage_effect$gene_dosage_p, method="bonferroni")
+gene_dosage_effect$bonf_sig <- gene_dosage_effect$gene_dosage_bonf_p < 0.05
+
+# mark significance
+give_stars <- function(fdr, bonf){
+  out <- ""
+  if(fdr==TRUE){
+    out <- paste0(out,"*")
+  }
+  if(bonf==TRUE){
+    out <- paste0(out,"*")
+  }
+  return(out)
+}
+gene_dosage_effect$sig <- NA
+for(i in 1:nrow(gene_dosage_effect)){ 
+  gene_dosage_effect[i,"sig"] <- give_stars(fdr=gene_dosage_effect[i,"fdr_sig"], bonf=gene_dosage_effect[i,"bonf_sig"])
+}
+
+```
+
+make table for export with subregion gene dosage effects
+```{r paged.print=FALSE}
+# create data frame for export
+save_dosage_effect <- filter(gene_dosage_effect, gene_dosage_fdr_q<0.05)[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region","sig")]
+
+# add whole amydgala and thalamus despite no FDR significance
+save_dosage_effect <- rbind(save_dosage_effect, gene_dosage_effect[c("Thal_Whole_thalamus.combat.norm","Amy_Whole_amygdala.combat.norm"),c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region","sig")])
+colnames(save_dosage_effect) <- c("beta","p","FDR q","Region","sig")
+
+# get region names for matching
+save_dosage_effect$Region <- gsub(".combat.norm","",save_dosage_effect$Region)
+save_dosage_effect$Region <- gsub("Thal_","",save_dosage_effect$Region)
+save_dosage_effect$Region <- gsub("Amy_","",save_dosage_effect$Region)
+save_dosage_effect$Region <- gsub("Hip_","",save_dosage_effect$Region)
+
+# merge with full names
+#save_dosage_effect <- merge(x=save_dosage_effect, y=lut[c("Structure","Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
+save_dosage_effect <- merge(x=save_dosage_effect, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
+
+# edit structure label
+save_dosage_effect$Structure <- paste(save_dosage_effect$Structure, "subregions") 
+
+# add total ICV name
+save_dosage_effect[which(save_dosage_effect$Region=="eTIVnormed"),c("Structure","bilat_name")] <-  c("whole brain","total ICV")
+
+# change structure label for whole thal, hip, amy
+save_dosage_effect[which(save_dosage_effect$Region %in% c("Whole_amygdala","Whole_thalamus","Whole_hippocampus")),"Structure"] <-  "whole structures"
+
+# set order
+save_dosage_effect$struct_order <- save_dosage_effect$Structure %>% gsub("whole brain",1,.) %>% gsub("whole structures",2,.) %>% gsub("thalamus subregions",3,.) %>% gsub("hippocampus subregions",4,.) %>% gsub("amygdala subregions",5,.)
+
+save_dosage_effect <- save_dosage_effect[with(save_dosage_effect, order(struct_order,beta)),]
+
+#save_dosage_effect$Structure <- gsub("thalamus","thal",save_dosage_effect$Structure)
+#save_dosage_effect$Structure <- gsub("hippocampus","hip",save_dosage_effect$Structure)
+#save_dosage_effect$Structure <- gsub("amygdala","amy",save_dosage_effect$Structure)
+#save_dosage_effect$Region <- save_dosage_effect$Name
+save_dosage_effect$Region <- save_dosage_effect$bilat_name
+rownames(save_dosage_effect) <- NULL
+
+# round
+save_dosage_effect$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
+#save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
+save_dosage_effect$p %<>% formatC(., format = "e", digits = 1)
+#save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
+# g option formats as scientific only when saves space
+save_dosage_effect$`FDR q` %<>% formatC(., format = "g", digits = 2)
+
+# edit structure names
+structure_dup <- duplicated(save_dosage_effect$Structure)
+for(i in 1:length(structure_dup)){
+  if(structure_dup[i]==TRUE){
+    save_dosage_effect[i,"Structure"] <- ""
+  }
+}
+
+save_dosage_effect_final <- save_dosage_effect[,c("Structure","Region","beta","p","FDR q","sig")]
+save_dosage_effect_final
+
+# export table
+save_dosage_effect_out <- save_dosage_effect_final %>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
+  cols_align(align="right", columns=everything())
+
+# gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.png"))
+# gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.pdf"))
+# gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.rtf"))
+# gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.tex"))
+```
+
+
+
+
+
+
+
+
+
+
+
+# Age curves from GAMMs
+wrap all maturational analyses in a function so that they can be repeated with a truncated age subset of the input
+```{r}
 stables <- lapply(gamm_combat,function(g) summary(g, freq=T)$s.table)
 
 # get p-vals
@@ -1183,20 +1316,7 @@ smooth_estimates_se <- function(gamm,smooth,n){
 smooth_all_combat <- lapply(gamm_combat, function(g) smooth_estimates_se(gamm=g, smooth="s(AGE)", n=1000))
 #names(smooth_all_combat) <- sc_names_combat
 names(smooth_all_combat) <- sc_names_normed
-
 ```
-
-test new gamm
-```{r}
-# testgam <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, k=4)", "gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="Hip_CA3.combat.norm"), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit")
-# 
-# testgam <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, k=4)", "gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="Hip_Whole_hippocampus.combat.norm"), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit")
-# 
-# testgam <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY,bs=\"tp\", k=4, fx=TRUE)", "gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="Thal_MD_all.combat"), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit")
-# 
-# summary(testgam)
-```
-
 
 plot all age smooths with partial residuals
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
@@ -1253,7 +1373,7 @@ plot_gamm_resid <- function(name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23), t
 #plot_gamm_resid_tc(name="Frontoparietal.combat",xlab="Age",ylab="TCC")
 #plot_gamm_resid_tc(name="Somatomotor.combat",xlab="Age",ylab="TCC")
 #lapply(sc_names_combat,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
-lapply(sc_names_normed,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
+#lapply(sc_names_normed,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
 ```
 
 get difference with TD smooth
@@ -1549,67 +1669,6 @@ LME for all subregions
 # gene_dosage_effect_sig <- gene_dosage_effect_sig[order(gene_dosage_effect_sig$gene_dosage_beta),]
 # 
 # #write.table(gene_dosage_effect_sig, file="~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/gene_dosage_lme_significant.csv", sep=",", col.names = TRUE, row.names = FALSE)
-```
-
-make table for export with subregion gene dosage effects
-```{r paged.print=FALSE}
-# create data frame for export
-save_dosage_effect <- gene_dosage_effect_sig[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")]
-# add whole amydgala and thalamus despite no FDR significance
-save_dosage_effect <- rbind(save_dosage_effect, gene_dosage_effect[c("Thal_Whole_thalamus.combat.norm","Amy_Whole_amygdala.combat.norm"),c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")])
-colnames(save_dosage_effect) <- c("beta","p","FDR q","Region")
-
-# get region names for matching
-save_dosage_effect$Region <- gsub(".combat.norm","",save_dosage_effect$Region)
-save_dosage_effect$Region <- gsub("Thal_","",save_dosage_effect$Region)
-save_dosage_effect$Region <- gsub("Amy_","",save_dosage_effect$Region)
-save_dosage_effect$Region <- gsub("Hip_","",save_dosage_effect$Region)
-
-# merge with full names
-#save_dosage_effect <- merge(x=save_dosage_effect, y=lut[c("Structure","Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
-save_dosage_effect <- merge(x=save_dosage_effect, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
-
-# edit structure label
-save_dosage_effect$Structure <- paste(save_dosage_effect$Structure, "subregions") 
-
-# add total ICV name
-save_dosage_effect[which(save_dosage_effect$Region=="total ICV"),c("Structure","bilat_name")] <-  c("gross volumes","total ICV")
-
-# change structure label for whole thal, hip, amy
-save_dosage_effect[which(save_dosage_effect$Region %in% c("Whole_amygdala","Whole_thalamus","Whole_hippocampus")),"Structure"] <-  "gross volumes"
-
-# set order
-save_dosage_effect$struct_order <- save_dosage_effect$Structure %>% gsub("gross volumes",1,.) %>% gsub("thalamus subregions",2,.) %>% gsub("hippocampus subregions",3,.) %>% gsub("amygdala subregions",4,.)
-
-save_dosage_effect <- save_dosage_effect[with(save_dosage_effect, order(struct_order,beta)),]
-
-#save_dosage_effect$Structure <- gsub("thalamus","thal",save_dosage_effect$Structure)
-#save_dosage_effect$Structure <- gsub("hippocampus","hip",save_dosage_effect$Structure)
-#save_dosage_effect$Structure <- gsub("amygdala","amy",save_dosage_effect$Structure)
-#save_dosage_effect$Region <- save_dosage_effect$Name
-save_dosage_effect$Region <- save_dosage_effect$bilat_name
-rownames(save_dosage_effect) <- NULL
-
-# round
-save_dosage_effect$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
-#save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
-save_dosage_effect$p %<>% formatC(., format = "e", digits = 1)
-#save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
-# g option formats as scientific only when saves space
-save_dosage_effect$`FDR q` %<>% formatC(., format = "g", digits = 2)
-
-# edit structure names
-structure_dup <- duplicated(save_dosage_effect$Structure)
-for(i in 1:length(structure_dup)){
-  if(structure_dup[i]==TRUE){
-    save_dosage_effect[i,"Structure"] <- ""
-  }
-}
-
-save_dosage_effect_final <- save_dosage_effect[,c("Structure","Region","beta","p","FDR q")]
-save_dosage_effect_final
-
-#write.csv(save_dosage_effect_final, file=file.path(project,"figures/gene_dosage/gene_dosage_subregions.csv"), row.names = FALSE)
 ```
 
 
