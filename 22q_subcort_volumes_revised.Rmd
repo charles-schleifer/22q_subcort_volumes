@@ -289,6 +289,9 @@ lut_bilat$bilat_name <- lut_bilat$Name %>% gsub("right","",.) %>% gsub("left",""
 lut_bilat_n <- lut_bilat[,c("bilat_name","bilat_match","Structure")]
 lut_unique <- lut_bilat_n[!duplicated(lut_bilat_n),]
 
+# add eTIVnormed
+lut_unique <- rbind(lut_unique, data.frame(bilat_name="total ICV", bilat_match="eTIVnormed", Structure="whole brain"))
+
 ```
 
 ## load sistat data and get lists of scans to use
@@ -1124,10 +1127,10 @@ names(gamm_combat) <- sc_names_normed
 gamm_etiv <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="eTIVnormed"), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit")
 
 # add eTIVnormed to gamm list
-gamm_combat$eTIVnormed <-  gamm_etiv
+gamm_combat$eTIVnormed.combat.norm <-  gamm_etiv
 
 # add eTIVnormed to list of names
-all_names_normed <- c(sc_names_normed,"eTIVnormed")
+all_names_normed <- c(sc_names_normed,"eTIVnormed.combat.norm")
 
 ```
 
@@ -1142,7 +1145,7 @@ names(gamm_combat_young) <- sc_names_normed
 gamm_etiv_young <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="eTIVnormed"), data=filter(demo_combat_na_gam, AGE < 37), selection=TRUE, method="REML", na.action="na.omit")
 
 # add eTIVnormed to gamm list
-gamm_combat_young$eTIVnormed <-  gamm_etiv_young
+gamm_combat_young$eTIVnormed.combat.norm <-  gamm_etiv_young
 ```
 
 # Gene dosage analysis from GAMMs
@@ -1201,7 +1204,7 @@ save_dosage_effect <- merge(x=save_dosage_effect, y=lut_unique[,c("Structure","b
 save_dosage_effect$Structure <- paste(save_dosage_effect$Structure, "subregions") 
 
 # add total ICV name
-save_dosage_effect[which(save_dosage_effect$Region=="eTIVnormed"),c("Structure","bilat_name")] <-  c("whole brain","total ICV")
+#save_dosage_effect[which(save_dosage_effect$Region=="eTIVnormed"),c("Structure","bilat_name")] <-  c("whole brain","total ICV")
 
 # change structure label for whole thal, hip, amy
 save_dosage_effect[which(save_dosage_effect$Region %in% c("Whole_amygdala","Whole_thalamus","Whole_hippocampus")),"Structure"] <-  "whole structures"
@@ -1260,127 +1263,16 @@ save_dosage_effect_out <- save_dosage_effect_final %>% gt() %>%
 
 # Age curves from GAMMs
 wrap all maturational analyses in a function so that they can be repeated with a truncated age subset of the input
+function allows for exact replication of age analyses with multiple age ranges 
 ```{r}
-stables <- lapply(gamm_combat,function(g) summary(g, freq=T)$s.table)
-
-# get p-vals
-del_age_pvals <- lapply(stables, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DEL",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
-del_age_pvals$Region <- rownames(del_age_pvals)
-del_age_pvals$SUBJECT_IDENTITY <- "PATIENT-DEL"
-
-dup_age_pvals <- lapply(stables, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DUP",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
-dup_age_pvals$Region <- rownames(dup_age_pvals)
-dup_age_pvals$SUBJECT_IDENTITY <- "PATIENT-DUP"
-
-hcs_age_pvals <- lapply(stables, function(s)s["s(AGE):SUBJECT_IDENTITYCONTROL",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame  %>% rename("age_p_val"="p.value")
-hcs_age_pvals$Region <- rownames(hcs_age_pvals)
-hcs_age_pvals$SUBJECT_IDENTITY <- "CONTROL"
-
-# correct for multiple comparisons (one test for age effects per group per network)
-all_age_pvals <- rbind(del_age_pvals,dup_age_pvals,hcs_age_pvals)
-all_age_pvals$age_p_val_fdr <- all_age_pvals$age_p_val %>% p.adjust(., method="fdr")
-all_age_pvals
-
-# make pretty table for export
-out_age_pvals <- all_age_pvals[,c("SUBJECT_IDENTITY","Region","F","age_p_val","age_p_val_fdr")]
-rownames(out_age_pvals) <- NULL
-out_age_pvals <- rename(out_age_pvals, "p"="age_p_val","FDR_q"="age_p_val_fdr", "Group"="SUBJECT_IDENTITY")
-out_age_pvals$Group <- out_age_pvals$Group %>% gsub("CONTROL","TD",.) %>% gsub("PATIENT-DEL","22qDel",.) %>% gsub("PATIENT-DUP","22qDup",.)
-#out_age_pvals$Region <- gsub(".combat","",out_age_pvals$Region)
-out_age_pvals$Region <- gsub(".combat.norm","",out_age_pvals$Region)
-out_age_pvals$F %<>% round(., digits=2) %>% sprintf("%.4f",.)
-out_age_pvals$p %<>% signif(., digits=2) %>% sprintf("%.3f",.)
-out_age_pvals$FDR_q %<>% signif(., digits=3) %>% sprintf("%.4f",.)
-
-# get only significant results
-out_age_pvals_sig <- filter(out_age_pvals, FDR_q<0.05)
-out_age_pvals_sig
-
-# get smooth estimates shifted by GAMM intercept to allow plotting over original data
-#smooth_estimates_se_b0 <- function(gamm,smooth,n){
-#  out <- smooth_estimates(gamm,smooth,n=n, partial_match = T)
-#  out$est <- out$est + gamm$coefficients["(Intercept)"]
-#  out$selo <- out$est - out$se
-#  out$sehi <- out$est + out$se
-#  return(out)
-#}
-
+# the next few functions will be used inside of main_maturation() 
+# function to estimate smooths for plotting
 smooth_estimates_se <- function(gamm,smooth,n){
   out <- smooth_estimates(gamm,smooth,n=n, partial_match = T)
   out$selo <- out$est - out$se
   out$sehi <- out$est + out$se
   return(out)
 }
-
-# smooth estimate
-smooth_all_combat <- lapply(gamm_combat, function(g) smooth_estimates_se(gamm=g, smooth="s(AGE)", n=1000))
-#names(smooth_all_combat) <- sc_names_combat
-names(smooth_all_combat) <- sc_names_normed
-```
-
-plot all age smooths with partial residuals
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-plot_gamm_resid <- function(name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23), title=""){
-  if(title==""){
-    plot_title <- paste(gsub("_"," ",gsub(".combat.norm","",name)),"Volume")
-  }else{
-    plot_title <- title
-  }
-  #resid <- add_partial_residuals(data=demo_combat_na,model=gamm_combat[[name]])
-  resid <- add_partial_residuals(data=gamm_combat[[name]]$model,model=gamm_combat[[name]])
-  resid_del <- filter(resid, SUBJECT_IDENTITY=="PATIENT-DEL")
-  resid_del$yvar <- resid_del$`s(AGE):SUBJECT_IDENTITYPATIENT-DEL`
-  resid_dup <- filter(resid, SUBJECT_IDENTITY=="PATIENT-DUP")
-  resid_dup$yvar <- resid_dup$`s(AGE):SUBJECT_IDENTITYPATIENT-DUP`
-  resid_hcs <- filter(resid, SUBJECT_IDENTITY=="CONTROL")
-  resid_hcs$yvar <- resid_hcs$`s(AGE):SUBJECT_IDENTITYCONTROL`
-  ggplot()+
-    geom_point(data=resid_del, aes(x=AGE, y=yvar), alpha=0.8,shape=21, color="gray20", fill=viridis(3)[1]) +
-    geom_point(data=resid_hcs, aes(x=AGE, y=yvar), alpha=0.8, shape=21, color="gray20", fill=viridis(3)[2]) +
-    geom_point(data=resid_dup, aes(x=AGE, y=yvar), alpha=0.8, shape=21, color="gray20", fill=viridis(3)[3]) +
-    #scale_shape_manual(values = c(17, 16))+
-    # td 
-    geom_ribbon(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="CONTROL"),
-                aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .3, linetype = 0)+
-    geom_line(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="CONTROL"),
-              aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
-    # dup
-    geom_ribbon(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DUP"),
-                aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .6, linetype = 0)+
-    geom_line(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DUP"),
-              aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
-        # del
-    geom_ribbon(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DEL"),
-                aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .3, linetype = 0)+
-    geom_line(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DEL"),
-              aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
-    #scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" ="black"), labels=c("Control","22qDel","22qDup")) +
-    scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" =viridis(3)[3]), labels=c("Control","22qDel","22qDup")) +
-    scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3]), labels=c("Control","22qDel","22qDup")) +
-    #scale_x_continuous(limits=xlim,expand=c(0,0))+
-    #scale_y_continuous(limits=ylim,expand=c(0,0))+
-    theme_classic() + 
-    theme(legend.title = element_blank())+
-    theme(axis.title.y = element_text(angle = 0,vjust=0.5))+
-    ylab(ylab)+
-    xlab(xlab)+
-    #ggtitle(paste(gsub("_"," ",gsub(".combat","",name)),"Volume"))
-    ggtitle(plot_title)
-}
-
-
-
-#plot_gamm_resid_tc(name="Frontoparietal.combat",xlab="Age",ylab="TCC")
-#plot_gamm_resid_tc(name="Somatomotor.combat",xlab="Age",ylab="TCC")
-#lapply(sc_names_combat,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
-#lapply(sc_names_normed,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
-```
-
-get difference with TD smooth
-```{r}
-# get all regions with a significant effect
-age_regions <- out_age_pvals_sig$Region %>% unique %>% sort
-age_names <- paste0(age_regions,".combat.norm")
 
 # function to take derivative output that includes an age smooth output age range where CI doesn't include zero
 # adapted from https://github.com/pittnerdlab/22q11_longitudinal_cortical_sMRI/blob/main/01a_age_effects.Rmd
@@ -1414,212 +1306,373 @@ get_sig_diff_ages_sc <- function(gam, smooth, group1="CONTROL", group2){
   return(ranges)
 }
 
-# get age ranges where del or dup significantly differ from td
-agediff_td_del <- lapply(gamm_combat[age_names], function(g) get_sig_diff_ages_sc(gam=g, smooth="s(AGE)",group1="CONTROL", group2="PATIENT-DEL"))
-agediff_td_dup <- lapply(gamm_combat[age_names], function(g) get_sig_diff_ages_sc(gam=g, smooth="s(AGE)",group1="CONTROL", group2="PATIENT-DUP"))
-
-# organize age group differences by region and group
-age_group_diffs <- data.frame(Region=gsub(".combat.norm","",names(agediff_td_del)), td_del=as.vector(unlist(agediff_td_del)),td_dup=as.vector(unlist(agediff_td_dup)))
-
-# convert to true/false for regions with or without a difference
-age_group_tf <- (age_group_diffs %>% as.matrix %>% nchar) !=0 
-age_group_tf <- data.frame(age_group_tf)
-age_group_tf$Region <- age_group_diffs$Region
-age_group_tf$either <- age_group_tf$td_del == TRUE | age_group_tf$td_dup == TRUE
-```
-
-make table of age differences for export
-```{r paged.print=FALSE}
-age_group_export <- age_group_diffs
-age_group_export$bilat_match <- age_group_export$Region %>% gsub("Thal_","",.) %>% gsub("Hip_","",.) %>% gsub("Amy_","",.)
-age_group_export  <- merge(x=age_group_export, y=lut_unique, by="bilat_match")
-
-age_group_export_final <- age_group_export[,c("Structure","bilat_name","td_del","td_dup")]
-colnames(age_group_export_final) <- c("Structure","Region","diff_TD_22qDel","diff_TD_22qDup") 
-age_group_export_final$struct_order <- age_group_export_final$Structure %>% gsub("thalamus",1,.) %>% gsub("hippocampus",2,.) %>% gsub("amygdala",3,.)
-age_group_export_final <- age_group_export_final[with(age_group_export_final, order(struct_order,Region)),]
-
-# edit structure names
-structure_dup <- duplicated(age_group_export_final$Structure)
-for(i in 1:length(structure_dup)){
-  if(structure_dup[i]==TRUE){
-    age_group_export_final[i,"Structure"] <- ""
-  }
-}
-
-#write.csv(age_group_export_final[,c("Structure","Region","diff_TD_22qDel","diff_TD_22qDup")], file=file.path(project,"figures/age/age_differences.csv"), row.names = FALSE)
-
-```
-
-plot summary of GAMM results (full age range)
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-# split data frames by group
-sig_del <- filter(out_age_pvals_sig, Group=="22qDel")
-sig_dup <- filter(out_age_pvals_sig, Group=="22qDup")
-sig_hcs <- filter(out_age_pvals_sig, Group=="TD")
-
-# list of unique regions with significance in 22q or TD
-sig_regions_compare <- data.frame(Region=sort(unique(out_age_pvals_sig$Region)))
-row.names(sig_regions_compare) <- sig_regions_compare$Region
-
-for (region in sig_regions_compare$Region){
-  sig_regions_compare[region,"22qDel"] <- region %in% sig_del$Region
-  #sig_regions_compare[region,"Del_u30"] <- region %in% sig_del_u30$Region
-  sig_regions_compare[region,"22qDup"] <- region %in% sig_dup$Region
-  #sig_regions_compare[region,"Dup_u30"] <- region %in% sig_dup_u30$Region
-  sig_regions_compare[region,"TD"]<- region %in% sig_hcs$Region
-  #sig_regions_compare[region,"TD_u30"] <- region %in% sig_hcs_u30$Region
-}
-#sig_regions_compare
-
-# create new column with TRUE if not also significant in TD
-sig_regions_compare$TD_sig <- NA
-for (r in 1:nrow(sig_regions_compare)){
-  td <- sig_regions_compare[r,"TD"]
-  #td30 <- sig_regions_compare[r,"TD_u30"]
-  if (td==TRUE){
-    sig_regions_compare[r,"TD_sig"] <- TRUE
-  }else{
-    sig_regions_compare[r,"TD_sig"] <- FALSE
-  }
-}
-
-# create long df for plotting
-setDT(sig_regions_compare)
-idvars=c("Region","TD_sig")
-compare_long <- melt.data.table(sig_regions_compare, id.vars = idvars, measure.vars = names(sig_regions_compare)[which(!names(sig_regions_compare) %in% idvars)])
-compare_long$Region %<>% as.factor
-
-# order by region, then group
-setorder(compare_long, Region, variable)
-
-# for plotting, create new column with TRUE if the value at row r is equal to row r-1 (excluding rows where variable is del_all)
-compare_long$postmatch <- NA
-for (r in 1:(nrow(compare_long)-1)){
-  val <- compare_long[r,"value"]
-  postval <- compare_long[(r+1),"value"]
-  if (val==TRUE & postval==TRUE){
-    compare_long[r,"postmatch"] <- TRUE
-  }else{
-    compare_long[r,"postmatch"] <- FALSE
-  }
-}
-# set to NA group that will be rightmost column of plot
-groups <- levels(compare_long$variable)
-last_group <- groups[length(groups)]
-compare_long[which(compare_long$variable==last_group),"postmatch"] <- NA
-
-# create column with TRUE if pt group is significant but TD are not
-compare_long$pt_sig_only <- NA
-for (r in 1:(nrow(compare_long))){
-  if(compare_long[r,"TD_sig"]==FALSE & compare_long[r,"value"]==TRUE){
-  #if(compare_long[r,"TD"]==FALSE & compare_long[r,"value"]==TRUE){
-    compare_long[r,"pt_sig_only"] <- TRUE
-  }
-  #if(compare_long[r,"variable"]=="TD_all" | compare_long[r,"variable"]=="TD_u30"){
-  if(compare_long[r,"variable"]=="TD_all"){
-    compare_long[r,"pt_sig_only"] <- NA
-  }
-}
-# replace NA with FALSE
-compare_long <- replace_na(compare_long, list(pt_sig_only=FALSE))
-
-# edit region names to remove trailing underscore and "_all", replace other underscores with space, and capitalize first letter without editing subsequent letters
-#compare_long$Region_edit <- compare_long$Region %>% gsub("_$","",.) %>% gsub("_all","",.) %>% gsub("_"," ",.) %>% gsub("\\b([a-z])", "\\U\\1",., perl=TRUE)
-compare_long$bilat_match <- compare_long$Region %>% gsub("Thal_","",.) %>% gsub("Hip_","",.) %>% gsub("Amy_","",.)
-compare_long <- merge(x=compare_long, y=lut_unique[,c("bilat_name","bilat_match","Structure")], by="bilat_match", all.x=TRUE)
-#compare_long$Region_edit <- paste(compare_long$Structure, compare_long$bilat_name)
-compare_long$Region_edit1 <- compare_long$bilat_name %>% gsub("hippocampal amygdala transition area","HATA",.) %>% gsub("hippocampus","",.) %>% gsub("thalamus","",.) %>% gsub("amygdala","",.) %>% gsub(" $","",.) %>% gsub("  "," ",.)
-
-region_edit_df <- data.frame(col1=compare_long$Region_edit1, col2=compare_long$Structure)
-region_edit_df <- region_edit_df[!duplicated(region_edit_df),]
-setorder(region_edit_df, col2, col1)
-region_levels<- paste(region_edit_df$col1, region_edit_df$col2)
-
-compare_long$Region_edit <- factor(x=paste(compare_long$Region_edit1, compare_long$Structure), levels=region_levels)
-#compare_long$Region_edit <- paste(compare_long$Structure, compare_long$Region_edit1)
-#compare_long$Region_edit <- compare_long$Region_edit %>% gsub("hippocampal  transition area hippocampus", "HATA hippocampus",.) %>% gsub("  "," ",.)
-
-# add column with true if there is a group difference between patients and controls
-#compare_long <- merge(x=compare_long, y=age_group_tf[,c("Region","either")], by="Region")
-compare_long$gdiff <- NA
-for (i in 1:nrow(compare_long)){
-  print(i)
-  region <- compare_long[i,"Region"] %>% as.matrix %>% as.character
-  print(region)
-  variable <- compare_long[i,"variable"] %>% as.matrix %>% as.character
-  print(variable)
-  gdiff <- NA
-  if(variable=="22qDel"){
-    gdiff <- filter(age_group_tf, Region==region)$td_del
-  }else if(variable=="22qDup"){
-    gdiff <- filter(age_group_tf, Region==region)$td_dup
-  }else if(variable=="TD"){
-    gdiff <- filter(age_group_tf, Region==region)$either
-  }
-  print(gdiff)
-  compare_long[i,"gdiff"] <- gdiff
-}
-
-# plot
-gamm_compare <- ggplot(data=compare_long, aes(y=Region_edit, x=variable))+
-  geom_line(aes(group=Region, color=postmatch),alpha=0.4, show.legend = FALSE)+
-  scale_color_manual(values=c("white", "black"))+
-  new_scale_color()+
-  geom_point(aes(shape=value, size=gdiff, color=pt_sig_only, alpha=value))+
-  scale_shape_manual(values=c(1,16))+
-  scale_alpha_manual(values=c(0.3,1))+
-  scale_size_manual(values=c(2,4))+
-  scale_color_manual(values = c("black","red"), na.value = "black")+
-  labs(shape="Age: FDR q < 0.05", alpha="Age: FDR q < 0.05",size="Group Difference", color="Significant in\nPatients only")+
-  guides(alpha = guide_legend(order = 1),
-         shape = guide_legend(order = 1, override.aes=list(size=2)),
-         #shape = guide_legend(order = 1, override.aes=list(size=4, shape=c(0,15))),
-         size  = guide_legend(order = 2),
-         #color  = guide_legend(order = 3, override.aes=list(size=4, shape=15)))+
-         color  = guide_legend(order = 3, override.aes=list(size=2)))+
-  scale_x_discrete(position = "top")+
-  xlab(NULL)+
-  ylab("Region")+
-  ggtitle("Significant Age Effects by Cohort")+
-  theme_bw(base_size = 12)+
-  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.ticks.x=element_blank())
+# giant function to run all age curve analyses and output a set of stats and plots as a list object
+main_maturation <- function(gam_list){
+  # create empty list object to fill with results
+  out <- list()
   
-gamm_compare
+  # add initial gam list
+  out$gam_list <- gam_list
+  
+  # get smooth tables from gam
+  stables <- lapply(gam_list,function(g) summary(g, freq=T)$s.table)
+  # retun smooth tables
+  out$stables <- stables
+  
+  # get p-vals
+  del_age_pvals <- lapply(stables, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DEL",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
+  del_age_pvals$Region <- rownames(del_age_pvals)
+  del_age_pvals$SUBJECT_IDENTITY <- "PATIENT-DEL"
+  
+  dup_age_pvals <- lapply(stables, function(s)s["s(AGE):SUBJECT_IDENTITYPATIENT-DUP",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame %>% rename("age_p_val"="p.value")
+  dup_age_pvals$Region <- rownames(dup_age_pvals)
+  dup_age_pvals$SUBJECT_IDENTITY <- "PATIENT-DUP"
+  
+  hcs_age_pvals <- lapply(stables, function(s)s["s(AGE):SUBJECT_IDENTITYCONTROL",c("F","p-value")]) %>% do.call(rbind,.) %>% data.frame  %>% rename("age_p_val"="p.value")
+  hcs_age_pvals$Region <- rownames(hcs_age_pvals)
+  hcs_age_pvals$SUBJECT_IDENTITY <- "CONTROL"
+  
+  # correct for multiple comparisons (one test for age effects per group per network)
+  all_age_pvals <- rbind(del_age_pvals,dup_age_pvals,hcs_age_pvals)
+  all_age_pvals$age_p_val_fdr <- all_age_pvals$age_p_val %>% p.adjust(., method="fdr")
+  all_age_pvals
+  
+  # make pretty table for export
+  out_age_pvals <- all_age_pvals[,c("SUBJECT_IDENTITY","Region","F","age_p_val","age_p_val_fdr")]
+  rownames(out_age_pvals) <- NULL
+  out_age_pvals <- rename(out_age_pvals, "p"="age_p_val","FDR_q"="age_p_val_fdr", "Group"="SUBJECT_IDENTITY")
+  out_age_pvals$Group <- out_age_pvals$Group %>% gsub("CONTROL","TD",.) %>% gsub("PATIENT-DEL","22qDel",.) %>% gsub("PATIENT-DUP","22qDup",.)
+  #out_age_pvals$Region <- gsub(".combat","",out_age_pvals$Region)
+  out_age_pvals$Region <- gsub(".combat.norm","",out_age_pvals$Region)
+  out_age_pvals$F %<>% round(., digits=2) %>% sprintf("%.4f",.)
+  out_age_pvals$p %<>% signif(., digits=2) %>% sprintf("%.3f",.)
+  out_age_pvals$FDR_q %<>% signif(., digits=3) %>% sprintf("%.4f",.)
+  # retun age p-vals
+  out$out_age_pvals <- out_age_pvals
+  
+  # get only significant results
+  out_age_pvals_sig <- filter(out_age_pvals, FDR_q<0.05)
+  out_age_pvals_sig
 
-#ggsave(plot=gamm_compare, filename=file.path(project,"figures/age/age_gamm_group_compare.pdf"), width=7, height=5, device = "pdf")
-#ggsave(plot=gamm_compare, filename=file.path(project,"figures/age/age_gamm_group_compare.png"), width=7, height=5, device = "png", dpi = 300)
+  # get smooth estimate
+  smooth_all_combat <- lapply(gam_list, function(g) smooth_estimates_se(gamm=g, smooth="s(AGE)", n=1000))
+  #names(smooth_all_combat) <- sc_names_combat
+  names(smooth_all_combat) <- sc_names_normed
+  # return smooth estimate
+  out$smooth_all_combat <- smooth_all_combat
+  
+  #get difference with TD smooth
+  # get all regions with a significant effect
+  age_regions <- out_age_pvals_sig$Region %>% unique %>% sort
+  age_names <- paste0(age_regions,".combat.norm")
+
+  # get age ranges where del or dup significantly differ from td
+  agediff_td_del <- lapply(gam_list[age_names], function(g) get_sig_diff_ages_sc(gam=g, smooth="s(AGE)",group1="CONTROL", group2="PATIENT-DEL"))
+  agediff_td_dup <- lapply(gam_list[age_names], function(g) get_sig_diff_ages_sc(gam=g, smooth="s(AGE)",group1="CONTROL", group2="PATIENT-DUP"))
+
+  # organize age group differences by region and group
+  age_group_diffs <- data.frame(Region=gsub(".combat.norm","",names(agediff_td_del)), td_del=as.vector(unlist(agediff_td_del)),td_dup=as.vector(unlist(agediff_td_dup)))
+  # return age group diffs
+  out$age_group_diffs <- age_group_diffs
+
+  # convert to true/false for regions with or without a difference
+  age_group_tf <- (age_group_diffs %>% as.matrix %>% nchar) !=0
+  age_group_tf <- data.frame(age_group_tf)
+  age_group_tf$Region <- age_group_diffs$Region
+  age_group_tf$either <- age_group_tf$td_del == TRUE | age_group_tf$td_dup == TRUE
+
+  #make table of age differences for export
+  age_group_export <- age_group_diffs
+  age_group_export$bilat_match <- age_group_export$Region %>% gsub("Thal_","",.) %>% gsub("Hip_","",.) %>% gsub("Amy_","",.)
+  age_group_export  <- merge(x=age_group_export, y=lut_unique, by="bilat_match")
+
+  age_group_export_final <- age_group_export[,c("Structure","bilat_name","td_del","td_dup")]
+  colnames(age_group_export_final) <- c("Structure","Region","diff_TD_22qDel","diff_TD_22qDup")
+  age_group_export_final$struct_order <- age_group_export_final$Structure %>% gsub("thalamus",1,.) %>% gsub("hippocampus",2,.) %>% gsub("amygdala",3,.)
+  age_group_export_final <- age_group_export_final[with(age_group_export_final, order(struct_order,Region)),]
+
+  # edit structure names
+  structure_dup <- duplicated(age_group_export_final$Structure)
+  for(i in 1:length(structure_dup)){
+    if(structure_dup[i]==TRUE){
+      age_group_export_final[i,"Structure"] <- ""
+    }
+  }
+
+  # return age group final table
+  out$age_group_export_final <- age_group_export_final
+  #write.csv(age_group_export_final[,c("Structure","Region","diff_TD_22qDel","diff_TD_22qDup")], file=file.path(project,"figures/age/age_differences.csv"), row.names = FALSE)
+
+  #plot summary of GAMM results
+  # split data frames by group
+  sig_del <- filter(out_age_pvals_sig, Group=="22qDel")
+  sig_dup <- filter(out_age_pvals_sig, Group=="22qDup")
+  sig_hcs <- filter(out_age_pvals_sig, Group=="TD")
+
+  # list of unique regions with significance in 22q or TD
+  sig_regions_compare <- data.frame(Region=sort(unique(out_age_pvals_sig$Region)))
+  row.names(sig_regions_compare) <- sig_regions_compare$Region
+
+  for (region in sig_regions_compare$Region){
+    sig_regions_compare[region,"22qDel"] <- region %in% sig_del$Region
+    #sig_regions_compare[region,"Del_u30"] <- region %in% sig_del_u30$Region
+    sig_regions_compare[region,"22qDup"] <- region %in% sig_dup$Region
+    #sig_regions_compare[region,"Dup_u30"] <- region %in% sig_dup_u30$Region
+    sig_regions_compare[region,"TD"]<- region %in% sig_hcs$Region
+    #sig_regions_compare[region,"TD_u30"] <- region %in% sig_hcs_u30$Region
+  }
+  #sig_regions_compare
+
+  # create new column with TRUE if not also significant in TD
+  sig_regions_compare$TD_sig <- NA
+  for (r in 1:nrow(sig_regions_compare)){
+    td <- sig_regions_compare[r,"TD"]
+    #td30 <- sig_regions_compare[r,"TD_u30"]
+    if (td==TRUE){
+      sig_regions_compare[r,"TD_sig"] <- TRUE
+    }else{
+      sig_regions_compare[r,"TD_sig"] <- FALSE
+    }
+  }
+
+  # return comparison of regions
+  out$sig_regions_compare <- sig_regions_compare
+
+  # create long df for plotting
+  setDT(sig_regions_compare)
+  idvars=c("Region","TD_sig")
+  compare_long <- melt.data.table(sig_regions_compare, id.vars = idvars, measure.vars = names(sig_regions_compare)[which(!names(sig_regions_compare) %in% idvars)])
+  compare_long$Region %<>% as.factor
+
+  # order by region, then group
+  setorder(compare_long, Region, variable)
+
+  # for plotting, create new column with TRUE if the value at row r is equal to row r-1 (excluding rows where variable is del_all)
+  compare_long$postmatch <- NA
+  for (r in 1:(nrow(compare_long)-1)){
+    val <- compare_long[r,"value"]
+    postval <- compare_long[(r+1),"value"]
+    if (val==TRUE & postval==TRUE){
+      compare_long[r,"postmatch"] <- TRUE
+    }else{
+      compare_long[r,"postmatch"] <- FALSE
+    }
+  }
+  # set to NA group that will be rightmost column of plot
+  groups <- levels(compare_long$variable)
+  last_group <- groups[length(groups)]
+  compare_long[which(compare_long$variable==last_group),"postmatch"] <- NA
+
+  # create column with TRUE if pt group is significant but TD are not
+  compare_long$pt_sig_only <- NA
+  for (r in 1:(nrow(compare_long))){
+    if(compare_long[r,"TD_sig"]==FALSE & compare_long[r,"value"]==TRUE){
+      #if(compare_long[r,"TD"]==FALSE & compare_long[r,"value"]==TRUE){
+      compare_long[r,"pt_sig_only"] <- TRUE
+    }
+    #if(compare_long[r,"variable"]=="TD_all" | compare_long[r,"variable"]=="TD_u30"){
+    if(compare_long[r,"variable"]=="TD_all"){
+      compare_long[r,"pt_sig_only"] <- NA
+    }
+  }
+  # replace NA with FALSE
+  compare_long <- replace_na(compare_long, list(pt_sig_only=FALSE))
+  
+  # edit region names to remove trailing underscore and "_all", replace other underscores with space, and capitalize first letter without editing subsequent letters
+  #compare_long$Region_edit <- compare_long$Region %>% gsub("_$","",.) %>% gsub("_all","",.) %>% gsub("_"," ",.) %>% gsub("\\b([a-z])", "\\U\\1",., perl=TRUE)
+  compare_long$bilat_match <- compare_long$Region %>% gsub("Thal_","",.) %>% gsub("Hip_","",.) %>% gsub("Amy_","",.)
+  compare_long <- merge(x=compare_long, y=lut_unique[,c("bilat_name","bilat_match","Structure")], by="bilat_match", all.x=TRUE)
+  #compare_long$Region_edit <- paste(compare_long$Structure, compare_long$bilat_name)
+  compare_long$Region_edit1 <- compare_long$bilat_name %>% gsub("hippocampal amygdala transition area","HATA",.) %>% gsub("hippocampus","",.) %>% gsub("thalamus","",.) %>%   gsub("amygdala","",.) %>% gsub(" $","",.) %>% gsub("  "," ",.)
+
+  region_edit_df <- data.frame(col1=compare_long$Region_edit1, col2=compare_long$Structure)
+  region_edit_df <- region_edit_df[!duplicated(region_edit_df),]
+  setorder(region_edit_df, col2, col1)
+  region_levels<- paste(region_edit_df$col1, region_edit_df$col2)
+
+  compare_long$Region_edit <- factor(x=paste(compare_long$Region_edit1, compare_long$Structure), levels=region_levels)
+  #compare_long$Region_edit <- paste(compare_long$Structure, compare_long$Region_edit1)
+  #compare_long$Region_edit <- compare_long$Region_edit %>% gsub("hippocampal  transition area hippocampus", "HATA hippocampus",.) %>% gsub("  "," ",.)
+
+  # add column with true if there is a group difference between patients and controls
+  #compare_long <- merge(x=compare_long, y=age_group_tf[,c("Region","either")], by="Region")
+  compare_long$gdiff <- NA
+  for (i in 1:nrow(compare_long)){
+    #print(i)
+    region <- compare_long[i,"Region"] %>% as.matrix %>% as.character
+    #print(region)
+    variable <- compare_long[i,"variable"] %>% as.matrix %>% as.character
+    #print(variable)
+    gdiff <- NA
+    if(variable=="22qDel"){
+      gdiff <- filter(age_group_tf, Region==region)$td_del
+    }else if(variable=="22qDup"){
+      gdiff <- filter(age_group_tf, Region==region)$td_dup
+    }else if(variable=="TD"){
+      gdiff <- filter(age_group_tf, Region==region)$either
+    }
+    #print(gdiff)
+    compare_long[i,"gdiff"] <- gdiff
+  }
+
+  # return compare_long 
+  out$compare_long <- compare_long
+
+  # plot
+  gamm_compare <- ggplot(data=compare_long, aes(y=Region_edit, x=variable))+
+    geom_line(aes(group=Region, color=postmatch),alpha=0.4, show.legend = FALSE)+
+    scale_color_manual(values=c("white", "black"))+
+    new_scale_color()+
+    geom_point(aes(shape=value, size=gdiff, color=pt_sig_only, alpha=value))+
+    scale_shape_manual(values=c(1,16))+
+    scale_alpha_manual(values=c(0.3,1))+
+    scale_size_manual(values=c(2,4))+
+    scale_color_manual(values = c("black","red"), na.value = "black")+
+    labs(shape="Age: FDR q < 0.05", alpha="Age: FDR q < 0.05",size="Group Difference", color="Significant in\nPatients only")+
+    guides(alpha = guide_legend(order = 1),
+           shape = guide_legend(order = 1, override.aes=list(size=2)),
+           #shape = guide_legend(order = 1, override.aes=list(size=4, shape=c(0,15))),
+           size  = guide_legend(order = 2),
+           #color  = guide_legend(order = 3, override.aes=list(size=4, shape=15)))+
+           color  = guide_legend(order = 3, override.aes=list(size=2)))+
+    scale_x_discrete(position = "top")+
+    xlab(NULL)+
+    ylab("Region")+
+    ggtitle("Significant Age Effects by Cohort")+
+    theme_bw(base_size = 12)+
+    theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.ticks.x=element_blank())
+
+  #gamm_compare
+  # return gamm comparison plot
+  out$gamm_compare <- gamm_compare
+  #ggsave(plot=gamm_compare, filename=file.path(project,"figures/age/age_gamm_group_compare.pdf"), width=7, height=5, device = "pdf")
+  #ggsave(plot=gamm_compare, filename=file.path(project,"figures/age/age_gamm_group_compare.png"), width=7, height=5, device = "png", dpi = 300)
+
+  #return final list object
+  return(out)
+}
 ```
 
-plot all GAMMS with significant effects in at least one group
+do maturation analyses
 ```{r}
-#gamms_to_plot <- paste0(out_age_pvals_sig$Region,".combat") %>% unique %>% sort
-gamms_to_plot <- paste0(filter(compare_long, pt_sig_only==TRUE)$Region,".combat.norm") %>% unique %>% sort
-lapply(gamms_to_plot,function(x) plot_gamm_resid(name=x,xlab="Age",ylab="Volume"))
+# full age range
+maturation_full <- main_maturation(gam_list=gamm_combat)
+# removing oldest participants (over 37 years)
+maturation_young <- main_maturation(gam_list=gamm_combat_young)
 ```
 
-plot chosen gamms
+save GAMM comparison plots
 ```{r}
+# full age range
+ggsave(plot=maturation_full$gamm_compare+ggtitle("Significant Age Effects by Cohort\nFull age range"), filename=file.path(project,"figures/age/age_gamm_group_compare_full.pdf"), width=7, height=5, device = "pdf")
+ggsave(plot=maturation_full$gamm_compare+ggtitle("Significant Age Effects by Cohort\nFull age range"), filename=file.path(project,"figures/age/age_gamm_group_compare_full.png"), width=7, height=5, device = "png", dpi = 300)
 
-thal_av <- plot_gamm_resid(name="Thal_AV.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Anteroventral Thalamus")
-hip_ca3 <- plot_gamm_resid(name="Hip_CA3.combat.norm",xlab="",ylab="", title="CA2/3 Hippocampus")
-amy_whole <- plot_gamm_resid(name="Amy_Whole_amygdala.combat.norm",xlab="",ylab="", title="Whole Amygdala")
-thal_md <- plot_gamm_resid(name="Thal_MD_all.combat.norm",xlab="",ylab="", title="Mediodorsal Thalamus")
-thal_mvre <- plot_gamm_resid(name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
-hip_ca4 <- plot_gamm_resid(name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
-#amy_aaa <- plot_gamm_resid(name="Amy_Anterior_amygdaloid_area_AAA.combat.norm",xlab="Age",ylab="Volume")
-#thal_lgn <- plot_gamm_resid(name="Thal_LGN.combat.norm",xlab="Age",ylab="Volume")
-#thal_mgn <- plot_gamm_resid(name="Thal_MGN.combat.norm",xlab="Age",ylab="Volume")
-#hip_ca1 <- plot_gamm_resid(name="Hip_CA1.combat.norm",xlab="",ylab="", title="CA1 Hippocampus")
+# younger age range
+ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 37"), filename=file.path(project,"figures/age/age_gamm_group_compare_u37.pdf"), width=7, height=5, device = "pdf")
+ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 37"), filename=file.path(project,"figures/age/age_gamm_group_compare_u37.png"), width=7, height=5, device = "png", dpi = 300)
 
-
-plot_age <- (thal_av + hip_ca3 + hip_ca4) / (thal_md + thal_mvre + amy_whole) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories") & theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
-
-plot_age
-
-#ggsave(plot=plot_age, filename=file.path(project,"figures/age/age_gamms_curves.pdf"), width=12, height=7, device = "pdf")
-#ggsave(plot=plot_age, filename=file.path(project,"figures/age/age_gamms_curves.png"), width=12, height=7, device = "png", dpi = 300)
 ```
+
+plot chosen GAMMS
+```{r}
+# function to plot all age smooths with partial residuals
+plot_gamm_resid <- function(list,name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23), title=""){
+  gam_list <- list$gam_list
+  smooth_all_combat <- list$smooth_all_combat
+  if(title==""){
+    plot_title <- paste(gsub("_"," ",gsub(".combat.norm","",name)),"Volume")
+  }else{
+    plot_title <- title
+  }
+  #resid <- add_partial_residuals(data=demo_combat_na,model=gam_list[[name]])
+  resid <- add_partial_residuals(data=gam_list[[name]]$model,model=gam_list[[name]])
+  resid_del <- filter(resid, SUBJECT_IDENTITY=="PATIENT-DEL")
+  resid_del$yvar <- resid_del$`s(AGE):SUBJECT_IDENTITYPATIENT-DEL`
+  resid_dup <- filter(resid, SUBJECT_IDENTITY=="PATIENT-DUP")
+  resid_dup$yvar <- resid_dup$`s(AGE):SUBJECT_IDENTITYPATIENT-DUP`
+  resid_hcs <- filter(resid, SUBJECT_IDENTITY=="CONTROL")
+  resid_hcs$yvar <- resid_hcs$`s(AGE):SUBJECT_IDENTITYCONTROL`
+  ggplot()+
+    geom_point(data=resid_del, aes(x=AGE, y=yvar), alpha=0.8,shape=21, color="gray20", fill=viridis(3)[1]) +
+    geom_point(data=resid_hcs, aes(x=AGE, y=yvar), alpha=0.8, shape=21, color="gray20", fill=viridis(3)[2]) +
+    geom_point(data=resid_dup, aes(x=AGE, y=yvar), alpha=0.8, shape=21, color="gray20", fill=viridis(3)[3]) +
+    #scale_shape_manual(values = c(17, 16))+
+    # td 
+    geom_ribbon(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="CONTROL"),
+                aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .3, linetype = 0)+
+    geom_line(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="CONTROL"),
+              aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
+    # dup
+    geom_ribbon(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DUP"),
+                aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .6, linetype = 0)+
+    geom_line(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DUP"),
+              aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
+    # del
+    geom_ribbon(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DEL"),
+                aes(x = AGE, ymin = selo,ymax = sehi, fill = SUBJECT_IDENTITY),alpha = .3, linetype = 0)+
+    geom_line(data = filter(smooth_all_combat[[name]], SUBJECT_IDENTITY=="PATIENT-DEL"),
+              aes(x = AGE, y = est, color = SUBJECT_IDENTITY),size = 1)+theme_bw()+
+    #scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" ="black"), labels=c("Control","22qDel","22qDup")) +
+    scale_fill_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" =viridis(3)[3]), labels=c("Control","22qDel","22qDup")) +
+    scale_color_manual(values = c("CONTROL" = viridis(3)[2], "PATIENT-DEL" = viridis(3)[1], "PATIENT-DUP" = viridis(3)[3]), labels=c("Control","22qDel","22qDup")) +
+    #scale_x_continuous(limits=xlim,expand=c(0,0))+
+    #scale_y_continuous(limits=ylim,expand=c(0,0))+
+    theme_classic() + 
+    theme(legend.title = element_blank())+
+    theme(axis.title.y = element_text(angle = 0,vjust=0.5))+
+    ylab(ylab)+
+    xlab(xlab)+
+    #ggtitle(paste(gsub("_"," ",gsub(".combat","",name)),"Volume"))
+    ggtitle(plot_title)
+}
+
+```
+
+plot age gamms for full sample
+```{r}
+  #plot chosen gamms
+  thal_av <- plot_gamm_resid(list=maturation_full, name="Thal_AV.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Anteroventral Thalamus")
+  hip_ca3 <- plot_gamm_resid(list=maturation_full, name="Hip_CA3.combat.norm",xlab="",ylab="", title="CA2/3 Hippocampus")
+  amy_whole <- plot_gamm_resid(list=maturation_full, name="Amy_Whole_amygdala.combat.norm",xlab="",ylab="", title="Whole Amygdala")
+  thal_md <- plot_gamm_resid(list=maturation_full, name="Thal_MD_all.combat.norm",xlab="",ylab="", title="Mediodorsal Thalamus")
+  thal_mvre <- plot_gamm_resid(list=maturation_full, name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
+  hip_ca4 <- plot_gamm_resid(list=maturation_full, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
+  #amy_aaa <- plot_gamm_resid(name="Amy_Anterior_amygdaloid_area_AAA.combat.norm",xlab="Age",ylab="Volume")
+  #thal_lgn <- plot_gamm_resid(name="Thal_LGN.combat.norm",xlab="Age",ylab="Volume")
+  #thal_mgn <- plot_gamm_resid(name="Thal_MGN.combat.norm",xlab="Age",ylab="Volume")
+  #hip_ca1 <- plot_gamm_resid(name="Hip_CA1.combat.norm",xlab="",ylab="", title="CA1 Hippocampus")
+  
+  
+  plot_age <- (thal_av + hip_ca3 + hip_ca4) / (thal_md + thal_mvre + amy_whole) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nFull age range") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
+  
+  plot_age
+  
+  #ggsave(plot=plot_age, filename=file.path(project,"figures/age/age_gamms_curves_full.pdf"), width=12, height=7, device = "pdf")
+  #ggsave(plot=plot_age, filename=file.path(project,"figures/age/age_gamms_curves_full.png"), width=12, height=7, device = "png", dpi = 300)
+```
+
+plot age gamms for young sample
+```{r}
+  #plot chosen gamms
+  thal_av_young <- plot_gamm_resid(list=maturation_young, name="Thal_AV.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Anteroventral Thalamus")
+  hip_ca3_young <- plot_gamm_resid(list=maturation_young, name="Hip_CA3.combat.norm",xlab="",ylab="", title="CA2/3 Hippocampus")
+  amy_whole_young <- plot_gamm_resid(list=maturation_young, name="Amy_Whole_amygdala.combat.norm",xlab="",ylab="", title="Whole Amygdala")
+  thal_md_young <- plot_gamm_resid(list=maturation_young, name="Thal_MD_all.combat.norm",xlab="",ylab="", title="Mediodorsal Thalamus")
+  thal_mvre_young <- plot_gamm_resid(list=maturation_young, name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
+  hip_ca4_young <- plot_gamm_resid(list=maturation_young, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
+  
+  
+  plot_age_young <- (thal_av_young + hip_ca3_young + hip_ca4_young) / (thal_md_young + thal_mvre_young + amy_whole_young) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 37") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
+  
+  plot_age_young
+  
+  #ggsave(plot=plot_age_young, filename=file.path(project,"figures/age/age_gamms_curves_u37.pdf"), width=12, height=7, device = "pdf")
+  #ggsave(plot=plot_age_young, filename=file.path(project,"figures/age/age_gamms_curves_u37.png"), width=12, height=7, device = "png", dpi = 300)
+```
+
+
+
+
 
 
 
