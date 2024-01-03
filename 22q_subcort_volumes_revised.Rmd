@@ -1647,12 +1647,12 @@ mat_young_gdiff <- gdiff_smooth(maturation_young)
 save GAMM comparison plots
 ```{r}
 # full age range
-ggsave(plot=maturation_full$gamm_compare+ggtitle("Significant Age Effects by Cohort\nFull age range"), filename=file.path(project,"figures/age/age_gamm_group_compare_full.pdf"), width=7, height=5, device = "pdf")
-ggsave(plot=maturation_full$gamm_compare+ggtitle("Significant Age Effects by Cohort\nFull age range"), filename=file.path(project,"figures/age/age_gamm_group_compare_full.png"), width=7, height=5, device = "png", dpi = 300)
+#ggsave(plot=maturation_full$gamm_compare+ggtitle("Significant Age Effects by Cohort\nFull age range"), filename=file.path(project,"figures/age/age_gamm_group_compare_full.pdf"), width=7, height=5, device = "pdf")
+#ggsave(plot=maturation_full$gamm_compare+ggtitle("Significant Age Effects by Cohort\nFull age range"), filename=file.path(project,"figures/age/age_gamm_group_compare_full.png"), width=7, height=5, device = "png", dpi = 300)
 
 # younger age range
-ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 37"), filename=file.path(project,"figures/age/age_gamm_group_compare_u37.pdf"), width=7, height=5, device = "pdf")
-ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 37"), filename=file.path(project,"figures/age/age_gamm_group_compare_u37.png"), width=7, height=5, device = "png", dpi = 300)
+#ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 37"), filename=file.path(project,"figures/age/age_gamm_group_compare_u37.pdf"), width=7, height=5, device = "pdf")
+#ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 37"), filename=file.path(project,"figures/age/age_gamm_group_compare_u37.png"), width=7, height=5, device = "png", dpi = 300)
 
 ```
 
@@ -1787,8 +1787,8 @@ plot_age <- (thal_av + hip_ca3 + hip_ca4) / (thal_md + thal_mvre + amy_whole) + 
 
 plot_age
 
-ggsave(plot=plot_age, filename=file.path(project,"figures/age/age_gamms_curves_resid_full.pdf"), width=12, height=7, device = "pdf")
-ggsave(plot=plot_age, filename=file.path(project,"figures/age/age_gamms_curves_resid_full.png"), width=12, height=7, device = "png", dpi = 300)
+#ggsave(plot=plot_age, filename=file.path(project,"figures/age/age_gamms_curves_resid_full.pdf"), width=12, height=7, device = "pdf")
+#ggsave(plot=plot_age, filename=file.path(project,"figures/age/age_gamms_curves_resid_full.png"), width=12, height=7, device = "png", dpi = 300)
 ```
 
 plot age gamms with group differences for full sample
@@ -1805,8 +1805,8 @@ plot_age_gd <- (thal_av_gd + hip_ca3_gd + hip_ca4_gd) / (thal_md_gd + thal_mvre_
 
 plot_age_gd
 
-ggsave(plot=plot_age_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_full.pdf"), width=12, height=7, device = "pdf")
-ggsave(plot=plot_age_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_full.png"), width=12, height=7, device = "png", dpi = 300)
+#ggsave(plot=plot_age_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_full.pdf"), width=12, height=7, device = "pdf")
+#ggsave(plot=plot_age_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_full.png"), width=12, height=7, device = "png", dpi = 300)
 ```
 
 plot age gamms for young sample
@@ -1824,8 +1824,8 @@ plot_age_young <- (thal_av_young + hip_ca3_young + hip_ca4_young) / (thal_md_you
 
 plot_age_young
 
-ggsave(plot=plot_age_young, filename=file.path(project,"figures/age/age_gamms_curves_resid_u37.pdf"), width=12, height=7, device = "pdf")
-ggsave(plot=plot_age_young, filename=file.path(project,"figures/age/age_gamms_curves_resid_u37.png"), width=12, height=7, device = "png", dpi = 300)
+#ggsave(plot=plot_age_young, filename=file.path(project,"figures/age/age_gamms_curves_resid_u37.pdf"), width=12, height=7, device = "pdf")
+#ggsave(plot=plot_age_young, filename=file.path(project,"figures/age/age_gamms_curves_resid_u37.png"), width=12, height=7, device = "png", dpi = 300)
 ```
 
 
@@ -1843,8 +1843,8 @@ plot_age_young_gd <- (thal_av_gd + hip_ca3_gd + hip_ca4_gd) / (thal_md_gd + thal
 
 plot_age_young_gd
 
-ggsave(plot=plot_age_young_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_u37.pdf"), width=12, height=7, device = "pdf")
-ggsave(plot=plot_age_young_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_u37.png"), width=12, height=7, device = "png", dpi = 300)
+#ggsave(plot=plot_age_young_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_u37.pdf"), width=12, height=7, device = "pdf")
+#ggsave(plot=plot_age_young_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_u37.png"), width=12, height=7, device = "png", dpi = 300)
 ```
 
 
