@@ -1774,7 +1774,7 @@ plot age gamms with partial resids for full sample
 thal_av <- plot_gamm_resid(list=maturation_full, name="Thal_AV.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Anteroventral Thalamus")
 hip_ca3 <- plot_gamm_resid(list=maturation_full, name="Hip_CA3.combat.norm",xlab="",ylab="", title="CA2/3 Hippocampus")
 amy_whole <- plot_gamm_resid(list=maturation_full, name="Amy_Whole_amygdala.combat.norm",xlab="",ylab="", title="Whole Amygdala")
-thal_md <- plot_gamm_resid(list=maturation_full, name="Thal_MD_all.combat.norm",xlab="",ylab="", title="Mediodorsal Thalamus")
+thal_mgn <- plot_gamm_resid(list=maturation_full, name="Thal_MGN.combat.norm",xlab="",ylab="", title="Medial Geniculate Thalamus")
 thal_mvre <- plot_gamm_resid(list=maturation_full, name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
 hip_ca4 <- plot_gamm_resid(list=maturation_full, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
 #amy_aaa <- plot_gamm_resid(name="Amy_Anterior_amygdaloid_area_AAA.combat.norm",xlab="Age",ylab="Volume")
@@ -1783,7 +1783,7 @@ hip_ca4 <- plot_gamm_resid(list=maturation_full, name="Hip_CA4.combat.norm",xlab
 #hip_ca1 <- plot_gamm_resid(name="Hip_CA1.combat.norm",xlab="",ylab="", title="CA1 Hippocampus")
 
 
-plot_age <- (thal_av + hip_ca3 + hip_ca4) / (thal_md + thal_mvre + amy_whole) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nFull age range") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
+plot_age <- (thal_av + hip_ca3 + hip_ca4) / (thal_mgn + thal_mvre + amy_whole) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nFull age range") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
 
 plot_age
 
@@ -1797,11 +1797,12 @@ plot age gamms with group differences for full sample
 thal_av_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Thal_AV.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Anteroventral Thalamus")
 hip_ca3_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Hip_CA3.combat.norm",xlab="",ylab="", title="CA2/3 Hippocampus")
 amy_whole_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Amy_Whole_amygdala.combat.norm",xlab="",ylab="", title="Whole Amygdala")
-thal_md_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Thal_MD_all.combat.norm",xlab="",ylab="", title="Mediodorsal Thalamus")
+#thal_md_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Thal_MD_all.combat.norm",xlab="",ylab="", title="Mediodorsal Thalamus")
+thal_mgn_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Thal_MGN.combat.norm",xlab="",ylab="", title="Medial Geniculate Thalamus")
 thal_mvre_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
 hip_ca4_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
 
-plot_age_gd <- (thal_av_gd + hip_ca3_gd + hip_ca4_gd) / (thal_md_gd + thal_mvre_gd + amy_whole_gd) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nFull age range") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
+plot_age_gd <- (thal_av_gd + hip_ca3_gd + hip_ca4_gd) / (thal_mgn_gd + thal_mvre_gd + amy_whole_gd) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nFull age range") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
 
 plot_age_gd
 
@@ -1815,12 +1816,12 @@ plot age gamms for young sample
 thal_av_young <- plot_gamm_resid(list=maturation_young, name="Thal_AV.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Anteroventral Thalamus")
 hip_ca3_young <- plot_gamm_resid(list=maturation_young, name="Hip_CA3.combat.norm",xlab="",ylab="", title="CA2/3 Hippocampus")
 amy_whole_young <- plot_gamm_resid(list=maturation_young, name="Amy_Whole_amygdala.combat.norm",xlab="",ylab="", title="Whole Amygdala")
-thal_md_young <- plot_gamm_resid(list=maturation_young, name="Thal_MD_all.combat.norm",xlab="",ylab="", title="Mediodorsal Thalamus")
+thal_mgn_young <- plot_gamm_resid(list=maturation_young, name="Thal_MGN.combat.norm",xlab="",ylab="", title="Medial Geniculate Thalamus")
 thal_mvre_young <- plot_gamm_resid(list=maturation_young, name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
 hip_ca4_young <- plot_gamm_resid(list=maturation_young, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
 
 
-plot_age_young <- (thal_av_young + hip_ca3_young + hip_ca4_young) / (thal_md_young + thal_mvre_young + amy_whole_young) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 37") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
+plot_age_young <- (thal_av_young + hip_ca3_young + hip_ca4_young) / (thal_mgn_young + thal_mvre_young + amy_whole_young) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 37") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
 
 plot_age_young
 
@@ -1832,14 +1833,14 @@ plot_age_young
 plot age gamms with group differences for young sample
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 #plot chosen gamms
-thal_av_young_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Thal_AV.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Anteroventral Thalamus")
-hip_ca3_young_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Hip_CA3.combat.norm",xlab="",ylab="", title="CA2/3 Hippocampus")
-amy_whole_young_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Amy_Whole_amygdala.combat.norm",xlab="",ylab="", title="Whole Amygdala")
-thal_md_young_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Thal_MD_all.combat.norm",xlab="",ylab="", title="Mediodorsal Thalamus")
-thal_mvre_young_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
-hip_ca4_young_gd <- plot_gamm_gdiff(list=mat_full_gdiff, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
+thal_av_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Thal_AV.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Anteroventral Thalamus")
+hip_ca3_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Hip_CA3.combat.norm",xlab="",ylab="", title="CA2/3 Hippocampus")
+amy_whole_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Amy_Whole_amygdala.combat.norm",xlab="",ylab="", title="Whole Amygdala")
+thal_mgn_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Thal_MGN.combat.norm",xlab="",ylab="", title="Medial Geniculate Thalamus")
+thal_mvre_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
+hip_ca4_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
 
-plot_age_young_gd <- (thal_av_gd + hip_ca3_gd + hip_ca4_gd) / (thal_md_gd + thal_mvre_gd + amy_whole_gd) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nFull age range") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
+plot_age_young_gd <- (thal_av_young_gd + hip_ca3_young_gd + hip_ca4_young_gd) / (thal_md_young_gd + thal_mvre_young_gd + amy_whole_young_gd) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 37") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
 
 plot_age_young_gd
 
