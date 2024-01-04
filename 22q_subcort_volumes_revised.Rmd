@@ -596,6 +596,14 @@ group_mean_match <- merge(x=group_mean_vols, y=lut_unique[,c("Structure","bilat_
 # select cols
 group_mean_out <- group_mean_match[order(group_mean_match[,"22qDel"]),c("Structure","bilat_name","22qDel","TD","22qDup")] %>% rename("Region"="bilat_name")
 
+group_mean_table <- group_mean_out %>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_title(),cells_column_labels())) %>%
+  cols_align(align="right", columns=everything()) %>% 
+  tab_header("Average volumes (mm^3) by group") 
+
+# gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.pdf"))
+# gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.png"))
+# gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.rtf"))
 ```
 
 ## gene dosage and age models
