@@ -26,7 +26,7 @@ rm(list = ls(all.names = TRUE))
 #remotes::install_github("cran/DMwR")
 
 # list packages to load
-packages <- c("conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","gt","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","mgcv","gratia","tidymv", "itsadug")
+packages <- c("mgcViz","conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","gt","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","mgcv","gratia","tidymv", "itsadug")
 
 # install packages if not yet installed
 all_packages <- rownames(installed.packages())
@@ -1109,6 +1109,20 @@ export_demo_table_bl <- print(demo_match_final_bl, quote=F, noSpaces=F, printTog
 #export_demo_table
 #write.csv(export_demo_table_bl, file=file.path(project,"/figures/demographics/table1_demographics.csv"))
 
+# read manually edited demo table back in
+demo_edit <- read.csv(file.path(project,"figures/demographics/table1_demographics_edit.csv")) %>% rename(" "="X") %>% rename("22qDel"="X22qDel") %>% rename("22qDup"="X22qDup") %>% rename("p-value"="p.value")
+#demo_edit$`p-value` %<>% as.numeric %>% formatC(., format = "g", digits = 2)
+
+# export table
+demo_out <- demo_edit %>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_body(columns = 1,rows = 1:nrow(demo_edit)), cells_column_labels())) %>%
+  cols_align(align="right", columns=everything())
+
+# gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.pdf"))
+# gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.png"))
+# gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.rtf"))
+# gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.tex"))
+
 ```
 
 
@@ -1257,14 +1271,6 @@ save_dosage_effect_out <- save_dosage_effect_final %>% gt() %>%
 # gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.rtf"))
 # gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.tex"))
 ```
-
-
-
-
-
-
-
-
 
 
 
@@ -1840,7 +1846,7 @@ thal_mgn_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Thal_MGN.combat
 thal_mvre_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
 hip_ca4_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
 
-plot_age_young_gd <- (thal_av_young_gd + hip_ca3_young_gd + hip_ca4_young_gd) / (thal_md_young_gd + thal_mvre_young_gd + amy_whole_young_gd) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 37") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
+plot_age_young_gd <- (thal_av_young_gd + hip_ca3_young_gd + hip_ca4_young_gd) / (thal_mgn_young_gd + thal_mvre_young_gd + amy_whole_young_gd) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 37") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
 
 plot_age_young_gd
 
@@ -1848,12 +1854,77 @@ plot_age_young_gd
 #ggsave(plot=plot_age_young_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_u37.png"), width=12, height=7, device = "png", dpi = 300)
 ```
 
+# plot gene dosage effects
+whole structure scatterplots
+```{r}
+#  whole thal
+#Thal_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Whole_thalamus.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+
+# function to plot gene dosage scatterplot from gamm resids
+gene_dosage_gamm_plot <- function(gam_list, name, title="", xlab="", ylab="",xlabels=c(1,2,3), ribbon_fill="lightgrey"){
+  # get mgcViz object from gamm
+  viz <- getViz(gam_list[[name]])
+  # plot first parametric term (gene_dosage)
+  pt <- pterm(viz, 1)
+  # create plot object with fit line and 0.95 CI
+  gt <- plot(pt)+ l_ciPoly(level=0.95) + l_fitLine()
+  # create ggplot
+  plot <- ggplot() +
+    # create confidence interval from estimate +/- 1.96 * the standard error in the mgcViz model/plot object
+    geom_ribbon(data=gt$data$fit,inherit.aes = FALSE, aes(x=x, ymin=y-1.96*se, ymax=y+1.96*se), fill=ribbon_fill, alpha=0.3)+
+    # plot line from the mgcViz model fit estimate
+    geom_line(data=gt$data$fit,inherit.aes = FALSE, aes(x=x, y=y), color="black")+
+    # plot kernel density estimate for residuals
+    geom_half_violin(data=gt$data$res, inherit.aes = FALSE, aes(x=x, group=x,y=y),fill="grey",color="grey20", side="r", lty="dotted", alpha=0.5)+
+    # residual scatterplot from mgcViz res
+    geom_point(data=gt$data$res, inherit.aes = FALSE, aes(x=x, y=y, fill=as.factor(x)), position=position_jitter(w=0.03,h=0,seed=1),shape=21,color="grey10", alpha=0.6, size=2)+
+    # plot details
+    scale_y_continuous(limits=c(-3,3), breaks=c(-2,0,2), minor_breaks = NULL)+
+    scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL, labels=xlabels)+
+    scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
+    theme_classic(base_size = 13)+
+    xlab(xlab)+
+    ylab(ylab)+
+    ggtitle(title)+
+    guides(fill = guide_legend(override.aes = list(size=7)))
+
+  return(plot)
+}
+
+
+plot_ICV <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="eTIVnormed.combat.norm", title="Total ICV", ribbon_fill="rosybrown1", xlabels=c("22qDel (1)","TD (2)","22qDup (3)"), ylab="volume partial effect", xlab="22q11.2 CNV dosage")
+plot_Thal_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_Whole_thalamus.combat.norm", title="Thalamus", ribbon_fill="lightgrey")
+plot_Amy_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Amy_Whole_amygdala.combat.norm", title="Amygdala", ribbon_fill="lightgrey")
+plot_Hip_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Hip_Whole_hippocampus.combat.norm", title="Hippocampus", ribbon_fill="rosybrown1")
+plot_Thal_MD <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_MD_all.combat.norm", title="Thalamus MD", ribbon_fill="lightsteelblue")
+plot_Thal_MV <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_MV_Re_.combat.norm", title="Thalamus MV", ribbon_fill="rosybrown1")
+plot_Amy_basal <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Amy_Basal_nucleus.combat.norm", title="Amygdala Basal", ribbon_fill="rosybrown1")
+plot_Hip_tail <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Hip_Hippocampal_tail.combat.norm", title="Hippocampus Tail", ribbon_fill="rosybrown1")
+
+
+#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.svg"), width=5, height=6, device = "svg")
+#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.pdf"), width=5, height=6, device = "pdf")
+#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.png"), width=5, height=6, device = "png", dpi=300)
+
+```
+
+Create figure with all lm plots
+```{r}
+# whole structure plots on top, selected subregions second row, panels labeled with bold letters
+lm_fig_top <- (plot_ICV + plot_Thal_Whole + plot_Amy_Whole + plot_Hip_Whole) +plot_layout(ncol = 4,nrow = 1)
+lm_fig_bottom <- (plot_Thal_MD + plot_Thal_MV + plot_Amy_basal + plot_Hip_tail) +plot_layout(ncol = 4,nrow = 1)
+
+lm_fig_all <- lm_fig_top/lm_fig_bottom  + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Volume Predicted by Gene Dosage") & theme(plot.tag = element_text(face = 'bold'),plot.title = element_text(size = 18,hjust = 0)) + theme(legend.position = "bottom", legend.text=element_text(size=18), legend.title=element_text(size=18))
 
 
 
+#+ plot_annotation(tag_levels = 'A', title="Developmental Trajectories") & theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0))
 
+lm_fig_all
 
-
+ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.pdf"), width=12, height=8.5, device = "pdf")
+ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.png"), width=12, height=8.5, device = "png", dpi = 300)
+```
 
 #########################################################################################################
 # bring up select pieces of code below to complete final version
