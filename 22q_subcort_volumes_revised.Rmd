@@ -1171,7 +1171,7 @@ gamm_combat_young <- lapply(sc_names_normed, function(r) gam(formula=reformulate
 names(gamm_combat_young) <- sc_names_normed
 
 # add a GAMM for eTIVnormed that doesnt already contain it as a covariate
-gamm_etiv_young <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="eTIVnormed"), data=filter(demo_combat_na_gam, AGE < 37), selection=TRUE, method="REML", na.action="na.omit")
+gamm_etiv_young <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="eTIVnormed"), data=filter(demo_combat_na_gam, AGE <= 35), selection=TRUE, method="REML", na.action="na.omit")
 
 # add eTIVnormed to gamm list
 gamm_combat_young$eTIVnormed.combat.norm <-  gamm_etiv_young
