@@ -45,7 +45,7 @@ print(paste("Project directory:", project))
 
 ```
 
-## read data
+## read MRI data
 ```{r}
 # path to data (organized with subject directories containing only the relevant files)
 dpath <- file.path(project,"volume_data")
@@ -189,7 +189,6 @@ histograms for each region
 ```{r}
 #lapply(sc_names, function(n)hist(subcort_all[,n],main=n))
 ```
-
 
 outlier from standard deviation
 ```{r}
@@ -412,9 +411,9 @@ print(demo_summary, showAllLevels=T)
 #print(demo_summary, showAllLevels=F)
 
 ```
-under 37, demographics summary
+under 35, demographics summary
 ```{r}
-demo_summary_young <- CreateTableOne(data=filter(ucla_demo_tp_agelim, AGE < 37),vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
+demo_summary_young <- CreateTableOne(data=filter(ucla_demo_tp_agelim, AGE < 35),vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
 print(demo_summary_young, showAllLevels=T)
 #print(demo_summary, showAllLevels=F)
 
@@ -599,7 +598,8 @@ group_mean_out <- group_mean_match[order(group_mean_match[,"22qDel"]),c("Structu
 group_mean_table <- group_mean_out %>% gt() %>% 
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_title(),cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>% 
-  tab_header("Average volumes (mm^3) by group") 
+  tab_header("Average volumes (mm^3) by group")%>%
+  tab_options(data_row.padding = px(1)) 
 
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.pdf"))
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.png"))
@@ -1147,13 +1147,13 @@ demo_combat_na_gam$SEX <- demo_combat_na_gam$SEX %>% gsub("F","0",.) %>% gsub("M
 
 # per reviewer suggestion, run with fixed DoF by setting k and using fx=TRUE
 # try two DoF because most estimated were between 1 and 3 and want to prevent overfitting on linear data
-gamm_combat <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response=r), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit"))
+gamm_combat <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit"))
 
 # name gamm list
 names(gamm_combat) <- sc_names_normed
 
 # add a GAMM for eTIVnormed that doesnt already contain it as a covariate
-gamm_etiv <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="eTIVnormed"), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit")
+gamm_etiv <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response="eTIVnormed"), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit")
 
 # add eTIVnormed to gamm list
 gamm_combat$eTIVnormed.combat.norm <-  gamm_etiv
@@ -1163,15 +1163,15 @@ all_names_normed <- c(sc_names_normed,"eTIVnormed.combat.norm")
 
 ```
 
-same GAMM for restricted age range (<37)
+same GAMM for restricted age range (<35)
 ```{r}
-gamm_combat_young <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)","gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response=r), data=filter(demo_combat_na_gam, AGE < 37), selection=TRUE, method="REML", na.action="na.omit"))
+gamm_combat_young <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)","gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r), data=filter(demo_combat_na_gam, AGE <= 35), selection=TRUE, method="REML", na.action="na.omit"))
 
 # name gamm list
 names(gamm_combat_young) <- sc_names_normed
 
 # add a GAMM for eTIVnormed that doesnt already contain it as a covariate
-gamm_etiv_young <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "site", "s(SUBJECTID, bs=\"re\", k=4)"), response="eTIVnormed"), data=filter(demo_combat_na_gam, AGE <= 35), selection=TRUE, method="REML", na.action="na.omit")
+gamm_etiv_young <- gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response="eTIVnormed"), data=filter(demo_combat_na_gam, AGE <= 35), selection=TRUE, method="REML", na.action="na.omit")
 
 # add eTIVnormed to gamm list
 gamm_combat_young$eTIVnormed.combat.norm <-  gamm_etiv_young
@@ -1279,8 +1279,77 @@ save_dosage_effect_out <- save_dosage_effect_final %>% gt() %>%
 # gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.rtf"))
 # gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.tex"))
 ```
+plot gene dosage effects
+whole structure scatterplots
+```{r}
+#  whole thal
+#Thal_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Whole_thalamus.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
+
+# function to plot gene dosage scatterplot from gamm resids
+gene_dosage_gamm_plot <- function(gam_list, name, title="", xlab="", ylab="",xlabels=c(1,2,3), ribbon_fill="lightgrey"){
+  # get mgcViz object from gamm
+  viz <- getViz(gam_list[[name]])
+  # plot first parametric term (gene_dosage)
+  pt <- pterm(viz, 1)
+  # create plot object with fit line and 0.95 CI
+  gt <- plot(pt)+ l_ciPoly(level=0.95) + l_fitLine()
+  # create ggplot
+  plot <- ggplot() +
+    # create confidence interval from estimate +/- 1.96 * the standard error in the mgcViz model/plot object
+    geom_ribbon(data=gt$data$fit,inherit.aes = FALSE, aes(x=x, ymin=y-1.96*se, ymax=y+1.96*se), fill=ribbon_fill, alpha=0.3)+
+    # plot line from the mgcViz model fit estimate
+    geom_line(data=gt$data$fit,inherit.aes = FALSE, aes(x=x, y=y), color="black")+
+    # plot kernel density estimate for residuals
+    geom_half_violin(data=gt$data$res, inherit.aes = FALSE, aes(x=x, group=x,y=y),fill="grey",color="grey20", side="r", lty="dotted", alpha=0.5)+
+    # residual scatterplot from mgcViz res
+    geom_point(data=gt$data$res, inherit.aes = FALSE, aes(x=x, y=y, fill=as.factor(x)), position=position_jitter(w=0.03,h=0,seed=1),shape=21,color="grey10", alpha=0.6, size=2)+
+    # plot details
+    scale_y_continuous(limits=c(-3,3), breaks=c(-2,0,2), minor_breaks = NULL)+
+    scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL, labels=xlabels)+
+    scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
+    theme_classic(base_size = 13)+
+    xlab(xlab)+
+    ylab(ylab)+
+    ggtitle(title)+
+    guides(fill = guide_legend(override.aes = list(size=7)))
+
+  return(plot)
+}
 
 
+plot_ICV <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="eTIVnormed.combat.norm", title="Total ICV", ribbon_fill="rosybrown1", xlabels=c("22qDel (1)","TD (2)","22qDup (3)"), ylab="volume partial effect", xlab="22q11.2 CNV dosage")
+plot_Thal_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_Whole_thalamus.combat.norm", title="Thalamus", ribbon_fill="lightgrey")
+plot_Amy_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Amy_Whole_amygdala.combat.norm", title="Amygdala", ribbon_fill="lightgrey")
+plot_Hip_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Hip_Whole_hippocampus.combat.norm", title="Hippocampus", ribbon_fill="rosybrown1")
+plot_Thal_MD <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_MD_all.combat.norm", title="Thalamus MD", ribbon_fill="lightsteelblue")
+plot_Thal_MV <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_MV_Re_.combat.norm", title="Thalamus MV", ribbon_fill="rosybrown1")
+plot_Amy_basal <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Amy_Basal_nucleus.combat.norm", title="Amygdala Basal", ribbon_fill="rosybrown1")
+plot_Hip_tail <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Hip_Hippocampal_tail.combat.norm", title="Hippocampus Tail", ribbon_fill="rosybrown1")
+
+
+#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.svg"), width=5, height=6, device = "svg")
+#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.pdf"), width=5, height=6, device = "pdf")
+#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.png"), width=5, height=6, device = "png", dpi=300)
+
+```
+
+Create figure with all lm plots
+```{r}
+# whole structure plots on top, selected subregions second row, panels labeled with bold letters
+lm_fig_top <- (plot_ICV + plot_Thal_Whole + plot_Amy_Whole + plot_Hip_Whole) +plot_layout(ncol = 4,nrow = 1)
+lm_fig_bottom <- (plot_Thal_MD + plot_Thal_MV + plot_Amy_basal + plot_Hip_tail) +plot_layout(ncol = 4,nrow = 1)
+
+lm_fig_all <- lm_fig_top/lm_fig_bottom  + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Volume Predicted by Gene Dosage") & theme(plot.tag = element_text(face = 'bold'),plot.title = element_text(size = 18,hjust = 0)) + theme(legend.position = "bottom", legend.text=element_text(size=18), legend.title=element_text(size=18))
+
+
+
+#+ plot_annotation(tag_levels = 'A', title="Developmental Trajectories") & theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0))
+
+lm_fig_all
+
+#ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.pdf"), width=12, height=8.5, device = "pdf")
+#ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.png"), width=12, height=8.5, device = "png", dpi = 300)
+```
 
 # Age curves from GAMMs
 wrap all maturational analyses in a function so that they can be repeated with a truncated age subset of the input
@@ -1410,8 +1479,9 @@ main_maturation <- function(gam_list){
 
   age_group_export_final <- age_group_export[,c("Structure","bilat_name","td_del","td_dup")]
   colnames(age_group_export_final) <- c("Structure","Region","diff_TD_22qDel","diff_TD_22qDup")
-  age_group_export_final$struct_order <- age_group_export_final$Structure %>% gsub("thalamus",1,.) %>% gsub("hippocampus",2,.) %>% gsub("amygdala",3,.)
+  age_group_export_final$struct_order <- age_group_export_final$Structure %>% gsub("whole brain",1,.) %>% gsub("thalamus",2,.) %>% gsub("hippocampus",3,.) %>% gsub("amygdala",4,.)
   age_group_export_final <- age_group_export_final[with(age_group_export_final, order(struct_order,Region)),]
+  age_group_export_final <- subset(age_group_export_final, select=-struct_order)
 
   # edit structure names
   structure_dup <- duplicated(age_group_export_final$Structure)
@@ -1579,7 +1649,7 @@ do maturation analyses
 ```{r}
 # full age range
 maturation_full <- main_maturation(gam_list=gamm_combat)
-# removing oldest participants (over 37 years)
+# removing oldest participants (over 35 years)
 maturation_young <- main_maturation(gam_list=gamm_combat_young)
 ```
 
@@ -1665,8 +1735,8 @@ save GAMM comparison plots
 #ggsave(plot=maturation_full$gamm_compare+ggtitle("Significant Age Effects by Cohort\nFull age range"), filename=file.path(project,"figures/age/age_gamm_group_compare_full.png"), width=7, height=5, device = "png", dpi = 300)
 
 # younger age range
-#ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 37"), filename=file.path(project,"figures/age/age_gamm_group_compare_u37.pdf"), width=7, height=5, device = "pdf")
-#ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 37"), filename=file.path(project,"figures/age/age_gamm_group_compare_u37.png"), width=7, height=5, device = "png", dpi = 300)
+#ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 35"), filename=file.path(project,"figures/age/age_gamm_group_compare_u35.pdf"), width=7, height=5, device = "pdf")
+#ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 35"), filename=file.path(project,"figures/age/age_gamm_group_compare_u35.png"), width=7, height=5, device = "png", dpi = 300)
 
 ```
 
@@ -1835,14 +1905,13 @@ thal_mvre_young <- plot_gamm_resid(list=maturation_young, name="Thal_MV_Re_.comb
 hip_ca4_young <- plot_gamm_resid(list=maturation_young, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
 
 
-plot_age_young <- (thal_av_young + hip_ca3_young + hip_ca4_young) / (thal_mgn_young + thal_mvre_young + amy_whole_young) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 37") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
+plot_age_young <- (thal_av_young + hip_ca3_young + hip_ca4_young) / (thal_mgn_young + thal_mvre_young + amy_whole_young) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 35") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
 
 plot_age_young
 
-#ggsave(plot=plot_age_young, filename=file.path(project,"figures/age/age_gamms_curves_resid_u37.pdf"), width=12, height=7, device = "pdf")
-#ggsave(plot=plot_age_young, filename=file.path(project,"figures/age/age_gamms_curves_resid_u37.png"), width=12, height=7, device = "png", dpi = 300)
+#ggsave(plot=plot_age_young, filename=file.path(project,"figures/age/age_gamms_curves_resid_u35.pdf"), width=12, height=7, device = "pdf")
+#ggsave(plot=plot_age_young, filename=file.path(project,"figures/age/age_gamms_curves_resid_u35.png"), width=12, height=7, device = "png", dpi = 300)
 ```
-
 
 plot age gamms with group differences for young sample
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
@@ -1854,447 +1923,31 @@ thal_mgn_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Thal_MGN.combat
 thal_mvre_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
 hip_ca4_young_gd <- plot_gamm_gdiff(list=mat_young_gdiff, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
 
-plot_age_young_gd <- (thal_av_young_gd + hip_ca3_young_gd + hip_ca4_young_gd) / (thal_mgn_young_gd + thal_mvre_young_gd + amy_whole_young_gd) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 37") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
+plot_age_young_gd <- (thal_av_young_gd + hip_ca3_young_gd + hip_ca4_young_gd) / (thal_mgn_young_gd + thal_mvre_young_gd + amy_whole_young_gd) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 35") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
 
 plot_age_young_gd
 
-#ggsave(plot=plot_age_young_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_u37.pdf"), width=12, height=7, device = "pdf")
-#ggsave(plot=plot_age_young_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_u37.png"), width=12, height=7, device = "png", dpi = 300)
+#ggsave(plot=plot_age_young_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_u35.pdf"), width=12, height=7, device = "pdf")
+#ggsave(plot=plot_age_young_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_u35.png"), width=12, height=7, device = "png", dpi = 300)
 ```
 
-# plot gene dosage effects
-whole structure scatterplots
-```{r}
-#  whole thal
-#Thal_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Whole_thalamus.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
-
-# function to plot gene dosage scatterplot from gamm resids
-gene_dosage_gamm_plot <- function(gam_list, name, title="", xlab="", ylab="",xlabels=c(1,2,3), ribbon_fill="lightgrey"){
-  # get mgcViz object from gamm
-  viz <- getViz(gam_list[[name]])
-  # plot first parametric term (gene_dosage)
-  pt <- pterm(viz, 1)
-  # create plot object with fit line and 0.95 CI
-  gt <- plot(pt)+ l_ciPoly(level=0.95) + l_fitLine()
-  # create ggplot
-  plot <- ggplot() +
-    # create confidence interval from estimate +/- 1.96 * the standard error in the mgcViz model/plot object
-    geom_ribbon(data=gt$data$fit,inherit.aes = FALSE, aes(x=x, ymin=y-1.96*se, ymax=y+1.96*se), fill=ribbon_fill, alpha=0.3)+
-    # plot line from the mgcViz model fit estimate
-    geom_line(data=gt$data$fit,inherit.aes = FALSE, aes(x=x, y=y), color="black")+
-    # plot kernel density estimate for residuals
-    geom_half_violin(data=gt$data$res, inherit.aes = FALSE, aes(x=x, group=x,y=y),fill="grey",color="grey20", side="r", lty="dotted", alpha=0.5)+
-    # residual scatterplot from mgcViz res
-    geom_point(data=gt$data$res, inherit.aes = FALSE, aes(x=x, y=y, fill=as.factor(x)), position=position_jitter(w=0.03,h=0,seed=1),shape=21,color="grey10", alpha=0.6, size=2)+
-    # plot details
-    scale_y_continuous(limits=c(-3,3), breaks=c(-2,0,2), minor_breaks = NULL)+
-    scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL, labels=xlabels)+
-    scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
-    theme_classic(base_size = 13)+
-    xlab(xlab)+
-    ylab(ylab)+
-    ggtitle(title)+
-    guides(fill = guide_legend(override.aes = list(size=7)))
-
-  return(plot)
-}
-
-
-plot_ICV <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="eTIVnormed.combat.norm", title="Total ICV", ribbon_fill="rosybrown1", xlabels=c("22qDel (1)","TD (2)","22qDup (3)"), ylab="volume partial effect", xlab="22q11.2 CNV dosage")
-plot_Thal_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_Whole_thalamus.combat.norm", title="Thalamus", ribbon_fill="lightgrey")
-plot_Amy_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Amy_Whole_amygdala.combat.norm", title="Amygdala", ribbon_fill="lightgrey")
-plot_Hip_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Hip_Whole_hippocampus.combat.norm", title="Hippocampus", ribbon_fill="rosybrown1")
-plot_Thal_MD <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_MD_all.combat.norm", title="Thalamus MD", ribbon_fill="lightsteelblue")
-plot_Thal_MV <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_MV_Re_.combat.norm", title="Thalamus MV", ribbon_fill="rosybrown1")
-plot_Amy_basal <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Amy_Basal_nucleus.combat.norm", title="Amygdala Basal", ribbon_fill="rosybrown1")
-plot_Hip_tail <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Hip_Hippocampal_tail.combat.norm", title="Hippocampus Tail", ribbon_fill="rosybrown1")
-
-
-#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.svg"), width=5, height=6, device = "svg")
-#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.pdf"), width=5, height=6, device = "pdf")
-#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.png"), width=5, height=6, device = "png", dpi=300)
-
-```
-
-Create figure with all lm plots
-```{r}
-# whole structure plots on top, selected subregions second row, panels labeled with bold letters
-lm_fig_top <- (plot_ICV + plot_Thal_Whole + plot_Amy_Whole + plot_Hip_Whole) +plot_layout(ncol = 4,nrow = 1)
-lm_fig_bottom <- (plot_Thal_MD + plot_Thal_MV + plot_Amy_basal + plot_Hip_tail) +plot_layout(ncol = 4,nrow = 1)
-
-lm_fig_all <- lm_fig_top/lm_fig_bottom  + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Volume Predicted by Gene Dosage") & theme(plot.tag = element_text(face = 'bold'),plot.title = element_text(size = 18,hjust = 0)) + theme(legend.position = "bottom", legend.text=element_text(size=18), legend.title=element_text(size=18))
-
-
-
-#+ plot_annotation(tag_levels = 'A', title="Developmental Trajectories") & theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0))
-
-lm_fig_all
-
-ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.pdf"), width=12, height=8.5, device = "pdf")
-ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.png"), width=12, height=8.5, device = "png", dpi = 300)
-```
-
-#########################################################################################################
-# bring up select pieces of code below to complete final version
-#########################################################################################################
-
-LME total ICV
-```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-# # test random intercept model for ICV
-# 
-# lme_ICV <- lmerTest::lmer(formula="eTIVnormed ~ gene_dosage + AGE + AGE2 + SEX + site + (1|SUBJECTID)", data=demo_combat_normed, REML=TRUE)
-#                             
-# ICV_summary <- summary(lme_ICV,ddf="Kenward-Roger")                            
-# 
-# ICV_gene_dosage <- ICV_summary$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]
-# ICV_gene_dosage_final <- data.frame(Region="total ICV", Hemi=NA, gene_dosage_beta=ICV_gene_dosage[1], gene_dosage_p=ICV_gene_dosage[2])
-# row.names(ICV_gene_dosage_final) <- NULL
-```
-
-
-LME for all subregions
-```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
-# # test random intercept model at each region
-# lme_combat <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=demo_combat_normed, REML=TRUE))
-# names(lme_combat) <- sc_names_normed
-# 
-# 
-# # get p-val for gene dosage effect
-# gene_dosage_effect <- lapply(lme_combat, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
-# colnames(gene_dosage_effect) <- c("gene_dosage_beta","gene_dosage_p")
-# gene_dosage_effect$Region <- sc_names_normed
-# 
-# # add total ICV
-# gene_dosage_effect <- rbind(gene_dosage_effect[,c("Region","gene_dosage_beta","gene_dosage_p")], ICV_gene_dosage_final[,c("Region","gene_dosage_beta","gene_dosage_p")])
-# 
-# # FDR correct
-# gene_dosage_effect$gene_dosage_fdr_q <- p.adjust(gene_dosage_effect$gene_dosage_p, method="fdr")
-# gene_dosage_effect$fdr_sig <- gene_dosage_effect$gene_dosage_fdr_q < 0.05
-# 
-# # get only significant effects
-# gene_dosage_effect_sig <- filter(gene_dosage_effect,fdr_sig==TRUE)
-# gene_dosage_effect_sig <- gene_dosage_effect_sig[order(gene_dosage_effect_sig$gene_dosage_beta),]
-# 
-# #write.table(gene_dosage_effect_sig, file="~/Dropbox/PhD/bearden_lab/22q/analyses/subcort_smri/gene_dosage_lme_significant.csv", sep=",", col.names = TRUE, row.names = FALSE)
-```
-
-
-whole structure scatterplots
-```{r}
-#  whole thal
-Thal_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Whole_thalamus.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
-
-# plot data points and model estimate
-plot_Thal_Whole <- ggplot()+
-  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_Whole_thalamus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_Whole_thalamus.combat, fill=factor(gene_dosage)),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="grey10", alpha=0.7)+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
-  guides(fill = guide_legend(override.aes = list(size=7)))+
-  geom_ribbon(data=Thal_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightgrey", alpha=0.6)+
-  geom_line(data=Thal_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  geom_segment(aes(y=mean(Thal_Whole$fit), yend=mean(Thal_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
-  #xlab("22q11.2 CNV dosage")+
-  #ylab("volume (mm^3)")+
-  xlab("")+
-  ylab("")+
-  ggtitle("Thalamus")+
-  #labs(fill="gene dosage")+
-  theme_classic(base_size = 13)+
-  theme(legend.position="bottom")
-
-plot_Thal_Whole
-#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.svg"), width=5, height=6, device = "svg")
-#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.pdf"), width=5, height=6, device = "pdf")
-#ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.png"), width=5, height=6, device = "png", dpi=300)
-
-# whole amygdala
-Amy_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Amy_Whole_amygdala.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
-
-# plot data points and model estimate
-plot_Amy_Whole <- ggplot()+
-  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Amy_Whole_amygdala.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Amy_Whole_amygdala.combat, fill=factor(gene_dosage)),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="grey10", alpha=0.7)+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
-  guides(fill = guide_legend(override.aes = list(size=7)))+
-  geom_ribbon(data=Amy_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightgrey", alpha=0.6)+
-  geom_line(data=Amy_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  geom_segment(aes(y=mean(Amy_Whole$fit), yend=mean(Amy_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
-  #xlab("22q11.2 CNV dosage")+
-  #ylab("volume (mm^3)")+
-  xlab("")+
-  ylab("")+
-  ggtitle("Amygdala")+
-  #labs(fill="gene dosage")+
-  theme_classic(base_size = 13)+
-  theme(legend.position="bottom")
-
-plot_Amy_Whole
-#ggsave(plot=plot_Amy_Whole, filename=file.path(project,"figures/gene_dosage/Amy_Whole.svg"), width=5, height=6, device = "svg")
-#ggsave(plot=plot_Amy_Whole, filename=file.path(project,"figures/gene_dosage/Amy_Whole.pdf"), width=5, height=6, device = "pdf")
-#ggsave(plot=plot_Amy_Whole, filename=file.path(project,"figures/gene_dosage/Amy_Whole.png"), width=5, height=6, device = "png", dpi=300)
-
-
-# Right whole hipp
-Hip_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Hip_Whole_hippocampus.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
-
-# plot data points and model estimate
-plot_Hip_Whole <- ggplot()+
-  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Hip_Whole_hippocampus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Hip_Whole_hippocampus.combat, fill=factor(gene_dosage)),position=position_jitter(w=0.1,h=0,seed=1),shape=21,color="grey10", alpha=0.7)+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
-  guides(fill = guide_legend(override.aes = list(size=7)))+
-  geom_segment(aes(y=mean(Hip_Whole$fit), yend=mean(Hip_Whole$fit),x=1, xend=3), lty="dashed", color="grey")+
-  geom_ribbon(data=Hip_Whole, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
-  geom_line(data=Hip_Whole, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  #xlab("22q11.2 CNV dosage")+
-  #ylab("volume (mm^3)")+
-  xlab("")+
-  ylab("")+
-  ggtitle("Hippocampus")+
-  #labs(fill="gene dosage")+
-  theme_classic(base_size = 13)+
-  theme(legend.position="bottom")
-
-plot_Hip_Whole
-#ggsave(plot=plot_Hip_Whole, filename=file.path(project,"figures/gene_dosage/Hip_Whole.svg"), width=5, height=6, device = "svg")
-#ggsave(plot=plot_Hip_Whole, filename=file.path(project,"figures/gene_dosage/Hip_Whole.pdf"), width=5, height=6, device = "pdf")
-#ggsave(plot=plot_Hip_Whole, filename=file.path(project,"figures/gene_dosage/Hip_Whole.png"), width=5, height=6, device = "png", dpi=300)
-
-
-# ICV
-ICV <- effect(term="gene_dosage", mod=lme4::lmer(formula="eTIV ~ gene_dosage + AGE + AGE2 + SEX + site + (1|SUBJECTID)", data=demo_combat_normed, REML=TRUE)) %>% as.data.frame
-
-# plot data points and model estimate
-plot_ICV <- ggplot()+
-  geom_half_violin(data=demo_combat_normed,aes(x=gene_dosage, group=gene_dosage, y=eTIV,fill=gene_dosage), fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_normed,aes(x=gene_dosage,y=eTIV, fill=factor(gene_dosage)), position=position_jitter(w=0.1,h=0,seed=1), shape=21,color="grey10", alpha=0.7)+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), labels=c("22qDel (1)","TD (2)","22qDup (3)"), minor_breaks = NULL)+
-  scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
-  guides(fill = guide_legend(override.aes = list(size=7)))+
-  geom_ribbon(data=ICV, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
-  geom_line(data=ICV, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  geom_segment(aes(y=mean(ICV$fit), yend=mean(ICV$fit),x=1, xend=3), lty="dashed", color="grey")+
-  xlab("22q11.2 CNV dosage")+
-  ylab("volume (mm^3)")+
-  #xlab("")+
-  #ylab("")+
-  ggtitle("Total ICV")+
-  #labs(fill="gene dosage")+
-  theme_classic(base_size = 13)+
-  theme(legend.position="bottom")
-
-plot_ICV
-```
-
-
-subregion scatterplots 
-```{r}
-# get model estimates (need to rerun model with lme4 rather than lmertest)
-# https://lmudge13.github.io/sample_code/mixed_effects.html
-
-#  Thal mediodorsal   
-Thal_MD <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_MD_all.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
-# plot data points and model estimate
-plot_Thal_MD <- ggplot()+
-  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_MD_all.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_MD_all.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="grey10", alpha=0.7)+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
-  guides(fill = guide_legend(override.aes = list(size=7)))+
-  geom_segment(aes(y=mean(Thal_MD$fit), yend=mean(Thal_MD$fit),x=1, xend=3), lty="dashed", color="grey")+
-  geom_ribbon(data=Thal_MD, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="lightsteelblue", alpha=0.6)+
-  geom_line(data=Thal_MD, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  #xlab("22q11.2 CNV dosage")+
-  #ylab("volume (mm^3)")+
-  xlab("")+
-  ylab("")+
-  ggtitle("Thalamus MD")+
-  #labs(fill="gene dosage")+
-  theme_classic(base_size = 13)+
-  theme(legend.position="bottom")
-
-plot_Thal_MD
-#ggsave(plot=plot_Thal_MD, filename=file.path(project,"figures/gene_dosage/Thal_MD_all.pdf"), width=5, height=6, device = "pdf")
-#ggsave(plot=plot_Thal_MD, filename=file.path(project,"figures/gene_dosage/Thal_MD_all.png"), width=5, height=6, device = "png", dpi=300)
-
-# Thal Right LGN   
-Thal_MV <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_MV_Re_.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
-# plot data points and model estimate
-plot_Thal_MV <- ggplot()+
-  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Thal_MV_Re_.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Thal_MV_Re_.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="grey10", alpha=0.7)+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
-  guides(fill = guide_legend(override.aes = list(size=7)))+
-  geom_segment(aes(y=mean(Thal_MV$fit), yend=mean(Thal_MV$fit),x=1, xend=3), lty="dashed", color="grey")+
-  geom_ribbon(data=Thal_MV, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
-  geom_line(data=Thal_MV, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  #xlab("22q11.2 CNV dosage")+
-  #ylab("volume (mm^3)")+
-  xlab("")+
-  ylab("")+
-  ggtitle("Thalamus MV")+
-  #labs(fill="gene dosage")+
-  theme_classic(base_size = 13)+
-  theme(legend.position="bottom")
-
-plot_Thal_MV
-#ggsave(plot=plot_Thal_MV, filename=file.path(project,"figures/gene_dosage/Thal_MV.pdf"), width=5, height=6, device = "pdf")
-#ggsave(plot=plot_Thal_MV, filename=file.path(project,"figures/gene_dosage/Thal_MV.png"), width=5, height=6, device = "png", dpi=300)
-
-
-# Left Hip tail  
-Hip_tail <- effect(term="gene_dosage", mod=lme4::lmer(formula="Hip_Hippocampal_tail.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
-# plot data points and model estimate
-plot_Hip_tail <- ggplot()+
-  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Hip_Hippocampal_tail.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Hip_Hippocampal_tail.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="grey10", alpha=0.7)+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
-  guides(fill = guide_legend(override.aes = list(size=7)))+
-  geom_segment(aes(y=mean(Hip_tail$fit), yend=mean(Hip_tail$fit),x=1, xend=3), lty="dashed", color="grey")+
-  geom_ribbon(data=Hip_tail, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
-  geom_line(data=Hip_tail, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  #xlab("22q11.2 CNV dosage")+
-  #ylab("volume (mm^3)")+
-  xlab("")+
-  ylab("")+
-  ggtitle("Hippocampus Tail")+
-  #labs(fill="gene dosage")+
-  theme_classic(base_size = 13)+
-  theme(legend.position="bottom")
-
-plot_Hip_tail
-#ggsave(plot=plot_Hip_tail, filename=file.path(project,"figures/gene_dosage/Hip_tail.pdf"), width=5, height=6, device = "pdf")
-#ggsave(plot=plot_Hip_tail, filename=file.path(project,"figures/gene_dosage/Hip_tail.pdf"), width=5, height=6, device = "png", dpi=300)
-
-# Amy basal 
-Amy_basal <- effect(term="gene_dosage", mod=lme4::lmer(formula="Amy_Basal_nucleus.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
-# plot data points and model estimate
-plot_Amy_basal <- ggplot()+
-  geom_half_violin(data=demo_combat_na,aes(x=gene_dosage, group=gene_dosage,y=Amy_Basal_nucleus.combat,fill=gene_dosage),fill="lightgrey", side="r", lty="blank")+
-  geom_point(data=demo_combat_na,aes(x=gene_dosage,y=Amy_Basal_nucleus.combat,fill=factor(gene_dosage)),position=position_jitter(w=0.1, h=0, seed=1),shape=21,color="grey10", alpha=0.7)+
-  scale_x_continuous(limits=c(0.85,3.5), breaks=c(1,2,3), minor_breaks = NULL)+
-  scale_fill_viridis(discrete = TRUE, name="", labels=c("22qDel","Control","22qDup"))+
-  guides(fill = guide_legend(override.aes = list(size=7)))+
-  geom_segment(aes(y=mean(Amy_basal$fit), yend=mean(Amy_basal$fit),x=1, xend=3), lty="dashed", color="grey")+
-  geom_ribbon(data=Amy_basal, inherit.aes = FALSE, aes(x=gene_dosage, ymin=lower, ymax=upper), fill="rosybrown1", alpha=0.6)+
-  geom_line(data=Amy_basal, inherit.aes = FALSE, aes(x=gene_dosage, y=fit, group=NA), color="black")+
-  #xlab("22q11.2 CNV dosage")+
-  #ylab("volume (mm^3)")+
-  xlab("")+
-  ylab("")+
-  ggtitle("Amygdala Basal")+
-  #labs(fill="gene dosage")+
-  theme_classic(base_size = 13)+
-  theme(legend.position="bottom")
-
-plot_Amy_basal
-```
-
-Create figure with all lm plots
-```{r}
-# whole structure plots on top, selected subregions second row, panels labeled with bold letters
-lm_fig_top <- (plot_ICV + plot_Thal_Whole + plot_Amy_Whole + plot_Hip_Whole) +plot_layout(ncol = 4,nrow = 1)
-lm_fig_bottom <- (plot_Thal_MD + plot_Thal_MV + plot_Amy_basal + plot_Hip_tail) +plot_layout(ncol = 4,nrow = 1)
-
-lm_fig_all <- lm_fig_top/lm_fig_bottom  + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Volume Predicted by Gene Dosage") & theme(plot.tag = element_text(face = 'bold'),plot.title = element_text(size = 18,hjust = 0)) + theme(legend.position = "bottom", legend.text=element_text(size=18), legend.title=element_text(size=18))
-
-
-
-#+ plot_annotation(tag_levels = 'A', title="Developmental Trajectories") & theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0))
-
-lm_fig_all
-
-#ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.pdf"), width=12, height=8.5, device = "pdf")
-#ggsave(plot=lm_fig_all, filename=file.path(project,"figures/gene_dosage/gene_dosage_all.png"), width=12, height=8.5, device = "png", dpi = 300)
-```
-
-sex interactions
-```{r}
-# test random intercept model at each region
-lme_combat_sexint <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*SEX","AGE", "AGE2","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=demo_combat_normed, REML=TRUE))
-names(lme_combat_sexint) <- sc_names_normed
-
-# get p-val for gene dosage effect
-sexint <- lapply(lme_combat_sexint, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage:SEXM",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
-colnames(sexint) <- c("sexint_beta","sexint_p")
-sexint$Region <- sc_names_normed
-
-# FDR correct
-sexint$sexint_fdr_q <- p.adjust(sexint$sexint_p, method="fdr")
-sexint$fdr_sig <- sexint$sexint_fdr_q < 0.05
-```
-
-sex main effects
-```{r}
-# get p-val for gene dosage effect
-sex_main <- lapply(lme_combat, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SEXM",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
-colnames(sex_main) <- c("sex_beta","sex_p")
-sex_main$Region <- sc_names_normed
-
-# FDR correct
-sex_main$sex_fdr_q <- p.adjust(sex_main$sex_p, method="fdr")
-sex_main$fdr_sig <- sex_main$sex_fdr_q < 0.05
-
-# create data frame for export
-save_sex_effect <- sex_main[,c("Region","sex_beta","sex_p","sex_fdr_q","fdr_sig","Region")]
-
-# get region names for matching
-save_sex_effect$Region <- gsub(".combat.norm","",save_sex_effect$Region)
-save_sex_effect$Region <- gsub("Thal_","",save_sex_effect$Region)
-save_sex_effect$Region <- gsub("Amy_","",save_sex_effect$Region)
-save_sex_effect$Region <- gsub("Hip_","",save_sex_effect$Region)
-
-# merge with full names
-save_sex_effect <- merge(x=save_sex_effect, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
-
-# set order
-save_sex_effect$struct_order <- save_sex_effect$Structure %>% gsub("thalamus",2,.) %>% gsub("hippocampus",3,.) %>% gsub("amygdala",4,.)
-
-save_sex_effect <- save_sex_effect[with(save_sex_effect, order(struct_order,sex_beta)),]
-
-save_sex_effect$Region <- save_sex_effect$bilat_name
-save_sex_effect$Region <- save_sex_effect$Region %>% gsub("hippocampal amygdala transition area", "HATA", .)
-rownames(save_sex_effect) <- NULL
-
-# get only significant
-save_sex_effect_final <- filter(save_sex_effect[,c("Structure","Region","sex_beta","sex_p","sex_fdr_q")], sex_fdr_q < 0.05)
-colnames(save_sex_effect_final) <-c("Structure","Region","beta","p","FDR q")
-
-# edit structure names
-structure_dup <- duplicated(save_sex_effect_final$Structure)
-for(i in 1:length(structure_dup)){
-  if(structure_dup[i]==TRUE){
-    save_sex_effect_final[i,"Structure"] <- ""
-  }
-}
-
-# round
-save_sex_effect_final$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
-save_sex_effect_final$p %<>% formatC(., format = "e", digits = 1)
-save_sex_effect_final$`FDR q` %<>% formatC(., format = "g", digits = 2)
-
-#write.csv(save_sex_effect_final, file=file.path(project,"figures/sex/sex_main_effect.csv"), row.names = FALSE)
-```
-
-To test for group differences, not just gene dosage effects (e.g. Dup and Del both decreased), use a model with a binary variable for each group? or two separate case/control models? 
+## supplemental
+To test for group differences, not just gene dosage effects (e.g. del < TD & Dup < TD or Del < TD = Dup), use a model with a binary variable for each group? or two separate case/control models? 
 ```{r warning=FALSE}
-# test random intercept model at each region separately in Del and Dup
-lme_combat_del <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("SUBJECT_IDENTITY", "AGE", "AGE2", "SEX", "eTIVscaled", "site", "(1|SUBJECTID)"), response=r),data=filter(demo_combat_normed, SUBJECT_IDENTITY %in% c("CONTROL","PATIENT-DEL")), REML=TRUE))
+#gamm_combat <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit"))
 
-lme_combat_dup <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("SUBJECT_IDENTITY","AGE", "AGE2", "SEX", "eTIVscaled", "site", "(1|SUBJECTID)"), response=r),data=filter(demo_combat_normed, SUBJECT_IDENTITY %in% c("CONTROL","PATIENT-DUP")), REML=TRUE))
+# test random intercept model at each region separately in Del and Dup
+gam_combat_del <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "SUBJECT_IDENTITY", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r),data=filter(demo_combat_na_gam, SUBJECT_IDENTITY %in% c("CONTROL","PATIENT-DEL")), REML=TRUE))
+
+gam_combat_dup <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "SUBJECT_IDENTITY", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r),data=filter(demo_combat_na_gam,  SUBJECT_IDENTITY %in% c("CONTROL","PATIENT-DUP")), REML=TRUE))
 
 # get p-val for gene dosage effect
-gene_dosage_effect_del <- lapply(lme_combat_del, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SUBJECT_IDENTITYPATIENT-DEL",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+gene_dosage_effect_del <- lapply(gam_combat_del, function(l) summary(l)$p.table["SUBJECT_IDENTITYPATIENT-DEL",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
 colnames(gene_dosage_effect_del) <- c("gene_dosage_beta","gene_dosage_p")
 gene_dosage_effect_del$Region <- sc_names_normed
 gene_dosage_effect_del$model <- "Del"
 
-gene_dosage_effect_dup <- lapply(lme_combat_dup, function(l) summary(l,ddf="Kenward-Roger")$coefficients["SUBJECT_IDENTITYPATIENT-DUP",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+gene_dosage_effect_dup <- lapply(gam_combat_dup, function(l) summary(l)$p.table["SUBJECT_IDENTITYPATIENT-DUP",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
 colnames(gene_dosage_effect_dup) <- c("gene_dosage_beta","gene_dosage_p")
 gene_dosage_effect_dup$Region <- sc_names_normed
 gene_dosage_effect_dup$model <- "Dup"
@@ -2373,61 +2026,227 @@ for(i in 1:length(structure_dup)){
 #write.csv(group_compare_del[,c("Structure","Region","beta","p","FDR_q")], file=file.path(project,"figures/gene_dosage/del_vs_td.csv"), row.names = FALSE)
 #write.csv(group_compare_dup[,c("Structure","Region","beta","p","FDR_q")], file=file.path(project,"figures/gene_dosage/dup_vs_td.csv"), row.names = FALSE)
 
+# export table
+group_compare_del_out <- group_compare_del[,c("Structure","Region","beta","p","FDR_q")] %>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
+  cols_align(align="right", columns=everything()) %>%
+  tab_options(data_row.padding = px(1))
+
+# gtsave(group_compare_del_out, filename = file.path(project,"figures/gene_dosage/del_vs_td_volumes.png"))
+# gtsave(group_compare_del_out, filename = file.path(project,"figures/gene_dosage/del_vs_td_volumes.pdf"))
+# gtsave(group_compare_del_out, filename = file.path(project,"figures/gene_dosage/del_vs_td_volumes.rtf"))
+## gtsave(group_compare_del_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.tex"))
+
+# export table
+group_compare_dup_out <- group_compare_dup[,c("Structure","Region","beta","p","FDR_q")] %>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
+  cols_align(align="right", columns=everything()) %>%
+  tab_options(data_row.padding = px(1))
+
+# gtsave(group_compare_dup_out, filename = file.path(project,"figures/gene_dosage/dup_vs_td_volumes.png"))
+# gtsave(group_compare_dup_out, filename = file.path(project,"figures/gene_dosage/dup_vs_td_volumes.pdf"))
+# gtsave(group_compare_dup_out, filename = file.path(project,"figures/gene_dosage/dup_vs_td_volumes.rtf"))
+
 ```
 
+age group difference table
+```{r}
+# export table full age range
+age_gdiff_out <- maturation_full$age_group_export_final %>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
+  cols_align(align="right", columns=everything()) %>%
+  tab_options(data_row.padding = px(1))
 
-LME for gene_dosage * Age linear interaction
-```{r warning=FALSE}
-# test random intercept model for group*age interaction at each region
-lme_combat_agegene <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=demo_combat_na, REML=TRUE))
+gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.png"))
+gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.pdf"))
+gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.rtf"))
+
+# export table full age range
+age_gdiff_u35_out <- maturation_young$age_group_export_final %>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
+  cols_align(align="right", columns=everything()) %>%
+  tab_options(data_row.padding = px(1))
+
+# gtsave(age_gdiff_u35_out, filename = file.path(project,"figures/age/age_gdiff_u35.png"))
+# gtsave(age_gdiff_u35_out, filename = file.path(project,"figures/age/age_gdiff_u35.pdf"))
+# gtsave(age_gdiff_u35_out, filename = file.path(project,"figures/age/age_gdiff_u35.rtf"))
+```
+
+sex interactions
+```{r}
+# test random intercept model at each region
+gam_combat_sexint <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage*SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r),data=demo_combat_na_gam, REML=TRUE))
+names(gam_combat_sexint) <- sc_names_normed
 
 # get p-val for gene dosage effect
-gene_by_age_effect <- lapply(lme_combat_agegene, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage:AGE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
-colnames(gene_by_age_effect) <- c("gene_by_age_beta","gene_by_age_p")
-gene_by_age_effect$gene_by_age_fdr_q <- p.adjust(gene_by_age_effect$gene_by_age_p, method="fdr")
-gene_by_age_effect$Region <- sc_names_combat
-gene_by_age_effect$fdr_sig <- gene_by_age_effect$gene_by_age_fdr_q < 0.05
-gene_by_age_effect <- gene_by_age_effect[order(gene_by_age_effect$gene_by_age_p),]
+sexint <- lapply(gam_combat_sexint, function(l) summary(l)$p.table["gene_dosage:SEX",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(sexint) <- c("sexint_beta","sexint_p")
+sexint$Region <- sc_names_normed
+
+# FDR correct
+sexint$sexint_fdr_q <- p.adjust(sexint$sexint_p, method="fdr")
+sexint$fdr_sig <- sexint$sexint_fdr_q < 0.05
+```
+
+sex main effects
+```{r}
+# get p-val for gene dosage effect
+sex_main <- lapply(gamm_combat, function(l) summary(l)$p.table["SEX",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(sex_main) <- c("sex_beta","sex_p")
+sex_main$Region <- all_names_normed
+
+# FDR correct
+sex_main$sex_fdr_q <- p.adjust(sex_main$sex_p, method="fdr")
+sex_main$fdr_sig <- sex_main$sex_fdr_q < 0.05
+
+# create data frame for export
+save_sex_effect <- sex_main[,c("Region","sex_beta","sex_p","sex_fdr_q","fdr_sig","Region")]
+
+# get region names for matching
+save_sex_effect$Region <- gsub(".combat.norm","",save_sex_effect$Region)
+save_sex_effect$Region <- gsub("Thal_","",save_sex_effect$Region)
+save_sex_effect$Region <- gsub("Amy_","",save_sex_effect$Region)
+save_sex_effect$Region <- gsub("Hip_","",save_sex_effect$Region)
+
+# merge with full names
+save_sex_effect <- merge(x=save_sex_effect, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
+
+# set order
+save_sex_effect$struct_order <- save_sex_effect$Structure %>% gsub("whole brain",1,.) %>% gsub("thalamus",2,.) %>% gsub("hippocampus",3,.) %>% gsub("amygdala",4,.)
+
+save_sex_effect <- save_sex_effect[with(save_sex_effect, order(struct_order,sex_beta)),]
+
+save_sex_effect$Region <- save_sex_effect$bilat_name
+save_sex_effect$Region <- save_sex_effect$Region %>% gsub("hippocampal amygdala transition area", "HATA", .)
+rownames(save_sex_effect) <- NULL
+
+# get only significant
+save_sex_effect_final <- filter(save_sex_effect[,c("Structure","Region","sex_beta","sex_p","sex_fdr_q")], sex_fdr_q < 0.05)
+colnames(save_sex_effect_final) <-c("Structure","Region","beta","p","FDR q")
+
+# edit structure names
+structure_dup <- duplicated(save_sex_effect_final$Structure)
+for(i in 1:length(structure_dup)){
+  if(structure_dup[i]==TRUE){
+    save_sex_effect_final[i,"Structure"] <- ""
+  }
+}
+
+# round
+save_sex_effect_final$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
+save_sex_effect_final$p %<>% formatC(., format = "e", digits = 1)
+save_sex_effect_final$`FDR q` %<>% formatC(., format = "g", digits = 2)
+
+# export table
+save_sex_effect_out <-save_sex_effect_final%>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
+  cols_align(align="right", columns=everything()) %>%
+  tab_options(data_row.padding = px(1))
+
+# gtsave(save_sex_effect_out, filename = file.path(project,"figures/gene_dosage/sex_main_effect.png"))
+# gtsave(save_sex_effect_out, filename = file.path(project,"figures/gene_dosage/sex_main_effect.pdf"))
+# gtsave(save_sex_effect_out, filename = file.path(project,"figures/gene_dosage/sex_main_effect.rtf"))
+
+```
+
+antipsychotic drug analysis
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# get t/f column for antipsychotic drug
+df_demo$APD <- df_demo$psych_meds == "antipsychotic"
+
+demo_normed_apd <- merge(x=demo_combat_na_gam, y=df_demo[,c("MRI_S_ID","APD")], by="MRI_S_ID")
+
+# test random intercept model including APD at each region
+gam_combat_apd <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage","APD","SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r),data=demo_normed_apd, REML=TRUE))
+names(gam_combat_apd) <- sc_names_normed
+
+
+# get p-val for gene dosage effect
+gene_dosage_effect_ap <- lapply(gam_combat_apd, function(l) summary(l)$p.table["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(gene_dosage_effect_ap) <- c("gene_dosage_beta","gene_dosage_p")
+gene_dosage_effect_ap$Region <- sc_names_normed
+
+# FDR correct
+gene_dosage_effect_ap$gene_dosage_fdr_q <- p.adjust(gene_dosage_effect_ap$gene_dosage_p, method="fdr")
+gene_dosage_effect_ap$fdr_sig <- gene_dosage_effect_ap$gene_dosage_fdr_q < 0.05
 
 # get only significant effects
-gene_by_age_effect_sig <- filter(gene_by_age_effect,fdr_sig==TRUE)
-#gene_by_age_effect_sig
+gene_dosage_effect_sig_ap <- filter(gene_dosage_effect_ap,fdr_sig==TRUE)
+gene_dosage_effect_sig_ap <- gene_dosage_effect_sig_ap[order(gene_dosage_effect_sig_ap$gene_dosage_beta),]
+
+
+# create data frame for export
+save_dosage_effect_ap <- gene_dosage_effect_sig_ap[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")]
+# add whole amydgala and thalamus despite no FDR significance
+#save_dosage_effect <- rbind(save_dosage_effect, gene_dosage_effect[c("Thal_Whole_thalamus.combat.norm","Amy_Whole_amygdala.combat.norm"),c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")])
+#colnames(save_dosage_effect) <- c("beta","p","FDR q","Region")
+
+# get region names for matching
+save_dosage_effect_ap$Region <- gsub(".combat.norm","",save_dosage_effect_ap$Region)
+save_dosage_effect_ap$Region <- gsub("Thal_","",save_dosage_effect_ap$Region)
+save_dosage_effect_ap$Region <- gsub("Amy_","",save_dosage_effect_ap$Region)
+save_dosage_effect_ap$Region <- gsub("Hip_","",save_dosage_effect_ap$Region)
+
+# merge with full names
+#save_dosage_effect <- merge(x=save_dosage_effect, y=lut[c("Structure","Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
+save_dosage_effect_ap <- merge(x=save_dosage_effect_ap, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
+
+# set order
+save_dosage_effect_ap$struct_order <- save_dosage_effect_ap$Structure %>% gsub("thalamus",1,.) %>% gsub("hippocampus",2,.) %>% gsub("amygdala",3,.)
+
+save_dosage_effect_ap <- save_dosage_effect_ap[with(save_dosage_effect_ap, order(struct_order,gene_dosage_beta)),]
+
+#save_dosage_effect$Structure <- gsub("thalamus","thal",save_dosage_effect$Structure)
+#save_dosage_effect$Structure <- gsub("hippocampus","hip",save_dosage_effect$Structure)
+#save_dosage_effect$Structure <- gsub("amygdala","amy",save_dosage_effect$Structure)
+#save_dosage_effect$Region <- save_dosage_effect$Name
+save_dosage_effect_ap$Region <- save_dosage_effect_ap$bilat_name
+save_dosage_effect_ap$beta <- save_dosage_effect_ap$gene_dosage_beta
+save_dosage_effect_ap$p <- save_dosage_effect_ap$gene_dosage_p
+save_dosage_effect_ap$`FDR q` <- save_dosage_effect_ap$gene_dosage_fdr_q
+rownames(save_dosage_effect_ap) <- NULL
+
+# round
+save_dosage_effect_ap$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
+#save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
+save_dosage_effect_ap$p %<>% formatC(., format = "e", digits = 1)
+#save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
+# g option formats as scientific only when saves space
+save_dosage_effect_ap$`FDR q` %<>% formatC(., format = "g", digits = 2)
+
+# edit structure names
+structure_dup <- duplicated(save_dosage_effect_ap$Structure)
+for(i in 1:length(structure_dup)){
+  if(structure_dup[i]==TRUE){
+    save_dosage_effect_ap[i,"Structure"] <- ""
+  }
+}
+
+save_dosage_effect_ap_final <- save_dosage_effect_ap[,c("Structure","Region","beta","p","FDR q")]
+save_dosage_effect_ap_final
+#write.csv(save_dosage_effect_ap_final, file=file.path(project,"figures/gene_dosage/gene_dosage_subregions_apd.csv"), row.names = FALSE)
+
+# export table
+save_dosage_effect_ap_out <-save_dosage_effect_ap_final%>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
+  cols_align(align="right", columns=everything()) %>%
+  tab_options(data_row.padding = px(1))
+
+# gtsave(save_dosage_effect_ap_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_antipsychotic.png"))
+# gtsave(save_dosage_effect_ap_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_antipsychotic.pdf"))
+# gtsave(save_dosage_effect_ap_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_antipsychotic.rtf"))
+
+# test random intercept model of APD in only 22qDel
+ap_model <- lapply(sc_names_normed, function(r) gam(formula=reformulate(c("APD","s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)","SEX","eTIVnormed","site","s(SUBJECTID, bs=\"re\", k=3)"), response=r),data=filter(demo_normed_apd, SUBJECT_IDENTITY=="PATIENT-DEL"), REML=TRUE))
+names(ap_model) <- sc_names_normed
+ap_effect <- lapply(ap_model, function(l) summary(l)$p.table["APDTRUE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
+colnames(ap_effect) <- c("beta","p")
+ap_effect$Region <- sc_names_normed
+ap_effect$fdr_q <- p.adjust(ap_effect$p, method="fdr")
+ap_effect$fdr_sig <- ap_effect$fdr_q < 0.05
+# no regions with FDR q < 0.05
 
 ```
-
-LME for separate group*age interaction in each group 
-```{r warning=FALSE}
-
-# test random intercept model for group*age interaction at each region
-lme_combat_agegene_del <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=filter(demo_combat_na, gene_dosage %in% c(1,2)), REML=TRUE))
-
-lme_combat_agegene_dup <- lapply(sc_names_combat, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage*AGE","SEX","eTIVscaled","site","(1|SUBJECTID)"), response=r),data=filter(demo_combat_na, gene_dosage %in% c(2,3)), REML=TRUE))
-
-# get p-val for gene dosage effect
-gene_by_age_effect_del <- lapply(lme_combat_agegene_del, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage:AGE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
-colnames(gene_by_age_effect_del) <- c("gene_by_age_beta","gene_by_age_p")
-gene_by_age_effect_del$Region <- sc_names_combat
-gene_by_age_effect_del$model <- "Del"
-
-gene_by_age_effect_dup <- lapply(lme_combat_agegene_dup, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage:AGE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
-colnames(gene_by_age_effect_dup) <- c("gene_by_age_beta","gene_by_age_p")
-gene_by_age_effect_dup$Region <- sc_names_combat
-gene_by_age_effect_dup$model <- "Dup"
-
-gene_by_age_del_dup_vs_hc <- rbind(gene_by_age_effect_del,gene_by_age_effect_dup)
-gene_by_age_del_dup_vs_hc$gene_by_age_fdr_q <- p.adjust(gene_by_age_del_dup_vs_hc$gene_by_age_p, method="fdr")
-#gene_by_age_del_dup_vs_hc$fdr_sig <- gene_by_age_del_dup_vs_hc$gene_dosage_fdr_q < 0.05
-
-#gene_by_age_del_dup_vs_hc_merged <- merge(x=filter(gene_by_age_del_dup_vs_hc, model=="Del"), y=filter(gene_by_age_del_dup_vs_hc, model=="Dup"), by="Region")
-
-# get only effects that are significant in both models
-#del_dup_vs_hc_merged_sig <- filter(del_dup_vs_hc_merged,fdr_sig.x==TRUE,fdr_sig.y==TRUE)
-
-
-
-```
-
-
 
 verbal IQ comparison with hippocampal tail (Latreche et al 2023)
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10476015/
@@ -2522,121 +2341,6 @@ all_iq_plot
 #ggsave(plot=all_iq_plot, filename=file.path(project,"figures/cognition/hip_tail_iq.png"), width=9, height=7, device = "png", dpi = 300)
 ```
 
-verbal learning
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-# CVLT
-cvlt <- df_all_ucla$CVLT
-demo_cvlt <- merge(x=demo_combat_normed, y=cvlt[,c("SUBJECTID","CONVERTEDVISITNUM","T1_5_T")], by=c("SUBJECTID","CONVERTEDVISITNUM"))
-
-print("CVLT:")
-groups <- c("PATIENT-DEL","CONTROL")
-cvlt_mod <- lapply(groups, function(g) test_sx_lmm(formula="T1_5_T ~ Hip_Hippocampal_tail.combat.norm + SEX + (1|SUBJECTID)", data=filter(demo_cvlt, SUBJECT_IDENTITY==g)))
-names(cvlt_mod) <- groups
-cvlt_mod
-
-# PENN CNB
-vmem <- read.csv(file.path(project,"demographics/vmem_dat.csv"))
-# get convertedvisitnum 1=2.0, 2=2.12, 3=2.24
-vmem$CONVERTEDVISITNUM <- factor(vmem$LOCALID,levels=c(1,2,3),labels=c(2.0,2.12,2.24)) %>% as.character %>% as.numeric
-demo_vmem <- merge(x=demo_combat_normed, y=vmem[,c("SUBJECTID","CONVERTEDVISITNUM","KCPW_A_CR_new")], by=c("SUBJECTID","CONVERTEDVISITNUM"))
-
-print("VMEM:")
-groups <- c("PATIENT-DEL","CONTROL")
-vmem_mod <- lapply(groups, function(g) test_sx_lmm(formula="KCPW_A_CR_new ~ Hip_Hippocampal_tail.combat.norm + SEX + (1|SUBJECTID)", data=filter(demo_vmem, SUBJECT_IDENTITY==g)))
-names(vmem_mod) <- groups
-vmem_mod
-```
-
-
-antipsychotic drug analysis
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-# get t/f column for antipsychotic drug
-df_demo$APD <- df_demo$psych_meds == "antipsychotic"
-
-demo_normed_apd <- merge(x=demo_combat_normed, y=df_demo[,c("MRI_S_ID","APD")], by="MRI_S_ID")
-
-# test random intercept model including APD at each region
-lme_combat_ap <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("gene_dosage","APD","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=demo_normed_apd, REML=TRUE))
-names(lme_combat_ap) <- sc_names_normed
-
-
-# get p-val for gene dosage effect
-gene_dosage_effect_ap <- lapply(lme_combat_ap, function(l) summary(l,ddf="Kenward-Roger")$coefficients["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
-colnames(gene_dosage_effect_ap) <- c("gene_dosage_beta","gene_dosage_p")
-gene_dosage_effect_ap$Region <- sc_names_normed
-
-# FDR correct
-gene_dosage_effect_ap$gene_dosage_fdr_q <- p.adjust(gene_dosage_effect_ap$gene_dosage_p, method="fdr")
-gene_dosage_effect_ap$fdr_sig <- gene_dosage_effect_ap$gene_dosage_fdr_q < 0.05
-
-# get only significant effects
-gene_dosage_effect_sig_ap <- filter(gene_dosage_effect_ap,fdr_sig==TRUE)
-gene_dosage_effect_sig_ap <- gene_dosage_effect_sig_ap[order(gene_dosage_effect_sig_ap$gene_dosage_beta),]
-
-
-# create data frame for export
-save_dosage_effect_ap <- gene_dosage_effect_sig_ap[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")]
-# add whole amydgala and thalamus despite no FDR significance
-#save_dosage_effect <- rbind(save_dosage_effect, gene_dosage_effect[c("Thal_Whole_thalamus.combat.norm","Amy_Whole_amygdala.combat.norm"),c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")])
-#colnames(save_dosage_effect) <- c("beta","p","FDR q","Region")
-
-# get region names for matching
-save_dosage_effect_ap$Region <- gsub(".combat.norm","",save_dosage_effect_ap$Region)
-save_dosage_effect_ap$Region <- gsub("Thal_","",save_dosage_effect_ap$Region)
-save_dosage_effect_ap$Region <- gsub("Amy_","",save_dosage_effect_ap$Region)
-save_dosage_effect_ap$Region <- gsub("Hip_","",save_dosage_effect_ap$Region)
-
-# merge with full names
-#save_dosage_effect <- merge(x=save_dosage_effect, y=lut[c("Structure","Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
-save_dosage_effect_ap <- merge(x=save_dosage_effect_ap, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
-
-# set order
-save_dosage_effect_ap$struct_order <- save_dosage_effect_ap$Structure %>% gsub("thalamus",1,.) %>% gsub("hippocampus",2,.) %>% gsub("amygdala",3,.)
-
-save_dosage_effect_ap <- save_dosage_effect_ap[with(save_dosage_effect_ap, order(struct_order,gene_dosage_beta)),]
-
-#save_dosage_effect$Structure <- gsub("thalamus","thal",save_dosage_effect$Structure)
-#save_dosage_effect$Structure <- gsub("hippocampus","hip",save_dosage_effect$Structure)
-#save_dosage_effect$Structure <- gsub("amygdala","amy",save_dosage_effect$Structure)
-#save_dosage_effect$Region <- save_dosage_effect$Name
-save_dosage_effect_ap$Region <- save_dosage_effect_ap$bilat_name
-save_dosage_effect_ap$beta <- save_dosage_effect_ap$gene_dosage_beta
-save_dosage_effect_ap$p <- save_dosage_effect_ap$gene_dosage_p
-save_dosage_effect_ap$`FDR q` <- save_dosage_effect_ap$gene_dosage_fdr_q
-rownames(save_dosage_effect_ap) <- NULL
-
-# round
-save_dosage_effect_ap$beta %<>% round(., digits=2) %>% sprintf("%.2f",.)
-#save_dosage_effect$p %<>% round(., digits=3) %>% sprintf("%.3f",.)
-save_dosage_effect_ap$p %<>% formatC(., format = "e", digits = 1)
-#save_dosage_effect$`FDR q` %<>% round(., digits=6) %>% sprintf("%.6f",.)
-# g option formats as scientific only when saves space
-save_dosage_effect_ap$`FDR q` %<>% formatC(., format = "g", digits = 2)
-
-# edit structure names
-structure_dup <- duplicated(save_dosage_effect_ap$Structure)
-for(i in 1:length(structure_dup)){
-  if(structure_dup[i]==TRUE){
-    save_dosage_effect_ap[i,"Structure"] <- ""
-  }
-}
-
-save_dosage_effect_ap_final <- save_dosage_effect_ap[,c("Structure","Region","beta","p","FDR q")]
-save_dosage_effect_ap_final
-#write.csv(save_dosage_effect_ap_final, file=file.path(project,"figures/gene_dosage/gene_dosage_subregions_apd.csv"), row.names = FALSE)
-
-# test random intercept model of APD in only 22qDel
-ap_model <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("APD","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=filter(demo_normed_apd, SUBJECT_IDENTITY=="PATIENT-DEL"), REML=TRUE))
-names(ap_model) <- sc_names_normed
-ap_effect <- lapply(ap_model, function(l) summary(l,ddf="Kenward-Roger")$coefficients["APDTRUE",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
-colnames(ap_effect) <- c("beta","p")
-ap_effect$Region <- sc_names_normed
-ap_effect$fdr_q <- p.adjust(ap_effect$p, method="fdr")
-ap_effect$fdr_sig <- ap_effect$fdr_q < 0.05
-# no regions with FDR q < 0.05
-
-```
-
 test model of SIPS scores vs volume in 22qDel
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # test random intercept model of SIPS positive score in only 22qDel
@@ -2719,30 +2423,25 @@ resids_all <- merge(x=resids_all, y=lut_unique[,c("bilat_name","bilat_match")], 
 resids_merge <- merge(x=save_dosage_effect_final, y=resids_all[,c("bilat_name","22qDel_mean_resid","TD_mean_resid","22qDup_mean_resid")], by.x="Region", by.y="bilat_name")
 ```
 
-save workspace
+## save workspace
+save package info as package_versions.txt
+save data Rdata object (excluding full gamm model to save space)
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-# # save list of packages
+# #save list of packages
 # setwd(project)
 # sink("package_versions.txt")
 # sessionInfo()
 # sink()
 # 
 # # clear data to make saved image smaller
-# combat_input <- NULL
-# input_all_ucla <- NULL
-# oplots <- NULL
-# all_iq_plot <- NULL
-# all_miq_plot <- NULL
-# all_viq_plot <- NULL
-# lme_combat_agegene <- NULL
-# lme_combat_agegene_del <- NULL
-# lme_combat_agegene_dup <- NULL
-# lme_combat_dup <- NULL
-# lme_combat_del <- NULL
-# lme_combat_sexint <- NULL
 # gamm_combat <- NULL
+# gamm_combat_young <- NULL
+# gam_combat_apd <- NULL
+# gam_combat_sexint <- NULL
+# gam_combat_del <- NULL
+# gam_combat_dup <- NULL
 # 
 # # save image
 # save.image(file=file.path(project,"demographics/subcort_volumes_data.Rdata"),compress = "bzip2")
-#load("~/Dropbox/github/22q_subcort_volumes/demographics/subcort_volumes_data.Rdata")
+# #load("~/Dropbox/github/22q_subcort_volumes/demographics/subcort_volumes_data.Rdata")
 ```
