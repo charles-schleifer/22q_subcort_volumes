@@ -2,10 +2,7 @@
 title: "22q_subcort_volumes"
 author: "Charles Schleifer"
 date: "Jan 11, 2024"
-output: rmarkdown::github_document
-#  pdf_document: default
-#  rmarkdown::github_document: default
-#knit: (function(inputFile, encoding){rmarkdown::render(inputFile, encoding = encoding, output_dir = "output", output_format = "all")})
+output: pdf_document
 ---
 ## Overview
 Subcortical nuclei volumes for Thalamus, Hippocampus, and Amygdala were generated with FreeSurfer 7.3.2 segment_structures.
@@ -17,6 +14,7 @@ https://doi.org/10.1101/2023.10.31.564553
 
 ## set up workspace
 ```{r setup, include=FALSE}
+# set default to print code but not display output
 knitr::opts_chunk$set(echo = T,
                       results = "hide",
                       error=FALSE,
@@ -284,7 +282,7 @@ subcort_bilat <- dcast(sc_long_hemi_avg, MRI_S_ID ~ bl_region, value.var="bl_vol
 ```
 
 lookup table for ROI info
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 # read edited lookup table matching freesurfer names to full names
 #lut <- read.csv(file.path(project,"lut_names_thal_hip_amy_match.txt"), header=TRUE)
 lut <- read.csv(file.path(project,"lut_names_thal_hip_amy_match_combine.csv"), header=TRUE)
@@ -416,21 +414,21 @@ ucla_demo_tp_agelim %<>% droplevels
 ```
 
 All timepoints, demographics summary
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 demo_summary <- CreateTableOne(data=ucla_demo_tp_agelim,vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
 print(demo_summary, showAllLevels=T)
 #print(demo_summary, showAllLevels=F)
 
 ```
 under 35, demographics summary
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 demo_summary_young <- CreateTableOne(data=filter(ucla_demo_tp_agelim, AGE < 35),vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
 print(demo_summary_young, showAllLevels=T)
 #print(demo_summary, showAllLevels=F)
 ```
 
 Baseline summary
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 demo_summary_bl <- CreateTableOne(data=filter(ucla_demo_tp_agelim, visit_index == 1),vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
 print(demo_summary_bl)
 ```
@@ -1100,7 +1098,7 @@ scanner_visit_final[1:6,1] <- paste("Visit",1:6, "Prisma scanner, n (%)")
 colnames(scanner_visit_final) <- colnames(demo_edit)
 demo_edit_final <- rbind(demo_edit,scanner_visit_final[1:6,1:5])
 ```
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 # export table
 demo_out <- demo_edit_final %>% gt() %>% 
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_body(columns = 1,rows = 1:nrow(demo_edit_final)), cells_column_labels())) %>%
@@ -1186,7 +1184,7 @@ for(i in 1:nrow(gene_dosage_effect)){
 ```
 
 make table for export with subregion gene dosage effects
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 # create data frame for export
 save_dosage_effect <- filter(gene_dosage_effect, gene_dosage_fdr_q<0.05)[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region","sig")]
 
@@ -1978,7 +1976,7 @@ del_dup_vs_hc_merged_sig <- filter(del_dup_vs_hc_merged,fdr_sig.x==TRUE & fdr_si
 ```
 
 export results of individual group comparisons 
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 group_compare_sort <- del_dup_vs_hc
 group_compare_sort$Group <- group_compare_sort$model %>% gsub("Del","22qDel",.) %>% gsub("Dup","22qDup",.)
 
@@ -2055,7 +2053,7 @@ group_compare_dup_out
 ```
 
 age group difference table
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 # export table full age range
 age_gdiff_out <- maturation_full$age_group_export_final %>% gt() %>% 
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
@@ -2094,7 +2092,7 @@ sexint$fdr_sig <- sexint$sexint_fdr_q < 0.05
 ```
 
 sex main effects
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 # get p-val for gene dosage effect
 sex_main <- lapply(gamm_combat, function(l) summary(l)$p.table["SEX",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
 colnames(sex_main) <- c("sex_beta","sex_p")
@@ -2154,7 +2152,7 @@ save_sex_effect_out
 ```
 
 antipsychotic drug analysis
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 # get t/f column for antipsychotic drug
 df_demo$APD <- df_demo$psych_meds == "antipsychotic"
 
@@ -2250,7 +2248,7 @@ ap_effect$fdr_sig <- ap_effect$fdr_q < 0.05
 
 verbal IQ comparison with hippocampal tail (Latreche et al 2023)
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10476015/
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 demo_sx_mri <- merge(x=demo_combat_na_gam, y=df_demo[,c("MRI_S_ID","WASI_verbal","WASI_matrix","IQ_full")], by="MRI_S_ID")
 
 # function to test formula on data
@@ -2340,7 +2338,7 @@ all_iq_plot
 ```
 
 test model of SIPS scores vs volume in 22qDel
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 # test random intercept model of SIPS positive score in only 22qDel
 demo_normed_sips <- merge(x=demo_combat_normed, y=df_demo[,c("MRI_S_ID","SIPS_p_sum","SIPS_prodromal")], by="MRI_S_ID")
 #sipsp_model <- lapply(sc_names_normed, function(r) lmerTest::lmer(formula=reformulate(c("SIPS_p_sum","AGE","AGE2","SEX","eTIVnormed","site","(1|SUBJECTID)"), response=r),data=filter(demo_normed_sips, SUBJECT_IDENTITY=="PATIENT-DEL"), REML=TRUE))

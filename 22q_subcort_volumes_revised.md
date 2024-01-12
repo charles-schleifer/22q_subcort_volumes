@@ -53,8 +53,6 @@ project <- here()
 print(paste("Project directory:", project))
 ```
 
-    ## [1] "Project directory: /Users/charlie/Library/CloudStorage/Dropbox/github/22q_subcort_volumes"
-
 ## read MRI data
 
 ``` r
@@ -308,146 +306,52 @@ lut_unique <- lut_bilat_n[!duplicated(lut_bilat_n),]
 lut_unique
 ```
 
-    ##                              bilat_name                  bilat_match
-    ## 1                    lateral geniculate                          LGN
-    ## 3                     medial geniculate                          MGN
-    ## 5                     pulvinar inferior                          PuI
-    ## 6                       pulvinar medial                          PuM
-    ## 7            limitans (suprageniculate)                         L_Sg
-    ## 8                ventral posterolateral                          VPL
-    ## 9                          centromedian                           CM
-    ## 10             ventral lateral anterior                          VLa
-    ## 11                    pulvinar anterior                          PuA
-    ## 12                   mediodorsal medial                          MDm
-    ## 13                       parafascicular                           Pf
-    ## 14                  ventral anterior mc                         VAmc
-    ## 15                  mediodorsal lateral                          MDl
-    ## 16                       central medial                          CeM
-    ## 17                     ventral anterior                           VA
-    ## 18            medial ventral (reuniens)                       MV_Re_
-    ## 19                         ventromedial                           VM
-    ## 20                      central lateral                           CL
-    ## 21                     pulvinar lateral                          PuL
-    ## 22                           paratenial                           Pt
-    ## 23                        anteroventral                           AV
-    ## 24                          paracentral                           Pc
-    ## 25            ventral lateral posterior                          VLp
-    ## 26                    lateral posterior                           LP
-    ## 49                         laterodorsal                           LD
-    ## 51                       whole thalamus               Whole_thalamus
-    ## 53                     hippocampal tail             Hippocampal_tail
-    ## 54                       subiculum body               subiculum_body
-    ## 55                             CA1 body                     CA1_body
-    ## 56                       subiculum head               subiculum_head
-    ## 57                  hippocampal fissure          hippocampal_fissure
-    ## 58                    presubiculum head            presubiculum_head
-    ## 59                             CA1 head                     CA1_head
-    ## 60                    presubiculum body            presubiculum_body
-    ## 61                        parasubiculum                parasubiculum
-    ## 62                 molecular layer head      molecular_layer_HP_head
-    ## 63                 molecular layer body      molecular_layer_HP_body
-    ## 64                        GC ML DG head                GC_ML_DG_head
-    ## 65                             CA3 body                     CA3_body
-    ## 66                        GC ML DG body                GC_ML_DG_body
-    ## 67                             CA4 head                     CA4_head
-    ## 68                             CA4 body                     CA4_body
-    ## 69                              fimbria                      fimbria
-    ## 70                             CA3 head                     CA3_head
-    ## 71 hippocampal amygdala transition area                         HATA
-    ## 72                    whole hippocampus            Whole_hippocampus
-    ## 73               whole hippocampus body       Whole_hippocampal_body
-    ## 74               whole hippocampus head       Whole_hippocampal_head
-    ## 75                      lateral nucleus              Lateral_nucleus
-    ## 76                        basal nucleus                Basal_nucleus
-    ## 77              accessory basal nucleus      Accessory_Basal_nucleus
-    ## 78             anterior amygdaloid area Anterior_amygdaloid_area_AAA
-    ## 79                      central nucleus              Central_nucleus
-    ## 80                       medial nucleus               Medial_nucleus
-    ## 81                     cortical nucleus             Cortical_nucleus
-    ## 82         corticoamygdaloid transition  Corticoamygdaloid_transitio
-    ## 83                  paralaminar nucleus          Paralaminar_nucleus
-    ## 84                       whole amygdala               Whole_amygdala
-    ## 85                          mediodorsal                       MD_all
-    ## 86                      ventral lateral                       VL_all
-    ## 87                     ventral anterior                       VA_all
-    ## 88                             pulvinar                      Pu_part
-    ## 93                                  CA1                          CA1
-    ## 94                                CA2/3                          CA3
-    ## 95                                  CA4                          CA4
-    ## 96                             GC ML DG                     GC_ML_DG
-    ## 97                      molecular layer           molecular_layer_HP
-    ## 98                         presubiculum                 presubiculum
-    ## 99                            subiculum                    subiculum
-    ##      Structure
-    ## 1     thalamus
-    ## 3     thalamus
-    ## 5     thalamus
-    ## 6     thalamus
-    ## 7     thalamus
-    ## 8     thalamus
-    ## 9     thalamus
-    ## 10    thalamus
-    ## 11    thalamus
-    ## 12    thalamus
-    ## 13    thalamus
-    ## 14    thalamus
-    ## 15    thalamus
-    ## 16    thalamus
-    ## 17    thalamus
-    ## 18    thalamus
-    ## 19    thalamus
-    ## 20    thalamus
-    ## 21    thalamus
-    ## 22    thalamus
-    ## 23    thalamus
-    ## 24    thalamus
-    ## 25    thalamus
-    ## 26    thalamus
-    ## 49    thalamus
-    ## 51    thalamus
-    ## 53 hippocampus
-    ## 54 hippocampus
-    ## 55 hippocampus
-    ## 56 hippocampus
-    ## 57 hippocampus
-    ## 58 hippocampus
-    ## 59 hippocampus
-    ## 60 hippocampus
-    ## 61 hippocampus
-    ## 62 hippocampus
-    ## 63 hippocampus
-    ## 64 hippocampus
-    ## 65 hippocampus
-    ## 66 hippocampus
-    ## 67 hippocampus
-    ## 68 hippocampus
-    ## 69 hippocampus
-    ## 70 hippocampus
-    ## 71 hippocampus
-    ## 72 hippocampus
-    ## 73 hippocampus
-    ## 74 hippocampus
-    ## 75    amygdala
-    ## 76    amygdala
-    ## 77    amygdala
-    ## 78    amygdala
-    ## 79    amygdala
-    ## 80    amygdala
-    ## 81    amygdala
-    ## 82    amygdala
-    ## 83    amygdala
-    ## 84    amygdala
-    ## 85    thalamus
-    ## 86    thalamus
-    ## 87    thalamus
-    ## 88    thalamus
-    ## 93 hippocampus
-    ## 94 hippocampus
-    ## 95 hippocampus
-    ## 96 hippocampus
-    ## 97 hippocampus
-    ## 98 hippocampus
-    ## 99 hippocampus
+                             bilat_name                  bilat_match
+
+1 lateral geniculate LGN 3 medial geniculate MGN 5 pulvinar inferior PuI
+6 pulvinar medial PuM 7 limitans (suprageniculate) L_Sg 8 ventral
+posterolateral VPL 9 centromedian CM 10 ventral lateral anterior VLa 11
+pulvinar anterior PuA 12 mediodorsal medial MDm 13 parafascicular Pf 14
+ventral anterior mc VAmc 15 mediodorsal lateral MDl 16 central medial
+CeM 17 ventral anterior VA 18 medial ventral (reuniens) MV_Re\_ 19
+ventromedial VM 20 central lateral CL 21 pulvinar lateral PuL 22
+paratenial Pt 23 anteroventral AV 24 paracentral Pc 25 ventral lateral
+posterior VLp 26 lateral posterior LP 49 laterodorsal LD 51 whole
+thalamus Whole_thalamus 53 hippocampal tail Hippocampal_tail 54
+subiculum body subiculum_body 55 CA1 body CA1_body 56 subiculum head
+subiculum_head 57 hippocampal fissure hippocampal_fissure 58
+presubiculum head presubiculum_head 59 CA1 head CA1_head 60 presubiculum
+body presubiculum_body 61 parasubiculum parasubiculum 62 molecular layer
+head molecular_layer_HP_head 63 molecular layer body
+molecular_layer_HP_body 64 GC ML DG head GC_ML_DG_head 65 CA3 body
+CA3_body 66 GC ML DG body GC_ML_DG_body 67 CA4 head CA4_head 68 CA4 body
+CA4_body 69 fimbria fimbria 70 CA3 head CA3_head 71 hippocampal amygdala
+transition area HATA 72 whole hippocampus Whole_hippocampus 73 whole
+hippocampus body Whole_hippocampal_body 74 whole hippocampus head
+Whole_hippocampal_head 75 lateral nucleus Lateral_nucleus 76 basal
+nucleus Basal_nucleus 77 accessory basal nucleus Accessory_Basal_nucleus
+78 anterior amygdaloid area Anterior_amygdaloid_area_AAA 79 central
+nucleus Central_nucleus 80 medial nucleus Medial_nucleus 81 cortical
+nucleus Cortical_nucleus 82 corticoamygdaloid transition
+Corticoamygdaloid_transitio 83 paralaminar nucleus Paralaminar_nucleus
+84 whole amygdala Whole_amygdala 85 mediodorsal MD_all 86 ventral
+lateral VL_all 87 ventral anterior VA_all 88 pulvinar Pu_part 93 CA1 CA1
+94 CA2/3 CA3 95 CA4 CA4 96 GC ML DG GC_ML_DG 97 molecular layer
+molecular_layer_HP 98 presubiculum presubiculum 99 subiculum subiculum
+Structure 1 thalamus 3 thalamus 5 thalamus 6 thalamus 7 thalamus 8
+thalamus 9 thalamus 10 thalamus 11 thalamus 12 thalamus 13 thalamus 14
+thalamus 15 thalamus 16 thalamus 17 thalamus 18 thalamus 19 thalamus 20
+thalamus 21 thalamus 22 thalamus 23 thalamus 24 thalamus 25 thalamus 26
+thalamus 49 thalamus 51 thalamus 53 hippocampus 54 hippocampus 55
+hippocampus 56 hippocampus 57 hippocampus 58 hippocampus 59 hippocampus
+60 hippocampus 61 hippocampus 62 hippocampus 63 hippocampus 64
+hippocampus 65 hippocampus 66 hippocampus 67 hippocampus 68 hippocampus
+69 hippocampus 70 hippocampus 71 hippocampus 72 hippocampus 73
+hippocampus 74 hippocampus 75 amygdala 76 amygdala 77 amygdala 78
+amygdala 79 amygdala 80 amygdala 81 amygdala 82 amygdala 83 amygdala 84
+amygdala 85 thalamus 86 thalamus 87 thalamus 88 thalamus 93 hippocampus
+94 hippocampus 95 hippocampus 96 hippocampus 97 hippocampus 98
+hippocampus 99 hippocampus
 
 ``` r
 # add eTIVnormed
@@ -581,12 +485,13 @@ demo_summary <- CreateTableOne(data=ucla_demo_tp_agelim,vars=c("AGE","SEX"),stra
 print(demo_summary, showAllLevels=T)
 ```
 
-    ##                  Stratified by SUBJECT_IDENTITY
-    ##                   level CONTROL       PATIENT-DEL   PATIENT-DUP   p      test
-    ##   n                       130           191            64                    
-    ##   AGE (mean (SD))       14.74 (6.68)  17.17 (7.78)  17.88 (12.40)  0.014     
-    ##   SEX (%)         F        64 (49.2)    111 (58.1)     26 (40.6)   0.037     
-    ##                   M        66 (50.8)     80 (41.9)     38 (59.4)
+                 Stratified by SUBJECT_IDENTITY
+                  level CONTROL       PATIENT-DEL   PATIENT-DUP   p      test
+
+n 130 191 64  
+AGE (mean (SD)) 14.74 (6.68) 17.17 (7.78) 17.88 (12.40) 0.014  
+SEX (%) F 64 (49.2) 111 (58.1) 26 (40.6) 0.037  
+M 66 (50.8) 80 (41.9) 38 (59.4)
 
 ``` r
 #print(demo_summary, showAllLevels=F)
@@ -599,12 +504,13 @@ demo_summary_young <- CreateTableOne(data=filter(ucla_demo_tp_agelim, AGE < 35),
 print(demo_summary_young, showAllLevels=T)
 ```
 
-    ##                  Stratified by SUBJECT_IDENTITY
-    ##                   level CONTROL       PATIENT-DEL   PATIENT-DUP   p      test
-    ##   n                       128           182            54                    
-    ##   AGE (mean (SD))       14.30 (5.69)  16.06 (6.08)  13.25 (6.33)   0.003     
-    ##   SEX (%)         F        62 (48.4)    106 (58.2)     19 (35.2)   0.008     
-    ##                   M        66 (51.6)     76 (41.8)     35 (64.8)
+                 Stratified by SUBJECT_IDENTITY
+                  level CONTROL       PATIENT-DEL   PATIENT-DUP   p      test
+
+n 128 182 54  
+AGE (mean (SD)) 14.30 (5.69) 16.06 (6.08) 13.25 (6.33) 0.003  
+SEX (%) F 62 (48.4) 106 (58.2) 19 (35.2) 0.008  
+M 66 (51.6) 76 (41.8) 35 (64.8)
 
 ``` r
 #print(demo_summary, showAllLevels=F)
@@ -617,11 +523,12 @@ demo_summary_bl <- CreateTableOne(data=filter(ucla_demo_tp_agelim, visit_index =
 print(demo_summary_bl)
 ```
 
-    ##                  Stratified by SUBJECT_IDENTITY
-    ##                   CONTROL       PATIENT-DEL   PATIENT-DUP   p      test
-    ##   n                  80            96            37                    
-    ##   AGE (mean (SD)) 14.89 (7.34)  15.52 (7.62)  17.83 (13.50)  0.240     
-    ##   SEX = M (%)        39 (48.8)     45 (46.9)     20 (54.1)   0.759
+                 Stratified by SUBJECT_IDENTITY
+                  CONTROL       PATIENT-DEL   PATIENT-DUP   p      test
+
+n 80 96 37  
+AGE (mean (SD)) 14.89 (7.34) 15.52 (7.62) 17.83 (13.50) 0.240  
+SEX = M (%) 39 (48.8) 45 (46.9) 20 (54.1) 0.759
 
 Age waterfall plot
 
@@ -1088,340 +995,9 @@ vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_p_sum","SIPS_pro
 # make table
 demo_match_final <- CreateTableOne(data=df_demo,vars=vars_use,strata="SUBJECT_IDENTITY",addOverall=F,includeNA=T)
 demo_match_final
-```
 
-    ##                                       Stratified by SUBJECT_IDENTITY
-    ##                                        CONTROL        PATIENT-DEL  
-    ##   n                                       130           193        
-    ##   AGE (mean (SD))                       14.74 (6.68)  17.09 (7.78) 
-    ##   SEX = M (%)                              66 (50.8)     82 (42.5) 
-    ##   hand (%)                                                         
-    ##      A                                     20 (15.4)     32 (16.6) 
-    ##      L                                      2 ( 1.5)      9 ( 4.7) 
-    ##      R                                     65 (50.0)     88 (45.6) 
-    ##      NA                                    43 (33.1)     64 (33.2) 
-    ##   IQ_full (mean (SD))                  113.49 (19.53) 79.49 (13.11)
-    ##   SIPS_total (mean (SD))                 4.42 (6.31)  22.22 (16.05)
-    ##   SIPS_p_sum (mean (SD))                 1.09 (2.13)   4.72 (5.84) 
-    ##   SIPS_prodromal (%)                                               
-    ##      FALSE                                 90 (69.2)     98 (50.8) 
-    ##      TRUE                                   6 ( 4.6)     52 (26.9) 
-    ##      NA                                    34 (26.2)     43 (22.3) 
-    ##   SCID_ADHD (%)                                                    
-    ##      FALSE                                120 (92.3)    104 (53.9) 
-    ##      TRUE                                   9 ( 6.9)     85 (44.0) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Anxiety_Related (%)                                         
-    ##      FALSE                                118 (90.8)    101 (52.3) 
-    ##      TRUE                                  11 ( 8.5)     88 (45.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Bipolar (%)                                                 
-    ##      FALSE                                128 (98.5)    184 (95.3) 
-    ##      TRUE                                   1 ( 0.8)      5 ( 2.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Communication_Disorder (%)                                  
-    ##      FALSE                                129 (99.2)    185 (95.9) 
-    ##      TRUE                                   0 ( 0.0)      4 ( 2.1) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Depression_Related (%)                                      
-    ##      FALSE                                120 (92.3)    156 (80.8) 
-    ##      TRUE                                   9 ( 6.9)     33 (17.1) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Eating_Disorder (%)                                         
-    ##      FALSE                                127 (97.7)    184 (95.3) 
-    ##      TRUE                                   2 ( 1.5)      5 ( 2.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Elimination_Disorder (%)                                    
-    ##      FALSE                                126 (96.9)    179 (92.7) 
-    ##      TRUE                                   3 ( 2.3)     10 ( 5.2) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Impulse_and_Conduct (%)                                     
-    ##      FALSE                                125 (96.2)    172 (89.1) 
-    ##      TRUE                                   4 ( 3.1)     17 ( 8.8) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Intellectual_Disability (%)                                 
-    ##      FALSE                                129 (99.2)    186 (96.4) 
-    ##      TRUE                                   0 ( 0.0)      3 ( 1.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Motor_Disorder (%)                                          
-    ##      FALSE                                126 (96.9)    186 (96.4) 
-    ##      TRUE                                   3 ( 2.3)      3 ( 1.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_OCD_Related (%)                                             
-    ##      FALSE                                126 (96.9)    177 (91.7) 
-    ##      TRUE                                   3 ( 2.3)     12 ( 6.2) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Schizophrenia_Related (%)                                   
-    ##      FALSE                                129 (99.2)    173 (89.6) 
-    ##      TRUE                                   0 ( 0.0)     16 ( 8.3) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Stress_Related (%)                                          
-    ##      FALSE                                126 (96.9)    189 (97.9) 
-    ##      TRUE                                   3 ( 2.3)      0 ( 0.0) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Substance (%)                                               
-    ##      FALSE                                128 (98.5)    182 (94.3) 
-    ##      TRUE                                   1 ( 0.8)      7 ( 3.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   summPsych_ASD = TRUE (%)                  0 ( 0.0)     97 (50.3) 
-    ##   psych_meds (%)                                                   
-    ##      antipsychotic                          1 ( 0.8)     21 (10.9) 
-    ##      antidepressant_or_mood_stabilizer      4 ( 3.1)     23 (11.9) 
-    ##      stimulant                              3 ( 2.3)     12 ( 6.2) 
-    ##      other                                  1 ( 0.8)     11 ( 5.7) 
-    ##      none                                 121 (93.1)    122 (63.2) 
-    ##      NA                                     0 ( 0.0)      4 ( 2.1) 
-    ##                                       Stratified by SUBJECT_IDENTITY
-    ##                                        PATIENT-DUP    p      test
-    ##   n                                       64                     
-    ##   AGE (mean (SD))                      17.88 (12.40)   0.016     
-    ##   SEX = M (%)                             38 ( 59.4)   0.048     
-    ##   hand (%)                                            <0.001     
-    ##      A                                     5 (  7.8)             
-    ##      L                                     2 (  3.1)             
-    ##      R                                    14 ( 21.9)             
-    ##      NA                                   43 ( 67.2)             
-    ##   IQ_full (mean (SD))                  94.56 (17.64)  <0.001     
-    ##   SIPS_total (mean (SD))               17.27 (10.82)  <0.001     
-    ##   SIPS_p_sum (mean (SD))                2.50 (2.86)   <0.001     
-    ##   SIPS_prodromal (%)                                  <0.001     
-    ##      FALSE                                41 ( 64.1)             
-    ##      TRUE                                  9 ( 14.1)             
-    ##      NA                                   14 ( 21.9)             
-    ##   SCID_ADHD (%)                                       <0.001     
-    ##      FALSE                                42 ( 65.6)             
-    ##      TRUE                                 22 ( 34.4)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Anxiety_Related (%)                            <0.001     
-    ##      FALSE                                32 ( 50.0)             
-    ##      TRUE                                 32 ( 50.0)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Bipolar (%)                                     0.469     
-    ##      FALSE                                63 ( 98.4)             
-    ##      TRUE                                  1 (  1.6)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Communication_Disorder (%)                      0.315     
-    ##      FALSE                                63 ( 98.4)             
-    ##      TRUE                                  1 (  1.6)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Depression_Related (%)                          0.050     
-    ##      FALSE                                54 ( 84.4)             
-    ##      TRUE                                 10 ( 15.6)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Eating_Disorder (%)                             0.407     
-    ##      FALSE                                64 (100.0)             
-    ##      TRUE                                  0 (  0.0)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Elimination_Disorder (%)                       <0.001     
-    ##      FALSE                                52 ( 81.2)             
-    ##      TRUE                                 12 ( 18.8)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Impulse_and_Conduct (%)                         0.010     
-    ##      FALSE                                53 ( 82.8)             
-    ##      TRUE                                 11 ( 17.2)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Intellectual_Disability (%)                     0.085     
-    ##      FALSE                                61 ( 95.3)             
-    ##      TRUE                                  3 (  4.7)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Motor_Disorder (%)                              0.399     
-    ##      FALSE                                61 ( 95.3)             
-    ##      TRUE                                  3 (  4.7)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_OCD_Related (%)                                 0.260     
-    ##      FALSE                                62 ( 96.9)             
-    ##      TRUE                                  2 (  3.1)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Schizophrenia_Related (%)                       0.001     
-    ##      FALSE                                64 (100.0)             
-    ##      TRUE                                  0 (  0.0)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Stress_Related (%)                              0.125     
-    ##      FALSE                                62 ( 96.9)             
-    ##      TRUE                                  2 (  3.1)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Substance (%)                                   0.142     
-    ##      FALSE                                64 (100.0)             
-    ##      TRUE                                  0 (  0.0)             
-    ##      NA                                    0 (  0.0)             
-    ##   summPsych_ASD = TRUE (%)                25 ( 39.1)  <0.001     
-    ##   psych_meds (%)                                      <0.001     
-    ##      antipsychotic                         2 (  3.1)             
-    ##      antidepressant_or_mood_stabilizer    10 ( 15.6)             
-    ##      stimulant                             9 ( 14.1)             
-    ##      other                                 4 (  6.2)             
-    ##      none                                 38 ( 59.4)             
-    ##      NA                                    1 (  1.6)
-
-``` r
 # export tableone
 export_demo_table <- print(demo_match_final, quote=F, noSpaces=F, printToggle=T)
-```
-
-    ##                                       Stratified by SUBJECT_IDENTITY
-    ##                                        CONTROL        PATIENT-DEL  
-    ##   n                                       130           193        
-    ##   AGE (mean (SD))                       14.74 (6.68)  17.09 (7.78) 
-    ##   SEX = M (%)                              66 (50.8)     82 (42.5) 
-    ##   hand (%)                                                         
-    ##      A                                     20 (15.4)     32 (16.6) 
-    ##      L                                      2 ( 1.5)      9 ( 4.7) 
-    ##      R                                     65 (50.0)     88 (45.6) 
-    ##      NA                                    43 (33.1)     64 (33.2) 
-    ##   IQ_full (mean (SD))                  113.49 (19.53) 79.49 (13.11)
-    ##   SIPS_total (mean (SD))                 4.42 (6.31)  22.22 (16.05)
-    ##   SIPS_p_sum (mean (SD))                 1.09 (2.13)   4.72 (5.84) 
-    ##   SIPS_prodromal (%)                                               
-    ##      FALSE                                 90 (69.2)     98 (50.8) 
-    ##      TRUE                                   6 ( 4.6)     52 (26.9) 
-    ##      NA                                    34 (26.2)     43 (22.3) 
-    ##   SCID_ADHD (%)                                                    
-    ##      FALSE                                120 (92.3)    104 (53.9) 
-    ##      TRUE                                   9 ( 6.9)     85 (44.0) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Anxiety_Related (%)                                         
-    ##      FALSE                                118 (90.8)    101 (52.3) 
-    ##      TRUE                                  11 ( 8.5)     88 (45.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Bipolar (%)                                                 
-    ##      FALSE                                128 (98.5)    184 (95.3) 
-    ##      TRUE                                   1 ( 0.8)      5 ( 2.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Communication_Disorder (%)                                  
-    ##      FALSE                                129 (99.2)    185 (95.9) 
-    ##      TRUE                                   0 ( 0.0)      4 ( 2.1) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Depression_Related (%)                                      
-    ##      FALSE                                120 (92.3)    156 (80.8) 
-    ##      TRUE                                   9 ( 6.9)     33 (17.1) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Eating_Disorder (%)                                         
-    ##      FALSE                                127 (97.7)    184 (95.3) 
-    ##      TRUE                                   2 ( 1.5)      5 ( 2.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Elimination_Disorder (%)                                    
-    ##      FALSE                                126 (96.9)    179 (92.7) 
-    ##      TRUE                                   3 ( 2.3)     10 ( 5.2) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Impulse_and_Conduct (%)                                     
-    ##      FALSE                                125 (96.2)    172 (89.1) 
-    ##      TRUE                                   4 ( 3.1)     17 ( 8.8) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Intellectual_Disability (%)                                 
-    ##      FALSE                                129 (99.2)    186 (96.4) 
-    ##      TRUE                                   0 ( 0.0)      3 ( 1.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Motor_Disorder (%)                                          
-    ##      FALSE                                126 (96.9)    186 (96.4) 
-    ##      TRUE                                   3 ( 2.3)      3 ( 1.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_OCD_Related (%)                                             
-    ##      FALSE                                126 (96.9)    177 (91.7) 
-    ##      TRUE                                   3 ( 2.3)     12 ( 6.2) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Schizophrenia_Related (%)                                   
-    ##      FALSE                                129 (99.2)    173 (89.6) 
-    ##      TRUE                                   0 ( 0.0)     16 ( 8.3) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Stress_Related (%)                                          
-    ##      FALSE                                126 (96.9)    189 (97.9) 
-    ##      TRUE                                   3 ( 2.3)      0 ( 0.0) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   SCID_Substance (%)                                               
-    ##      FALSE                                128 (98.5)    182 (94.3) 
-    ##      TRUE                                   1 ( 0.8)      7 ( 3.6) 
-    ##      NA                                     1 ( 0.8)      4 ( 2.1) 
-    ##   summPsych_ASD = TRUE (%)                  0 ( 0.0)     97 (50.3) 
-    ##   psych_meds (%)                                                   
-    ##      antipsychotic                          1 ( 0.8)     21 (10.9) 
-    ##      antidepressant_or_mood_stabilizer      4 ( 3.1)     23 (11.9) 
-    ##      stimulant                              3 ( 2.3)     12 ( 6.2) 
-    ##      other                                  1 ( 0.8)     11 ( 5.7) 
-    ##      none                                 121 (93.1)    122 (63.2) 
-    ##      NA                                     0 ( 0.0)      4 ( 2.1) 
-    ##                                       Stratified by SUBJECT_IDENTITY
-    ##                                        PATIENT-DUP    p      test
-    ##   n                                       64                     
-    ##   AGE (mean (SD))                      17.88 (12.40)   0.016     
-    ##   SEX = M (%)                             38 ( 59.4)   0.048     
-    ##   hand (%)                                            <0.001     
-    ##      A                                     5 (  7.8)             
-    ##      L                                     2 (  3.1)             
-    ##      R                                    14 ( 21.9)             
-    ##      NA                                   43 ( 67.2)             
-    ##   IQ_full (mean (SD))                  94.56 (17.64)  <0.001     
-    ##   SIPS_total (mean (SD))               17.27 (10.82)  <0.001     
-    ##   SIPS_p_sum (mean (SD))                2.50 (2.86)   <0.001     
-    ##   SIPS_prodromal (%)                                  <0.001     
-    ##      FALSE                                41 ( 64.1)             
-    ##      TRUE                                  9 ( 14.1)             
-    ##      NA                                   14 ( 21.9)             
-    ##   SCID_ADHD (%)                                       <0.001     
-    ##      FALSE                                42 ( 65.6)             
-    ##      TRUE                                 22 ( 34.4)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Anxiety_Related (%)                            <0.001     
-    ##      FALSE                                32 ( 50.0)             
-    ##      TRUE                                 32 ( 50.0)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Bipolar (%)                                     0.469     
-    ##      FALSE                                63 ( 98.4)             
-    ##      TRUE                                  1 (  1.6)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Communication_Disorder (%)                      0.315     
-    ##      FALSE                                63 ( 98.4)             
-    ##      TRUE                                  1 (  1.6)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Depression_Related (%)                          0.050     
-    ##      FALSE                                54 ( 84.4)             
-    ##      TRUE                                 10 ( 15.6)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Eating_Disorder (%)                             0.407     
-    ##      FALSE                                64 (100.0)             
-    ##      TRUE                                  0 (  0.0)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Elimination_Disorder (%)                       <0.001     
-    ##      FALSE                                52 ( 81.2)             
-    ##      TRUE                                 12 ( 18.8)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Impulse_and_Conduct (%)                         0.010     
-    ##      FALSE                                53 ( 82.8)             
-    ##      TRUE                                 11 ( 17.2)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Intellectual_Disability (%)                     0.085     
-    ##      FALSE                                61 ( 95.3)             
-    ##      TRUE                                  3 (  4.7)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Motor_Disorder (%)                              0.399     
-    ##      FALSE                                61 ( 95.3)             
-    ##      TRUE                                  3 (  4.7)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_OCD_Related (%)                                 0.260     
-    ##      FALSE                                62 ( 96.9)             
-    ##      TRUE                                  2 (  3.1)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Schizophrenia_Related (%)                       0.001     
-    ##      FALSE                                64 (100.0)             
-    ##      TRUE                                  0 (  0.0)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Stress_Related (%)                              0.125     
-    ##      FALSE                                62 ( 96.9)             
-    ##      TRUE                                  2 (  3.1)             
-    ##      NA                                    0 (  0.0)             
-    ##   SCID_Substance (%)                                   0.142     
-    ##      FALSE                                64 (100.0)             
-    ##      TRUE                                  0 (  0.0)             
-    ##      NA                                    0 (  0.0)             
-    ##   summPsych_ASD = TRUE (%)                25 ( 39.1)  <0.001     
-    ##   psych_meds (%)                                      <0.001     
-    ##      antipsychotic                         2 (  3.1)             
-    ##      antidepressant_or_mood_stabilizer    10 ( 15.6)             
-    ##      stimulant                             9 ( 14.1)             
-    ##      other                                 4 (  6.2)             
-    ##      none                                 38 ( 59.4)             
-    ##      NA                                    1 (  1.6)
-
-``` r
 #write.csv(export_demo_table, file=file.path(project,"table1_demographics.csv"))
 ```
 
@@ -1607,328 +1183,10 @@ vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_p_sum","SIPS_pro
 # make table
 demo_match_final_bl <- CreateTableOne(data=df_demo_table_bl,vars=vars_use,strata="SUBJECT_IDENTITY",addOverall=F,includeNA=T)
 demo_match_final_bl
-```
 
-    ##                                       Stratified by SUBJECT_IDENTITY
-    ##                                        CONTROL         PATIENT-DEL    
-    ##   n                                        80              96         
-    ##   AGE (mean (SD))                       14.89 (7.34)    15.52 (7.62)  
-    ##   SEX = M (%)                              39 ( 48.8)      45 (46.9)  
-    ##   hand (%)                                                            
-    ##      A                                     15 ( 18.8)      20 (20.8)  
-    ##      L                                      2 (  2.5)       5 ( 5.2)  
-    ##      R                                     36 ( 45.0)      45 (46.9)  
-    ##      NA                                    27 ( 33.8)      26 (27.1)  
-    ##   IQ_full (mean (SD))                  111.27 (19.28)   78.65 (12.74) 
-    ##   SIPS_total (mean (SD))                 4.54 (5.85)    25.44 (17.08) 
-    ##   SIPS_p_sum (mean (SD))                 1.23 (1.88)     5.86 (6.52)  
-    ##   SIPS_prodromal (%)                                                  
-    ##      FALSE                                 53 ( 66.2)      39 (40.6)  
-    ##      TRUE                                   4 (  5.0)      24 (25.0)  
-    ##      NA                                    23 ( 28.7)      33 (34.4)  
-    ##   SCID_ADHD (%)                                                       
-    ##      FALSE                                 75 ( 93.8)      54 (56.2)  
-    ##      TRUE                                   5 (  6.2)      41 (42.7)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Anxiety_Related (%)                                            
-    ##      FALSE                                 73 ( 91.2)      48 (50.0)  
-    ##      TRUE                                   7 (  8.8)      47 (49.0)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Bipolar (%)                                                    
-    ##      FALSE                                 79 ( 98.8)      94 (97.9)  
-    ##      TRUE                                   1 (  1.2)       1 ( 1.0)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Depression_Related (%)                                         
-    ##      FALSE                                 73 ( 91.2)      79 (82.3)  
-    ##      TRUE                                   7 (  8.8)      16 (16.7)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Eating_Disorder (%)                                            
-    ##      FALSE                                 78 ( 97.5)      93 (96.9)  
-    ##      TRUE                                   2 (  2.5)       2 ( 2.1)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Elimination_Disorder (%)                                       
-    ##      FALSE                                 79 ( 98.8)      90 (93.8)  
-    ##      TRUE                                   1 (  1.2)       5 ( 5.2)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Impulse_and_Conduct (%)                                        
-    ##      FALSE                                 79 ( 98.8)      84 (87.5)  
-    ##      TRUE                                   1 (  1.2)      11 (11.5)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Intellectual_Disability (%)                                    
-    ##      FALSE                                 80 (100.0)      93 (96.9)  
-    ##      TRUE                                   0 (  0.0)       2 ( 2.1)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Motor_Disorder (%)                                             
-    ##      FALSE                                 77 ( 96.2)      93 (96.9)  
-    ##      TRUE                                   3 (  3.8)       2 ( 2.1)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_OCD_Related (%)                                                
-    ##      FALSE                                 78 ( 97.5)      88 (91.7)  
-    ##      TRUE                                   2 (  2.5)       7 ( 7.3)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Schizophrenia_Related (%)                                      
-    ##      FALSE                                 80 (100.0)      87 (90.6)  
-    ##      TRUE                                   0 (  0.0)       8 ( 8.3)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Stress_Related (%)                                             
-    ##      FALSE                                 77 ( 96.2)      95 (99.0)  
-    ##      TRUE                                   3 (  3.8)       0 ( 0.0)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Substance (%)                                                  
-    ##      FALSE                                 79 ( 98.8)      91 (94.8)  
-    ##      TRUE                                   1 (  1.2)       4 ( 4.2)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   summPsych_ASD = TRUE (%)                  0 (  0.0)      45 (46.9)  
-    ##   psych_meds (%)                                                      
-    ##      antipsychotic                          0 (  0.0)      11 (11.5)  
-    ##      antidepressant_or_mood_stabilizer      3 (  3.8)      13 (13.5)  
-    ##      stimulant                              2 (  2.5)       6 ( 6.2)  
-    ##      other                                  1 (  1.2)       5 ( 5.2)  
-    ##      none                                  74 ( 92.5)      61 (63.5)  
-    ##   visit_counts (mean (SD))               1.62 (0.89)     1.99 (1.16)  
-    ##   avg_interval (mean (SD))             667.68 (546.90) 676.78 (383.58)
-    ##                                       Stratified by SUBJECT_IDENTITY
-    ##                                        PATIENT-DUP     p      test
-    ##   n                                        37                     
-    ##   AGE (mean (SD))                       17.83 (13.50)   0.240     
-    ##   SEX = M (%)                              20 ( 54.1)   0.759     
-    ##   hand (%)                                              0.625     
-    ##      A                                      5 ( 13.5)             
-    ##      L                                      2 (  5.4)             
-    ##      R                                     14 ( 37.8)             
-    ##      NA                                    16 ( 43.2)             
-    ##   IQ_full (mean (SD))                   95.44 (17.84)  <0.001     
-    ##   SIPS_total (mean (SD))                17.38 (11.86)  <0.001     
-    ##   SIPS_p_sum (mean (SD))                 2.96 (3.25)   <0.001     
-    ##   SIPS_prodromal (%)                                    0.002     
-    ##      FALSE                                 19 ( 51.4)             
-    ##      TRUE                                   5 ( 13.5)             
-    ##      NA                                    13 ( 35.1)             
-    ##   SCID_ADHD (%)                                        <0.001     
-    ##      FALSE                                 23 ( 62.2)             
-    ##      TRUE                                  14 ( 37.8)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Anxiety_Related (%)                             <0.001     
-    ##      FALSE                                 20 ( 54.1)             
-    ##      TRUE                                  17 ( 45.9)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Bipolar (%)                                      0.778     
-    ##      FALSE                                 36 ( 97.3)             
-    ##      TRUE                                   1 (  2.7)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Depression_Related (%)                           0.447     
-    ##      FALSE                                 32 ( 86.5)             
-    ##      TRUE                                   5 ( 13.5)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Eating_Disorder (%)                              0.712     
-    ##      FALSE                                 37 (100.0)             
-    ##      TRUE                                   0 (  0.0)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Elimination_Disorder (%)                         0.018     
-    ##      FALSE                                 31 ( 83.8)             
-    ##      TRUE                                   6 ( 16.2)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Impulse_and_Conduct (%)                          0.031     
-    ##      FALSE                                 31 ( 83.8)             
-    ##      TRUE                                   6 ( 16.2)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Intellectual_Disability (%)                      0.260     
-    ##      FALSE                                 35 ( 94.6)             
-    ##      TRUE                                   2 (  5.4)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Motor_Disorder (%)                               0.696     
-    ##      FALSE                                 35 ( 94.6)             
-    ##      TRUE                                   2 (  5.4)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_OCD_Related (%)                                  0.417     
-    ##      FALSE                                 36 ( 97.3)             
-    ##      TRUE                                   1 (  2.7)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Schizophrenia_Related (%)                        0.022     
-    ##      FALSE                                 37 (100.0)             
-    ##      TRUE                                   0 (  0.0)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Stress_Related (%)                               0.322     
-    ##      FALSE                                 36 ( 97.3)             
-    ##      TRUE                                   1 (  2.7)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Substance (%)                                    0.412     
-    ##      FALSE                                 37 (100.0)             
-    ##      TRUE                                   0 (  0.0)             
-    ##      NA                                     0 (  0.0)             
-    ##   summPsych_ASD = TRUE (%)                 15 ( 40.5)  <0.001     
-    ##   psych_meds (%)                                       <0.001     
-    ##      antipsychotic                          2 (  5.4)             
-    ##      antidepressant_or_mood_stabilizer      2 (  5.4)             
-    ##      stimulant                              6 ( 16.2)             
-    ##      other                                  2 (  5.4)             
-    ##      none                                  25 ( 67.6)             
-    ##   visit_counts (mean (SD))               1.73 (0.93)    0.058     
-    ##   avg_interval (mean (SD))             483.15 (111.84)  0.260
-
-``` r
 # export tableone
 export_demo_table_bl <- print(demo_match_final_bl, quote=F, noSpaces=F, printToggle=T)
-```
 
-    ##                                       Stratified by SUBJECT_IDENTITY
-    ##                                        CONTROL         PATIENT-DEL    
-    ##   n                                        80              96         
-    ##   AGE (mean (SD))                       14.89 (7.34)    15.52 (7.62)  
-    ##   SEX = M (%)                              39 ( 48.8)      45 (46.9)  
-    ##   hand (%)                                                            
-    ##      A                                     15 ( 18.8)      20 (20.8)  
-    ##      L                                      2 (  2.5)       5 ( 5.2)  
-    ##      R                                     36 ( 45.0)      45 (46.9)  
-    ##      NA                                    27 ( 33.8)      26 (27.1)  
-    ##   IQ_full (mean (SD))                  111.27 (19.28)   78.65 (12.74) 
-    ##   SIPS_total (mean (SD))                 4.54 (5.85)    25.44 (17.08) 
-    ##   SIPS_p_sum (mean (SD))                 1.23 (1.88)     5.86 (6.52)  
-    ##   SIPS_prodromal (%)                                                  
-    ##      FALSE                                 53 ( 66.2)      39 (40.6)  
-    ##      TRUE                                   4 (  5.0)      24 (25.0)  
-    ##      NA                                    23 ( 28.7)      33 (34.4)  
-    ##   SCID_ADHD (%)                                                       
-    ##      FALSE                                 75 ( 93.8)      54 (56.2)  
-    ##      TRUE                                   5 (  6.2)      41 (42.7)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Anxiety_Related (%)                                            
-    ##      FALSE                                 73 ( 91.2)      48 (50.0)  
-    ##      TRUE                                   7 (  8.8)      47 (49.0)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Bipolar (%)                                                    
-    ##      FALSE                                 79 ( 98.8)      94 (97.9)  
-    ##      TRUE                                   1 (  1.2)       1 ( 1.0)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Depression_Related (%)                                         
-    ##      FALSE                                 73 ( 91.2)      79 (82.3)  
-    ##      TRUE                                   7 (  8.8)      16 (16.7)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Eating_Disorder (%)                                            
-    ##      FALSE                                 78 ( 97.5)      93 (96.9)  
-    ##      TRUE                                   2 (  2.5)       2 ( 2.1)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Elimination_Disorder (%)                                       
-    ##      FALSE                                 79 ( 98.8)      90 (93.8)  
-    ##      TRUE                                   1 (  1.2)       5 ( 5.2)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Impulse_and_Conduct (%)                                        
-    ##      FALSE                                 79 ( 98.8)      84 (87.5)  
-    ##      TRUE                                   1 (  1.2)      11 (11.5)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Intellectual_Disability (%)                                    
-    ##      FALSE                                 80 (100.0)      93 (96.9)  
-    ##      TRUE                                   0 (  0.0)       2 ( 2.1)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Motor_Disorder (%)                                             
-    ##      FALSE                                 77 ( 96.2)      93 (96.9)  
-    ##      TRUE                                   3 (  3.8)       2 ( 2.1)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_OCD_Related (%)                                                
-    ##      FALSE                                 78 ( 97.5)      88 (91.7)  
-    ##      TRUE                                   2 (  2.5)       7 ( 7.3)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Schizophrenia_Related (%)                                      
-    ##      FALSE                                 80 (100.0)      87 (90.6)  
-    ##      TRUE                                   0 (  0.0)       8 ( 8.3)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Stress_Related (%)                                             
-    ##      FALSE                                 77 ( 96.2)      95 (99.0)  
-    ##      TRUE                                   3 (  3.8)       0 ( 0.0)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   SCID_Substance (%)                                                  
-    ##      FALSE                                 79 ( 98.8)      91 (94.8)  
-    ##      TRUE                                   1 (  1.2)       4 ( 4.2)  
-    ##      NA                                     0 (  0.0)       1 ( 1.0)  
-    ##   summPsych_ASD = TRUE (%)                  0 (  0.0)      45 (46.9)  
-    ##   psych_meds (%)                                                      
-    ##      antipsychotic                          0 (  0.0)      11 (11.5)  
-    ##      antidepressant_or_mood_stabilizer      3 (  3.8)      13 (13.5)  
-    ##      stimulant                              2 (  2.5)       6 ( 6.2)  
-    ##      other                                  1 (  1.2)       5 ( 5.2)  
-    ##      none                                  74 ( 92.5)      61 (63.5)  
-    ##   visit_counts (mean (SD))               1.62 (0.89)     1.99 (1.16)  
-    ##   avg_interval (mean (SD))             667.68 (546.90) 676.78 (383.58)
-    ##                                       Stratified by SUBJECT_IDENTITY
-    ##                                        PATIENT-DUP     p      test
-    ##   n                                        37                     
-    ##   AGE (mean (SD))                       17.83 (13.50)   0.240     
-    ##   SEX = M (%)                              20 ( 54.1)   0.759     
-    ##   hand (%)                                              0.625     
-    ##      A                                      5 ( 13.5)             
-    ##      L                                      2 (  5.4)             
-    ##      R                                     14 ( 37.8)             
-    ##      NA                                    16 ( 43.2)             
-    ##   IQ_full (mean (SD))                   95.44 (17.84)  <0.001     
-    ##   SIPS_total (mean (SD))                17.38 (11.86)  <0.001     
-    ##   SIPS_p_sum (mean (SD))                 2.96 (3.25)   <0.001     
-    ##   SIPS_prodromal (%)                                    0.002     
-    ##      FALSE                                 19 ( 51.4)             
-    ##      TRUE                                   5 ( 13.5)             
-    ##      NA                                    13 ( 35.1)             
-    ##   SCID_ADHD (%)                                        <0.001     
-    ##      FALSE                                 23 ( 62.2)             
-    ##      TRUE                                  14 ( 37.8)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Anxiety_Related (%)                             <0.001     
-    ##      FALSE                                 20 ( 54.1)             
-    ##      TRUE                                  17 ( 45.9)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Bipolar (%)                                      0.778     
-    ##      FALSE                                 36 ( 97.3)             
-    ##      TRUE                                   1 (  2.7)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Depression_Related (%)                           0.447     
-    ##      FALSE                                 32 ( 86.5)             
-    ##      TRUE                                   5 ( 13.5)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Eating_Disorder (%)                              0.712     
-    ##      FALSE                                 37 (100.0)             
-    ##      TRUE                                   0 (  0.0)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Elimination_Disorder (%)                         0.018     
-    ##      FALSE                                 31 ( 83.8)             
-    ##      TRUE                                   6 ( 16.2)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Impulse_and_Conduct (%)                          0.031     
-    ##      FALSE                                 31 ( 83.8)             
-    ##      TRUE                                   6 ( 16.2)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Intellectual_Disability (%)                      0.260     
-    ##      FALSE                                 35 ( 94.6)             
-    ##      TRUE                                   2 (  5.4)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Motor_Disorder (%)                               0.696     
-    ##      FALSE                                 35 ( 94.6)             
-    ##      TRUE                                   2 (  5.4)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_OCD_Related (%)                                  0.417     
-    ##      FALSE                                 36 ( 97.3)             
-    ##      TRUE                                   1 (  2.7)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Schizophrenia_Related (%)                        0.022     
-    ##      FALSE                                 37 (100.0)             
-    ##      TRUE                                   0 (  0.0)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Stress_Related (%)                               0.322     
-    ##      FALSE                                 36 ( 97.3)             
-    ##      TRUE                                   1 (  2.7)             
-    ##      NA                                     0 (  0.0)             
-    ##   SCID_Substance (%)                                    0.412     
-    ##      FALSE                                 37 (100.0)             
-    ##      TRUE                                   0 (  0.0)             
-    ##      NA                                     0 (  0.0)             
-    ##   summPsych_ASD = TRUE (%)                 15 ( 40.5)  <0.001     
-    ##   psych_meds (%)                                       <0.001     
-    ##      antipsychotic                          2 (  5.4)             
-    ##      antidepressant_or_mood_stabilizer      2 (  5.4)             
-    ##      stimulant                              6 ( 16.2)             
-    ##      other                                  2 (  5.4)             
-    ##      none                                  25 ( 67.6)             
-    ##   visit_counts (mean (SD))               1.73 (0.93)    0.058     
-    ##   avg_interval (mean (SD))             483.15 (111.84)  0.260
-
-``` r
 #export_demo_table
 #write.csv(export_demo_table_bl, file=file.path(project,"/figures/demographics/table1_demographics.csv"))
 ```
@@ -1948,37 +1206,6 @@ get_scanner_by_visit <- function(df_long=df_demo, visit){
   return(out)
 }
 scanner_visit <- lapply(1:6, function(i) get_scanner_by_visit(visit=i)) %>% do.call(rbind,.) %>% as.data.frame
-```
-
-    ##           Stratified by SUBJECT_IDENTITY
-    ##            level CONTROL    PATIENT-DEL PATIENT-DUP p      test
-    ##   n              80         96          37                     
-    ##   site (%) P     25 (31.2)  23 (24.0)   16 (43.2)    0.090     
-    ##            T     55 (68.8)  73 (76.0)   21 (56.8)              
-    ##           Stratified by SUBJECT_IDENTITY
-    ##            level CONTROL    PATIENT-DEL PATIENT-DUP p      test
-    ##   n              35         54          16                     
-    ##   site (%) P      8 (22.9)  16 (29.6)   16 (100.0)  <0.001     
-    ##            T     27 (77.1)  38 (70.4)    0 (  0.0)             
-    ##           Stratified by SUBJECT_IDENTITY
-    ##            level CONTROL    PATIENT-DEL PATIENT-DUP p      test
-    ##   n              11         28          10                     
-    ##   site (%) P      4 (36.4)  13 (46.4)   10 (100.0)   0.005     
-    ##            T      7 (63.6)  15 (53.6)    0 (  0.0)             
-    ##           Stratified by SUBJECT_IDENTITY
-    ##            level CONTROL    PATIENT-DEL PATIENT-DUP p   test
-    ##   n              2          11          1                   
-    ##   site (%) P     2 (100.0)  11 (100.0)  1 (100.0)    NA     
-    ##           Stratified by SUBJECT_IDENTITY
-    ##            level CONTROL    PATIENT-DEL PATIENT-DUP p   test
-    ##   n              1          4           0                   
-    ##   site (%) P     1 (100.0)  4 (100.0)   -            NA     
-    ##           Stratified by SUBJECT_IDENTITY
-    ##            level CONTROL    PATIENT-DEL PATIENT-DUP p   test
-    ##   n              1          0           0                   
-    ##   site (%) P     1 (100.0)  -           -            NA
-
-``` r
 scanner_visit_final <- scanner_visit 
 scanner_visit_final[1:6,1] <- paste("Visit",1:6, "Prisma scanner, n (%)")
 colnames(scanner_visit_final) <- colnames(demo_edit)
@@ -1993,23 +1220,23 @@ demo_out <- demo_edit_final %>% gt() %>%
 demo_out
 ```
 
-<div id="ybyqlqzded" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ybyqlqzded table {
+<div id="xvrbaqpmsd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#xvrbaqpmsd table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#ybyqlqzded thead, #ybyqlqzded tbody, #ybyqlqzded tfoot, #ybyqlqzded tr, #ybyqlqzded td, #ybyqlqzded th {
+#xvrbaqpmsd thead, #xvrbaqpmsd tbody, #xvrbaqpmsd tfoot, #xvrbaqpmsd tr, #xvrbaqpmsd td, #xvrbaqpmsd th {
   border-style: none;
 }
 
-#ybyqlqzded p {
+#xvrbaqpmsd p {
   margin: 0;
   padding: 0;
 }
 
-#ybyqlqzded .gt_table {
+#xvrbaqpmsd .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -2035,12 +1262,12 @@ demo_out
   border-left-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_caption {
+#xvrbaqpmsd .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#ybyqlqzded .gt_title {
+#xvrbaqpmsd .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2052,7 +1279,7 @@ demo_out
   border-bottom-width: 0;
 }
 
-#ybyqlqzded .gt_subtitle {
+#xvrbaqpmsd .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2064,7 +1291,7 @@ demo_out
   border-top-width: 0;
 }
 
-#ybyqlqzded .gt_heading {
+#xvrbaqpmsd .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2076,13 +1303,13 @@ demo_out
   border-right-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_bottom_border {
+#xvrbaqpmsd .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_col_headings {
+#xvrbaqpmsd .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2097,7 +1324,7 @@ demo_out
   border-right-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_col_heading {
+#xvrbaqpmsd .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2117,7 +1344,7 @@ demo_out
   overflow-x: hidden;
 }
 
-#ybyqlqzded .gt_column_spanner_outer {
+#xvrbaqpmsd .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2129,15 +1356,15 @@ demo_out
   padding-right: 4px;
 }
 
-#ybyqlqzded .gt_column_spanner_outer:first-child {
+#xvrbaqpmsd .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ybyqlqzded .gt_column_spanner_outer:last-child {
+#xvrbaqpmsd .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ybyqlqzded .gt_column_spanner {
+#xvrbaqpmsd .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2149,11 +1376,11 @@ demo_out
   width: 100%;
 }
 
-#ybyqlqzded .gt_spanner_row {
+#xvrbaqpmsd .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#ybyqlqzded .gt_group_heading {
+#xvrbaqpmsd .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2179,7 +1406,7 @@ demo_out
   text-align: left;
 }
 
-#ybyqlqzded .gt_empty_group_heading {
+#xvrbaqpmsd .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2194,15 +1421,15 @@ demo_out
   vertical-align: middle;
 }
 
-#ybyqlqzded .gt_from_md > :first-child {
+#xvrbaqpmsd .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#ybyqlqzded .gt_from_md > :last-child {
+#xvrbaqpmsd .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#ybyqlqzded .gt_row {
+#xvrbaqpmsd .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2221,7 +1448,7 @@ demo_out
   overflow-x: hidden;
 }
 
-#ybyqlqzded .gt_stub {
+#xvrbaqpmsd .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2234,7 +1461,7 @@ demo_out
   padding-right: 5px;
 }
 
-#ybyqlqzded .gt_stub_row_group {
+#xvrbaqpmsd .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2248,15 +1475,15 @@ demo_out
   vertical-align: top;
 }
 
-#ybyqlqzded .gt_row_group_first td {
+#xvrbaqpmsd .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#ybyqlqzded .gt_row_group_first th {
+#xvrbaqpmsd .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#ybyqlqzded .gt_summary_row {
+#xvrbaqpmsd .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2266,16 +1493,16 @@ demo_out
   padding-right: 5px;
 }
 
-#ybyqlqzded .gt_first_summary_row {
+#xvrbaqpmsd .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_first_summary_row.thick {
+#xvrbaqpmsd .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#ybyqlqzded .gt_last_summary_row {
+#xvrbaqpmsd .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2285,7 +1512,7 @@ demo_out
   border-bottom-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_grand_summary_row {
+#xvrbaqpmsd .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2295,7 +1522,7 @@ demo_out
   padding-right: 5px;
 }
 
-#ybyqlqzded .gt_first_grand_summary_row {
+#xvrbaqpmsd .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2305,7 +1532,7 @@ demo_out
   border-top-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_last_grand_summary_row_top {
+#xvrbaqpmsd .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2315,11 +1542,11 @@ demo_out
   border-bottom-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_striped {
+#xvrbaqpmsd .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ybyqlqzded .gt_table_body {
+#xvrbaqpmsd .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2328,7 +1555,7 @@ demo_out
   border-bottom-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_footnotes {
+#xvrbaqpmsd .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2342,7 +1569,7 @@ demo_out
   border-right-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_footnote {
+#xvrbaqpmsd .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -2351,7 +1578,7 @@ demo_out
   padding-right: 5px;
 }
 
-#ybyqlqzded .gt_sourcenotes {
+#xvrbaqpmsd .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2365,7 +1592,7 @@ demo_out
   border-right-color: #D3D3D3;
 }
 
-#ybyqlqzded .gt_sourcenote {
+#xvrbaqpmsd .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -2373,63 +1600,63 @@ demo_out
   padding-right: 5px;
 }
 
-#ybyqlqzded .gt_left {
+#xvrbaqpmsd .gt_left {
   text-align: left;
 }
 
-#ybyqlqzded .gt_center {
+#xvrbaqpmsd .gt_center {
   text-align: center;
 }
 
-#ybyqlqzded .gt_right {
+#xvrbaqpmsd .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ybyqlqzded .gt_font_normal {
+#xvrbaqpmsd .gt_font_normal {
   font-weight: normal;
 }
 
-#ybyqlqzded .gt_font_bold {
+#xvrbaqpmsd .gt_font_bold {
   font-weight: bold;
 }
 
-#ybyqlqzded .gt_font_italic {
+#xvrbaqpmsd .gt_font_italic {
   font-style: italic;
 }
 
-#ybyqlqzded .gt_super {
+#xvrbaqpmsd .gt_super {
   font-size: 65%;
 }
 
-#ybyqlqzded .gt_footnote_marks {
+#xvrbaqpmsd .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#ybyqlqzded .gt_asterisk {
+#xvrbaqpmsd .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#ybyqlqzded .gt_indent_1 {
+#xvrbaqpmsd .gt_indent_1 {
   text-indent: 5px;
 }
 
-#ybyqlqzded .gt_indent_2 {
+#xvrbaqpmsd .gt_indent_2 {
   text-indent: 10px;
 }
 
-#ybyqlqzded .gt_indent_3 {
+#xvrbaqpmsd .gt_indent_3 {
   text-indent: 15px;
 }
 
-#ybyqlqzded .gt_indent_4 {
+#xvrbaqpmsd .gt_indent_4 {
   text-indent: 20px;
 }
 
-#ybyqlqzded .gt_indent_5 {
+#xvrbaqpmsd .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
@@ -2691,23 +1918,23 @@ save_dosage_effect_out <- save_dosage_effect_final %>% gt() %>%
 save_dosage_effect_out
 ```
 
-<div id="tjjidygcco" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#tjjidygcco table {
+<div id="ivdfmdrbtd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ivdfmdrbtd table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#tjjidygcco thead, #tjjidygcco tbody, #tjjidygcco tfoot, #tjjidygcco tr, #tjjidygcco td, #tjjidygcco th {
+#ivdfmdrbtd thead, #ivdfmdrbtd tbody, #ivdfmdrbtd tfoot, #ivdfmdrbtd tr, #ivdfmdrbtd td, #ivdfmdrbtd th {
   border-style: none;
 }
 
-#tjjidygcco p {
+#ivdfmdrbtd p {
   margin: 0;
   padding: 0;
 }
 
-#tjjidygcco .gt_table {
+#ivdfmdrbtd .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -2733,12 +1960,12 @@ save_dosage_effect_out
   border-left-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_caption {
+#ivdfmdrbtd .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#tjjidygcco .gt_title {
+#ivdfmdrbtd .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2750,7 +1977,7 @@ save_dosage_effect_out
   border-bottom-width: 0;
 }
 
-#tjjidygcco .gt_subtitle {
+#ivdfmdrbtd .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2762,7 +1989,7 @@ save_dosage_effect_out
   border-top-width: 0;
 }
 
-#tjjidygcco .gt_heading {
+#ivdfmdrbtd .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2774,13 +2001,13 @@ save_dosage_effect_out
   border-right-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_bottom_border {
+#ivdfmdrbtd .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_col_headings {
+#ivdfmdrbtd .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2795,7 +2022,7 @@ save_dosage_effect_out
   border-right-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_col_heading {
+#ivdfmdrbtd .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2815,7 +2042,7 @@ save_dosage_effect_out
   overflow-x: hidden;
 }
 
-#tjjidygcco .gt_column_spanner_outer {
+#ivdfmdrbtd .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2827,15 +2054,15 @@ save_dosage_effect_out
   padding-right: 4px;
 }
 
-#tjjidygcco .gt_column_spanner_outer:first-child {
+#ivdfmdrbtd .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#tjjidygcco .gt_column_spanner_outer:last-child {
+#ivdfmdrbtd .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#tjjidygcco .gt_column_spanner {
+#ivdfmdrbtd .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2847,11 +2074,11 @@ save_dosage_effect_out
   width: 100%;
 }
 
-#tjjidygcco .gt_spanner_row {
+#ivdfmdrbtd .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#tjjidygcco .gt_group_heading {
+#ivdfmdrbtd .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2877,7 +2104,7 @@ save_dosage_effect_out
   text-align: left;
 }
 
-#tjjidygcco .gt_empty_group_heading {
+#ivdfmdrbtd .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2892,15 +2119,15 @@ save_dosage_effect_out
   vertical-align: middle;
 }
 
-#tjjidygcco .gt_from_md > :first-child {
+#ivdfmdrbtd .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#tjjidygcco .gt_from_md > :last-child {
+#ivdfmdrbtd .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#tjjidygcco .gt_row {
+#ivdfmdrbtd .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2919,7 +2146,7 @@ save_dosage_effect_out
   overflow-x: hidden;
 }
 
-#tjjidygcco .gt_stub {
+#ivdfmdrbtd .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2932,7 +2159,7 @@ save_dosage_effect_out
   padding-right: 5px;
 }
 
-#tjjidygcco .gt_stub_row_group {
+#ivdfmdrbtd .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2946,15 +2173,15 @@ save_dosage_effect_out
   vertical-align: top;
 }
 
-#tjjidygcco .gt_row_group_first td {
+#ivdfmdrbtd .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#tjjidygcco .gt_row_group_first th {
+#ivdfmdrbtd .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#tjjidygcco .gt_summary_row {
+#ivdfmdrbtd .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2964,16 +2191,16 @@ save_dosage_effect_out
   padding-right: 5px;
 }
 
-#tjjidygcco .gt_first_summary_row {
+#ivdfmdrbtd .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_first_summary_row.thick {
+#ivdfmdrbtd .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#tjjidygcco .gt_last_summary_row {
+#ivdfmdrbtd .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2983,7 +2210,7 @@ save_dosage_effect_out
   border-bottom-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_grand_summary_row {
+#ivdfmdrbtd .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2993,7 +2220,7 @@ save_dosage_effect_out
   padding-right: 5px;
 }
 
-#tjjidygcco .gt_first_grand_summary_row {
+#ivdfmdrbtd .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3003,7 +2230,7 @@ save_dosage_effect_out
   border-top-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_last_grand_summary_row_top {
+#ivdfmdrbtd .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -3013,11 +2240,11 @@ save_dosage_effect_out
   border-bottom-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_striped {
+#ivdfmdrbtd .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#tjjidygcco .gt_table_body {
+#ivdfmdrbtd .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -3026,7 +2253,7 @@ save_dosage_effect_out
   border-bottom-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_footnotes {
+#ivdfmdrbtd .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -3040,7 +2267,7 @@ save_dosage_effect_out
   border-right-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_footnote {
+#ivdfmdrbtd .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -3049,7 +2276,7 @@ save_dosage_effect_out
   padding-right: 5px;
 }
 
-#tjjidygcco .gt_sourcenotes {
+#ivdfmdrbtd .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -3063,7 +2290,7 @@ save_dosage_effect_out
   border-right-color: #D3D3D3;
 }
 
-#tjjidygcco .gt_sourcenote {
+#ivdfmdrbtd .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -3071,63 +2298,63 @@ save_dosage_effect_out
   padding-right: 5px;
 }
 
-#tjjidygcco .gt_left {
+#ivdfmdrbtd .gt_left {
   text-align: left;
 }
 
-#tjjidygcco .gt_center {
+#ivdfmdrbtd .gt_center {
   text-align: center;
 }
 
-#tjjidygcco .gt_right {
+#ivdfmdrbtd .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#tjjidygcco .gt_font_normal {
+#ivdfmdrbtd .gt_font_normal {
   font-weight: normal;
 }
 
-#tjjidygcco .gt_font_bold {
+#ivdfmdrbtd .gt_font_bold {
   font-weight: bold;
 }
 
-#tjjidygcco .gt_font_italic {
+#ivdfmdrbtd .gt_font_italic {
   font-style: italic;
 }
 
-#tjjidygcco .gt_super {
+#ivdfmdrbtd .gt_super {
   font-size: 65%;
 }
 
-#tjjidygcco .gt_footnote_marks {
+#ivdfmdrbtd .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#tjjidygcco .gt_asterisk {
+#ivdfmdrbtd .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#tjjidygcco .gt_indent_1 {
+#ivdfmdrbtd .gt_indent_1 {
   text-indent: 5px;
 }
 
-#tjjidygcco .gt_indent_2 {
+#ivdfmdrbtd .gt_indent_2 {
   text-indent: 10px;
 }
 
-#tjjidygcco .gt_indent_3 {
+#ivdfmdrbtd .gt_indent_3 {
   text-indent: 15px;
 }
 
-#tjjidygcco .gt_indent_4 {
+#ivdfmdrbtd .gt_indent_4 {
   text-indent: 20px;
 }
 
-#tjjidygcco .gt_indent_5 {
+#ivdfmdrbtd .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
@@ -3916,214 +3143,7 @@ check some additional ones
 lapply(all_names_normed, function(n) plot_gamm_gdiff(list=mat_full_gdiff, name=n,xlab="Age",ylab="Normalized\nVolume", title=n))
 ```
 
-    ## [[1]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
-
-    ## 
-    ## [[2]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-2.png)<!-- -->
-
-    ## 
-    ## [[3]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-3.png)<!-- -->
-
-    ## 
-    ## [[4]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-4.png)<!-- -->
-
-    ## 
-    ## [[5]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-5.png)<!-- -->
-
-    ## 
-    ## [[6]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-6.png)<!-- -->
-
-    ## 
-    ## [[7]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-7.png)<!-- -->
-
-    ## 
-    ## [[8]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-8.png)<!-- -->
-
-    ## 
-    ## [[9]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-9.png)<!-- -->
-
-    ## 
-    ## [[10]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-10.png)<!-- -->
-
-    ## 
-    ## [[11]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-11.png)<!-- -->
-
-    ## 
-    ## [[12]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-12.png)<!-- -->
-
-    ## 
-    ## [[13]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-13.png)<!-- -->
-
-    ## 
-    ## [[14]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-14.png)<!-- -->
-
-    ## 
-    ## [[15]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-15.png)<!-- -->
-
-    ## 
-    ## [[16]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-16.png)<!-- -->
-
-    ## 
-    ## [[17]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-17.png)<!-- -->
-
-    ## 
-    ## [[18]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-18.png)<!-- -->
-
-    ## 
-    ## [[19]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-19.png)<!-- -->
-
-    ## 
-    ## [[20]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-20.png)<!-- -->
-
-    ## 
-    ## [[21]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-21.png)<!-- -->
-
-    ## 
-    ## [[22]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-22.png)<!-- -->
-
-    ## 
-    ## [[23]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-23.png)<!-- -->
-
-    ## 
-    ## [[24]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-24.png)<!-- -->
-
-    ## 
-    ## [[25]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-25.png)<!-- -->
-
-    ## 
-    ## [[26]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-26.png)<!-- -->
-
-    ## 
-    ## [[27]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-27.png)<!-- -->
-
-    ## 
-    ## [[28]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-28.png)<!-- -->
-
-    ## 
-    ## [[29]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-29.png)<!-- -->
-
-    ## 
-    ## [[30]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-30.png)<!-- -->
-
-    ## 
-    ## [[31]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-31.png)<!-- -->
-
-    ## 
-    ## [[32]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-32.png)<!-- -->
-
-    ## 
-    ## [[33]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-33.png)<!-- -->
-
-    ## 
-    ## [[34]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-34.png)<!-- -->
-
-    ## 
-    ## [[35]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-35.png)<!-- -->
-
-    ## 
-    ## [[36]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-36.png)<!-- -->
-
-    ## 
-    ## [[37]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-37.png)<!-- -->
-
-    ## 
-    ## [[38]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-38.png)<!-- -->
-
-    ## 
-    ## [[39]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-39.png)<!-- -->
-
-    ## 
-    ## [[40]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-40.png)<!-- -->
-
-    ## 
-    ## [[41]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-41.png)<!-- -->
-
-    ## 
-    ## [[42]]
-
-![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-42.png)<!-- -->
+![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-2.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-3.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-4.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-5.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-6.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-7.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-8.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-9.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-10.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-11.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-12.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-13.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-14.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-15.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-16.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-17.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-18.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-19.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-20.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-21.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-22.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-23.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-24.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-25.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-26.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-27.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-28.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-29.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-30.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-31.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-32.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-33.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-34.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-35.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-36.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-37.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-38.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-39.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-40.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-41.png)<!-- -->![](22q_subcort_volumes_revised_files/figure-gfm/unnamed-chunk-39-42.png)<!-- -->
 
 plot age gamms for young sample
 
@@ -4203,675 +3223,6 @@ group_mean_table <- group_mean_out %>% gt() %>%
   tab_header("Average volumes (mm^3) by group")%>%
   tab_options(data_row.padding = px(1)) 
 group_mean_table
-```
-
-<div id="ocltszlure" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ocltszlure table {
-  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-#ocltszlure thead, #ocltszlure tbody, #ocltszlure tfoot, #ocltszlure tr, #ocltszlure td, #ocltszlure th {
-  border-style: none;
-}
-
-#ocltszlure p {
-  margin: 0;
-  padding: 0;
-}
-
-#ocltszlure .gt_table {
-  display: table;
-  border-collapse: collapse;
-  line-height: normal;
-  margin-left: auto;
-  margin-right: auto;
-  color: #333333;
-  font-size: 16px;
-  font-weight: normal;
-  font-style: normal;
-  background-color: #FFFFFF;
-  width: auto;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #A8A8A8;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #A8A8A8;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-}
-
-#ocltszlure .gt_caption {
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
-#ocltszlure .gt_title {
-  color: #333333;
-  font-size: 125%;
-  font-weight: initial;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-color: #FFFFFF;
-  border-bottom-width: 0;
-}
-
-#ocltszlure .gt_subtitle {
-  color: #333333;
-  font-size: 85%;
-  font-weight: initial;
-  padding-top: 3px;
-  padding-bottom: 5px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-top-color: #FFFFFF;
-  border-top-width: 0;
-}
-
-#ocltszlure .gt_heading {
-  background-color: #FFFFFF;
-  text-align: center;
-  border-bottom-color: #FFFFFF;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-}
-
-#ocltszlure .gt_bottom_border {
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#ocltszlure .gt_col_headings {
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-}
-
-#ocltszlure .gt_col_heading {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: normal;
-  text-transform: inherit;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: bottom;
-  padding-top: 5px;
-  padding-bottom: 6px;
-  padding-left: 5px;
-  padding-right: 5px;
-  overflow-x: hidden;
-}
-
-#ocltszlure .gt_column_spanner_outer {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: normal;
-  text-transform: inherit;
-  padding-top: 0;
-  padding-bottom: 0;
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
-#ocltszlure .gt_column_spanner_outer:first-child {
-  padding-left: 0;
-}
-
-#ocltszlure .gt_column_spanner_outer:last-child {
-  padding-right: 0;
-}
-
-#ocltszlure .gt_column_spanner {
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  vertical-align: bottom;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  overflow-x: hidden;
-  display: inline-block;
-  width: 100%;
-}
-
-#ocltszlure .gt_spanner_row {
-  border-bottom-style: hidden;
-}
-
-#ocltszlure .gt_group_heading {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: middle;
-  text-align: left;
-}
-
-#ocltszlure .gt_empty_group_heading {
-  padding: 0.5px;
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  vertical-align: middle;
-}
-
-#ocltszlure .gt_from_md > :first-child {
-  margin-top: 0;
-}
-
-#ocltszlure .gt_from_md > :last-child {
-  margin-bottom: 0;
-}
-
-#ocltszlure .gt_row {
-  padding-top: 1px;
-  padding-bottom: 1px;
-  padding-left: 5px;
-  padding-right: 5px;
-  margin: 10px;
-  border-top-style: solid;
-  border-top-width: 1px;
-  border-top-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: middle;
-  overflow-x: hidden;
-}
-
-#ocltszlure .gt_stub {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-right-style: solid;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#ocltszlure .gt_stub_row_group {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-right-style: solid;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  padding-left: 5px;
-  padding-right: 5px;
-  vertical-align: top;
-}
-
-#ocltszlure .gt_row_group_first td {
-  border-top-width: 2px;
-}
-
-#ocltszlure .gt_row_group_first th {
-  border-top-width: 2px;
-}
-
-#ocltszlure .gt_summary_row {
-  color: #333333;
-  background-color: #FFFFFF;
-  text-transform: inherit;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#ocltszlure .gt_first_summary_row {
-  border-top-style: solid;
-  border-top-color: #D3D3D3;
-}
-
-#ocltszlure .gt_first_summary_row.thick {
-  border-top-width: 2px;
-}
-
-#ocltszlure .gt_last_summary_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#ocltszlure .gt_grand_summary_row {
-  color: #333333;
-  background-color: #FFFFFF;
-  text-transform: inherit;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#ocltszlure .gt_first_grand_summary_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-top-style: double;
-  border-top-width: 6px;
-  border-top-color: #D3D3D3;
-}
-
-#ocltszlure .gt_last_grand_summary_row_top {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-style: double;
-  border-bottom-width: 6px;
-  border-bottom-color: #D3D3D3;
-}
-
-#ocltszlure .gt_striped {
-  background-color: rgba(128, 128, 128, 0.05);
-}
-
-#ocltszlure .gt_table_body {
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#ocltszlure .gt_footnotes {
-  color: #333333;
-  background-color: #FFFFFF;
-  border-bottom-style: none;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-}
-
-#ocltszlure .gt_footnote {
-  margin: 0px;
-  font-size: 90%;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#ocltszlure .gt_sourcenotes {
-  color: #333333;
-  background-color: #FFFFFF;
-  border-bottom-style: none;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-}
-
-#ocltszlure .gt_sourcenote {
-  font-size: 90%;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#ocltszlure .gt_left {
-  text-align: left;
-}
-
-#ocltszlure .gt_center {
-  text-align: center;
-}
-
-#ocltszlure .gt_right {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-#ocltszlure .gt_font_normal {
-  font-weight: normal;
-}
-
-#ocltszlure .gt_font_bold {
-  font-weight: bold;
-}
-
-#ocltszlure .gt_font_italic {
-  font-style: italic;
-}
-
-#ocltszlure .gt_super {
-  font-size: 65%;
-}
-
-#ocltszlure .gt_footnote_marks {
-  font-size: 75%;
-  vertical-align: 0.4em;
-  position: initial;
-}
-
-#ocltszlure .gt_asterisk {
-  font-size: 100%;
-  vertical-align: 0;
-}
-
-#ocltszlure .gt_indent_1 {
-  text-indent: 5px;
-}
-
-#ocltszlure .gt_indent_2 {
-  text-indent: 10px;
-}
-
-#ocltszlure .gt_indent_3 {
-  text-indent: 15px;
-}
-
-#ocltszlure .gt_indent_4 {
-  text-indent: 20px;
-}
-
-#ocltszlure .gt_indent_5 {
-  text-indent: 25px;
-}
-</style>
-<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
-  <thead>
-    <tr class="gt_heading">
-      <td colspan="5" class="gt_heading gt_title gt_font_normal gt_bottom_border" style="font-weight: bold;">Average volumes (mm^3) by group</td>
-    </tr>
-    
-    <tr class="gt_col_headings">
-      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" style="font-weight: bold;" scope="col" id="Structure">Structure</th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" style="font-weight: bold;" scope="col" id="Region">Region</th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" style="font-weight: bold;" scope="col" id="22qDel">22qDel</th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" style="font-weight: bold;" scope="col" id="TD">TD</th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" style="font-weight: bold;" scope="col" id="22qDup">22qDup</th>
-    </tr>
-  </thead>
-  <tbody class="gt_table_body">
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">medial ventral (reuniens)</td>
-<td headers="22qDel" class="gt_row gt_right">14</td>
-<td headers="TD" class="gt_row gt_right">16</td>
-<td headers="22qDup" class="gt_row gt_right">16</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">ventromedial</td>
-<td headers="22qDel" class="gt_row gt_right">22</td>
-<td headers="TD" class="gt_row gt_right">22</td>
-<td headers="22qDup" class="gt_row gt_right">21</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">amygdala</td>
-<td headers="Region" class="gt_row gt_right">cortical nucleus</td>
-<td headers="22qDel" class="gt_row gt_right">24</td>
-<td headers="TD" class="gt_row gt_right">26</td>
-<td headers="22qDup" class="gt_row gt_right">24</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">amygdala</td>
-<td headers="Region" class="gt_row gt_right">medial nucleus</td>
-<td headers="22qDel" class="gt_row gt_right">24</td>
-<td headers="TD" class="gt_row gt_right">27</td>
-<td headers="22qDup" class="gt_row gt_right">25</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">laterodorsal</td>
-<td headers="22qDel" class="gt_row gt_right">30</td>
-<td headers="TD" class="gt_row gt_right">31</td>
-<td headers="22qDup" class="gt_row gt_right">33</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">limitans (suprageniculate)</td>
-<td headers="22qDel" class="gt_row gt_right">31</td>
-<td headers="TD" class="gt_row gt_right">31</td>
-<td headers="22qDup" class="gt_row gt_right">33</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">central lateral</td>
-<td headers="22qDel" class="gt_row gt_right">38</td>
-<td headers="TD" class="gt_row gt_right">39</td>
-<td headers="22qDup" class="gt_row gt_right">40</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">amygdala</td>
-<td headers="Region" class="gt_row gt_right">central nucleus</td>
-<td headers="22qDel" class="gt_row gt_right">46</td>
-<td headers="TD" class="gt_row gt_right">50</td>
-<td headers="22qDup" class="gt_row gt_right">50</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">amygdala</td>
-<td headers="Region" class="gt_row gt_right">paralaminar nucleus</td>
-<td headers="22qDel" class="gt_row gt_right">51</td>
-<td headers="TD" class="gt_row gt_right">55</td>
-<td headers="22qDup" class="gt_row gt_right">55</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">parafascicular</td>
-<td headers="22qDel" class="gt_row gt_right">54</td>
-<td headers="TD" class="gt_row gt_right">58</td>
-<td headers="22qDup" class="gt_row gt_right">57</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">hippocampal amygdala transition area</td>
-<td headers="22qDel" class="gt_row gt_right">55</td>
-<td headers="TD" class="gt_row gt_right">54</td>
-<td headers="22qDup" class="gt_row gt_right">58</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">amygdala</td>
-<td headers="Region" class="gt_row gt_right">anterior amygdaloid area</td>
-<td headers="22qDel" class="gt_row gt_right">62</td>
-<td headers="TD" class="gt_row gt_right">64</td>
-<td headers="22qDup" class="gt_row gt_right">62</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">central medial</td>
-<td headers="22qDel" class="gt_row gt_right">76</td>
-<td headers="TD" class="gt_row gt_right">81</td>
-<td headers="22qDup" class="gt_row gt_right">81</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">parasubiculum</td>
-<td headers="22qDel" class="gt_row gt_right">76</td>
-<td headers="TD" class="gt_row gt_right">75</td>
-<td headers="22qDup" class="gt_row gt_right">76</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">fimbria</td>
-<td headers="22qDel" class="gt_row gt_right">82</td>
-<td headers="TD" class="gt_row gt_right">86</td>
-<td headers="22qDup" class="gt_row gt_right">90</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">lateral posterior</td>
-<td headers="22qDel" class="gt_row gt_right">113</td>
-<td headers="TD" class="gt_row gt_right">121</td>
-<td headers="22qDup" class="gt_row gt_right">125</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">medial geniculate</td>
-<td headers="22qDel" class="gt_row gt_right">124</td>
-<td headers="TD" class="gt_row gt_right">141</td>
-<td headers="22qDup" class="gt_row gt_right">137</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">hippocampal fissure</td>
-<td headers="22qDel" class="gt_row gt_right">127</td>
-<td headers="TD" class="gt_row gt_right">140</td>
-<td headers="22qDup" class="gt_row gt_right">151</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">anteroventral</td>
-<td headers="22qDel" class="gt_row gt_right">133</td>
-<td headers="TD" class="gt_row gt_right">144</td>
-<td headers="22qDup" class="gt_row gt_right">150</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">amygdala</td>
-<td headers="Region" class="gt_row gt_right">corticoamygdaloid transition</td>
-<td headers="22qDel" class="gt_row gt_right">180</td>
-<td headers="TD" class="gt_row gt_right">181</td>
-<td headers="22qDup" class="gt_row gt_right">185</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">CA2/3</td>
-<td headers="22qDel" class="gt_row gt_right">206</td>
-<td headers="TD" class="gt_row gt_right">214</td>
-<td headers="22qDup" class="gt_row gt_right">221</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">CA4</td>
-<td headers="22qDel" class="gt_row gt_right">248</td>
-<td headers="TD" class="gt_row gt_right">273</td>
-<td headers="22qDup" class="gt_row gt_right">280</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">centromedian</td>
-<td headers="22qDel" class="gt_row gt_right">248</td>
-<td headers="TD" class="gt_row gt_right">258</td>
-<td headers="22qDup" class="gt_row gt_right">256</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">lateral geniculate</td>
-<td headers="22qDel" class="gt_row gt_right">258</td>
-<td headers="TD" class="gt_row gt_right">289</td>
-<td headers="22qDup" class="gt_row gt_right">284</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">amygdala</td>
-<td headers="Region" class="gt_row gt_right">accessory basal nucleus</td>
-<td headers="22qDel" class="gt_row gt_right">259</td>
-<td headers="TD" class="gt_row gt_right">277</td>
-<td headers="22qDup" class="gt_row gt_right">283</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">GC ML DG</td>
-<td headers="22qDel" class="gt_row gt_right">283</td>
-<td headers="TD" class="gt_row gt_right">312</td>
-<td headers="22qDup" class="gt_row gt_right">316</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">presubiculum</td>
-<td headers="22qDel" class="gt_row gt_right">303</td>
-<td headers="TD" class="gt_row gt_right">315</td>
-<td headers="22qDup" class="gt_row gt_right">310</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">subiculum</td>
-<td headers="22qDel" class="gt_row gt_right">391</td>
-<td headers="TD" class="gt_row gt_right">439</td>
-<td headers="22qDup" class="gt_row gt_right">438</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">amygdala</td>
-<td headers="Region" class="gt_row gt_right">basal nucleus</td>
-<td headers="22qDel" class="gt_row gt_right">454</td>
-<td headers="TD" class="gt_row gt_right">489</td>
-<td headers="22qDup" class="gt_row gt_right">494</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">ventral anterior</td>
-<td headers="22qDel" class="gt_row gt_right">482</td>
-<td headers="TD" class="gt_row gt_right">510</td>
-<td headers="22qDup" class="gt_row gt_right">508</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">hippocampal tail</td>
-<td headers="22qDel" class="gt_row gt_right">517</td>
-<td headers="TD" class="gt_row gt_right">588</td>
-<td headers="22qDup" class="gt_row gt_right">596</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">molecular layer</td>
-<td headers="22qDel" class="gt_row gt_right">535</td>
-<td headers="TD" class="gt_row gt_right">589</td>
-<td headers="22qDup" class="gt_row gt_right">593</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">CA1</td>
-<td headers="22qDel" class="gt_row gt_right">616</td>
-<td headers="TD" class="gt_row gt_right">669</td>
-<td headers="22qDup" class="gt_row gt_right">688</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">amygdala</td>
-<td headers="Region" class="gt_row gt_right">lateral nucleus</td>
-<td headers="22qDel" class="gt_row gt_right">640</td>
-<td headers="TD" class="gt_row gt_right">659</td>
-<td headers="22qDup" class="gt_row gt_right">659</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">pulvinar</td>
-<td headers="22qDel" class="gt_row gt_right">696</td>
-<td headers="TD" class="gt_row gt_right">716</td>
-<td headers="22qDup" class="gt_row gt_right">730</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">ventral posterolateral</td>
-<td headers="22qDel" class="gt_row gt_right">860</td>
-<td headers="TD" class="gt_row gt_right">893</td>
-<td headers="22qDup" class="gt_row gt_right">870</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">mediodorsal</td>
-<td headers="22qDel" class="gt_row gt_right">1202</td>
-<td headers="TD" class="gt_row gt_right">1219</td>
-<td headers="22qDup" class="gt_row gt_right">1159</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right">ventral lateral</td>
-<td headers="22qDel" class="gt_row gt_right">1536</td>
-<td headers="TD" class="gt_row gt_right">1543</td>
-<td headers="22qDup" class="gt_row gt_right">1507</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">amygdala</td>
-<td headers="Region" class="gt_row gt_right">whole amygdala</td>
-<td headers="22qDel" class="gt_row gt_right">1740</td>
-<td headers="TD" class="gt_row gt_right">1828</td>
-<td headers="22qDup" class="gt_row gt_right">1838</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">hippocampus</td>
-<td headers="Region" class="gt_row gt_right">whole hippocampus</td>
-<td headers="22qDel" class="gt_row gt_right">3316</td>
-<td headers="TD" class="gt_row gt_right">3616</td>
-<td headers="22qDup" class="gt_row gt_right">3667</td></tr>
-    <tr><td headers="Structure" class="gt_row gt_right">thalamus</td>
-<td headers="Region" class="gt_row gt_right"> whole thalamus</td>
-<td headers="22qDel" class="gt_row gt_right">7091</td>
-<td headers="TD" class="gt_row gt_right">7363</td>
-<td headers="22qDup" class="gt_row gt_right">7294</td></tr>
-  </tbody>
-  
-  
-</table>
-</div>
-
-``` r
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.pdf"))
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.png"))
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.rtf"))
@@ -4912,18 +3263,10 @@ del_dup_vs_hc_merged <- merge(x=filter(del_dup_vs_hc, model=="Del"), y=filter(de
 
 # number of sig 22qDel vs control
 sum(del_dup_vs_hc_merged$fdr_sig.x)
-```
 
-    ## [1] 14
-
-``` r
 # number of sig 22qDup vs control
 sum(del_dup_vs_hc_merged$fdr_sig.y)
-```
 
-    ## [1] 1
-
-``` r
 # get only effects that are significant in both models
 del_dup_vs_hc_merged_sig <- filter(del_dup_vs_hc_merged,fdr_sig.x==TRUE & fdr_sig.y==TRUE)
 #del_dup_vs_hc_sig <- del_dup_vs_hc_sig[order(del_dup_vs_hc_sig$gene_dosage_beta),]
@@ -4993,23 +3336,23 @@ group_compare_del_out <- group_compare_del[,c("Structure","Region","beta","p","F
 group_compare_del_out
 ```
 
-<div id="qaiyfurxgz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#qaiyfurxgz table {
+<div id="tengbhezfz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#tengbhezfz table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#qaiyfurxgz thead, #qaiyfurxgz tbody, #qaiyfurxgz tfoot, #qaiyfurxgz tr, #qaiyfurxgz td, #qaiyfurxgz th {
+#tengbhezfz thead, #tengbhezfz tbody, #tengbhezfz tfoot, #tengbhezfz tr, #tengbhezfz td, #tengbhezfz th {
   border-style: none;
 }
 
-#qaiyfurxgz p {
+#tengbhezfz p {
   margin: 0;
   padding: 0;
 }
 
-#qaiyfurxgz .gt_table {
+#tengbhezfz .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -5035,12 +3378,12 @@ group_compare_del_out
   border-left-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_caption {
+#tengbhezfz .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#qaiyfurxgz .gt_title {
+#tengbhezfz .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -5052,7 +3395,7 @@ group_compare_del_out
   border-bottom-width: 0;
 }
 
-#qaiyfurxgz .gt_subtitle {
+#tengbhezfz .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -5064,7 +3407,7 @@ group_compare_del_out
   border-top-width: 0;
 }
 
-#qaiyfurxgz .gt_heading {
+#tengbhezfz .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -5076,13 +3419,13 @@ group_compare_del_out
   border-right-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_bottom_border {
+#tengbhezfz .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_col_headings {
+#tengbhezfz .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5097,7 +3440,7 @@ group_compare_del_out
   border-right-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_col_heading {
+#tengbhezfz .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5117,7 +3460,7 @@ group_compare_del_out
   overflow-x: hidden;
 }
 
-#qaiyfurxgz .gt_column_spanner_outer {
+#tengbhezfz .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5129,15 +3472,15 @@ group_compare_del_out
   padding-right: 4px;
 }
 
-#qaiyfurxgz .gt_column_spanner_outer:first-child {
+#tengbhezfz .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#qaiyfurxgz .gt_column_spanner_outer:last-child {
+#tengbhezfz .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#qaiyfurxgz .gt_column_spanner {
+#tengbhezfz .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -5149,11 +3492,11 @@ group_compare_del_out
   width: 100%;
 }
 
-#qaiyfurxgz .gt_spanner_row {
+#tengbhezfz .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#qaiyfurxgz .gt_group_heading {
+#tengbhezfz .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5179,7 +3522,7 @@ group_compare_del_out
   text-align: left;
 }
 
-#qaiyfurxgz .gt_empty_group_heading {
+#tengbhezfz .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -5194,15 +3537,15 @@ group_compare_del_out
   vertical-align: middle;
 }
 
-#qaiyfurxgz .gt_from_md > :first-child {
+#tengbhezfz .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#qaiyfurxgz .gt_from_md > :last-child {
+#tengbhezfz .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#qaiyfurxgz .gt_row {
+#tengbhezfz .gt_row {
   padding-top: 1px;
   padding-bottom: 1px;
   padding-left: 5px;
@@ -5221,7 +3564,7 @@ group_compare_del_out
   overflow-x: hidden;
 }
 
-#qaiyfurxgz .gt_stub {
+#tengbhezfz .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5234,7 +3577,7 @@ group_compare_del_out
   padding-right: 5px;
 }
 
-#qaiyfurxgz .gt_stub_row_group {
+#tengbhezfz .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5248,15 +3591,15 @@ group_compare_del_out
   vertical-align: top;
 }
 
-#qaiyfurxgz .gt_row_group_first td {
+#tengbhezfz .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#qaiyfurxgz .gt_row_group_first th {
+#tengbhezfz .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#qaiyfurxgz .gt_summary_row {
+#tengbhezfz .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -5266,16 +3609,16 @@ group_compare_del_out
   padding-right: 5px;
 }
 
-#qaiyfurxgz .gt_first_summary_row {
+#tengbhezfz .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_first_summary_row.thick {
+#tengbhezfz .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#qaiyfurxgz .gt_last_summary_row {
+#tengbhezfz .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5285,7 +3628,7 @@ group_compare_del_out
   border-bottom-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_grand_summary_row {
+#tengbhezfz .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -5295,7 +3638,7 @@ group_compare_del_out
   padding-right: 5px;
 }
 
-#qaiyfurxgz .gt_first_grand_summary_row {
+#tengbhezfz .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5305,7 +3648,7 @@ group_compare_del_out
   border-top-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_last_grand_summary_row_top {
+#tengbhezfz .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5315,11 +3658,11 @@ group_compare_del_out
   border-bottom-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_striped {
+#tengbhezfz .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#qaiyfurxgz .gt_table_body {
+#tengbhezfz .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5328,7 +3671,7 @@ group_compare_del_out
   border-bottom-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_footnotes {
+#tengbhezfz .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -5342,7 +3685,7 @@ group_compare_del_out
   border-right-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_footnote {
+#tengbhezfz .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -5351,7 +3694,7 @@ group_compare_del_out
   padding-right: 5px;
 }
 
-#qaiyfurxgz .gt_sourcenotes {
+#tengbhezfz .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -5365,7 +3708,7 @@ group_compare_del_out
   border-right-color: #D3D3D3;
 }
 
-#qaiyfurxgz .gt_sourcenote {
+#tengbhezfz .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -5373,63 +3716,63 @@ group_compare_del_out
   padding-right: 5px;
 }
 
-#qaiyfurxgz .gt_left {
+#tengbhezfz .gt_left {
   text-align: left;
 }
 
-#qaiyfurxgz .gt_center {
+#tengbhezfz .gt_center {
   text-align: center;
 }
 
-#qaiyfurxgz .gt_right {
+#tengbhezfz .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#qaiyfurxgz .gt_font_normal {
+#tengbhezfz .gt_font_normal {
   font-weight: normal;
 }
 
-#qaiyfurxgz .gt_font_bold {
+#tengbhezfz .gt_font_bold {
   font-weight: bold;
 }
 
-#qaiyfurxgz .gt_font_italic {
+#tengbhezfz .gt_font_italic {
   font-style: italic;
 }
 
-#qaiyfurxgz .gt_super {
+#tengbhezfz .gt_super {
   font-size: 65%;
 }
 
-#qaiyfurxgz .gt_footnote_marks {
+#tengbhezfz .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#qaiyfurxgz .gt_asterisk {
+#tengbhezfz .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#qaiyfurxgz .gt_indent_1 {
+#tengbhezfz .gt_indent_1 {
   text-indent: 5px;
 }
 
-#qaiyfurxgz .gt_indent_2 {
+#tengbhezfz .gt_indent_2 {
   text-indent: 10px;
 }
 
-#qaiyfurxgz .gt_indent_3 {
+#tengbhezfz .gt_indent_3 {
   text-indent: 15px;
 }
 
-#qaiyfurxgz .gt_indent_4 {
+#tengbhezfz .gt_indent_4 {
   text-indent: 20px;
 }
 
-#qaiyfurxgz .gt_indent_5 {
+#tengbhezfz .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
@@ -5670,23 +4013,23 @@ group_compare_dup_out <- group_compare_dup[,c("Structure","Region","beta","p","F
 group_compare_dup_out
 ```
 
-<div id="tttohnaqve" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#tttohnaqve table {
+<div id="iuhwmgtetp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#iuhwmgtetp table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#tttohnaqve thead, #tttohnaqve tbody, #tttohnaqve tfoot, #tttohnaqve tr, #tttohnaqve td, #tttohnaqve th {
+#iuhwmgtetp thead, #iuhwmgtetp tbody, #iuhwmgtetp tfoot, #iuhwmgtetp tr, #iuhwmgtetp td, #iuhwmgtetp th {
   border-style: none;
 }
 
-#tttohnaqve p {
+#iuhwmgtetp p {
   margin: 0;
   padding: 0;
 }
 
-#tttohnaqve .gt_table {
+#iuhwmgtetp .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -5712,12 +4055,12 @@ group_compare_dup_out
   border-left-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_caption {
+#iuhwmgtetp .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#tttohnaqve .gt_title {
+#iuhwmgtetp .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -5729,7 +4072,7 @@ group_compare_dup_out
   border-bottom-width: 0;
 }
 
-#tttohnaqve .gt_subtitle {
+#iuhwmgtetp .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -5741,7 +4084,7 @@ group_compare_dup_out
   border-top-width: 0;
 }
 
-#tttohnaqve .gt_heading {
+#iuhwmgtetp .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -5753,13 +4096,13 @@ group_compare_dup_out
   border-right-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_bottom_border {
+#iuhwmgtetp .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_col_headings {
+#iuhwmgtetp .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5774,7 +4117,7 @@ group_compare_dup_out
   border-right-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_col_heading {
+#iuhwmgtetp .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5794,7 +4137,7 @@ group_compare_dup_out
   overflow-x: hidden;
 }
 
-#tttohnaqve .gt_column_spanner_outer {
+#iuhwmgtetp .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5806,15 +4149,15 @@ group_compare_dup_out
   padding-right: 4px;
 }
 
-#tttohnaqve .gt_column_spanner_outer:first-child {
+#iuhwmgtetp .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#tttohnaqve .gt_column_spanner_outer:last-child {
+#iuhwmgtetp .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#tttohnaqve .gt_column_spanner {
+#iuhwmgtetp .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -5826,11 +4169,11 @@ group_compare_dup_out
   width: 100%;
 }
 
-#tttohnaqve .gt_spanner_row {
+#iuhwmgtetp .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#tttohnaqve .gt_group_heading {
+#iuhwmgtetp .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5856,7 +4199,7 @@ group_compare_dup_out
   text-align: left;
 }
 
-#tttohnaqve .gt_empty_group_heading {
+#iuhwmgtetp .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -5871,15 +4214,15 @@ group_compare_dup_out
   vertical-align: middle;
 }
 
-#tttohnaqve .gt_from_md > :first-child {
+#iuhwmgtetp .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#tttohnaqve .gt_from_md > :last-child {
+#iuhwmgtetp .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#tttohnaqve .gt_row {
+#iuhwmgtetp .gt_row {
   padding-top: 1px;
   padding-bottom: 1px;
   padding-left: 5px;
@@ -5898,7 +4241,7 @@ group_compare_dup_out
   overflow-x: hidden;
 }
 
-#tttohnaqve .gt_stub {
+#iuhwmgtetp .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5911,7 +4254,7 @@ group_compare_dup_out
   padding-right: 5px;
 }
 
-#tttohnaqve .gt_stub_row_group {
+#iuhwmgtetp .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5925,15 +4268,15 @@ group_compare_dup_out
   vertical-align: top;
 }
 
-#tttohnaqve .gt_row_group_first td {
+#iuhwmgtetp .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#tttohnaqve .gt_row_group_first th {
+#iuhwmgtetp .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#tttohnaqve .gt_summary_row {
+#iuhwmgtetp .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -5943,16 +4286,16 @@ group_compare_dup_out
   padding-right: 5px;
 }
 
-#tttohnaqve .gt_first_summary_row {
+#iuhwmgtetp .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_first_summary_row.thick {
+#iuhwmgtetp .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#tttohnaqve .gt_last_summary_row {
+#iuhwmgtetp .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5962,7 +4305,7 @@ group_compare_dup_out
   border-bottom-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_grand_summary_row {
+#iuhwmgtetp .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -5972,7 +4315,7 @@ group_compare_dup_out
   padding-right: 5px;
 }
 
-#tttohnaqve .gt_first_grand_summary_row {
+#iuhwmgtetp .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5982,7 +4325,7 @@ group_compare_dup_out
   border-top-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_last_grand_summary_row_top {
+#iuhwmgtetp .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5992,11 +4335,11 @@ group_compare_dup_out
   border-bottom-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_striped {
+#iuhwmgtetp .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#tttohnaqve .gt_table_body {
+#iuhwmgtetp .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -6005,7 +4348,7 @@ group_compare_dup_out
   border-bottom-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_footnotes {
+#iuhwmgtetp .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6019,7 +4362,7 @@ group_compare_dup_out
   border-right-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_footnote {
+#iuhwmgtetp .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -6028,7 +4371,7 @@ group_compare_dup_out
   padding-right: 5px;
 }
 
-#tttohnaqve .gt_sourcenotes {
+#iuhwmgtetp .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6042,7 +4385,7 @@ group_compare_dup_out
   border-right-color: #D3D3D3;
 }
 
-#tttohnaqve .gt_sourcenote {
+#iuhwmgtetp .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -6050,63 +4393,63 @@ group_compare_dup_out
   padding-right: 5px;
 }
 
-#tttohnaqve .gt_left {
+#iuhwmgtetp .gt_left {
   text-align: left;
 }
 
-#tttohnaqve .gt_center {
+#iuhwmgtetp .gt_center {
   text-align: center;
 }
 
-#tttohnaqve .gt_right {
+#iuhwmgtetp .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#tttohnaqve .gt_font_normal {
+#iuhwmgtetp .gt_font_normal {
   font-weight: normal;
 }
 
-#tttohnaqve .gt_font_bold {
+#iuhwmgtetp .gt_font_bold {
   font-weight: bold;
 }
 
-#tttohnaqve .gt_font_italic {
+#iuhwmgtetp .gt_font_italic {
   font-style: italic;
 }
 
-#tttohnaqve .gt_super {
+#iuhwmgtetp .gt_super {
   font-size: 65%;
 }
 
-#tttohnaqve .gt_footnote_marks {
+#iuhwmgtetp .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#tttohnaqve .gt_asterisk {
+#iuhwmgtetp .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#tttohnaqve .gt_indent_1 {
+#iuhwmgtetp .gt_indent_1 {
   text-indent: 5px;
 }
 
-#tttohnaqve .gt_indent_2 {
+#iuhwmgtetp .gt_indent_2 {
   text-indent: 10px;
 }
 
-#tttohnaqve .gt_indent_3 {
+#iuhwmgtetp .gt_indent_3 {
   text-indent: 15px;
 }
 
-#tttohnaqve .gt_indent_4 {
+#iuhwmgtetp .gt_indent_4 {
   text-indent: 20px;
 }
 
-#tttohnaqve .gt_indent_5 {
+#iuhwmgtetp .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
@@ -6350,23 +4693,23 @@ age_gdiff_out <- maturation_full$age_group_export_final %>% gt() %>%
 age_gdiff_out
 ```
 
-<div id="ytesxiubxi" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ytesxiubxi table {
+<div id="yuyfqmgbto" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#yuyfqmgbto table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#ytesxiubxi thead, #ytesxiubxi tbody, #ytesxiubxi tfoot, #ytesxiubxi tr, #ytesxiubxi td, #ytesxiubxi th {
+#yuyfqmgbto thead, #yuyfqmgbto tbody, #yuyfqmgbto tfoot, #yuyfqmgbto tr, #yuyfqmgbto td, #yuyfqmgbto th {
   border-style: none;
 }
 
-#ytesxiubxi p {
+#yuyfqmgbto p {
   margin: 0;
   padding: 0;
 }
 
-#ytesxiubxi .gt_table {
+#yuyfqmgbto .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -6392,12 +4735,12 @@ age_gdiff_out
   border-left-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_caption {
+#yuyfqmgbto .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#ytesxiubxi .gt_title {
+#yuyfqmgbto .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -6409,7 +4752,7 @@ age_gdiff_out
   border-bottom-width: 0;
 }
 
-#ytesxiubxi .gt_subtitle {
+#yuyfqmgbto .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -6421,7 +4764,7 @@ age_gdiff_out
   border-top-width: 0;
 }
 
-#ytesxiubxi .gt_heading {
+#yuyfqmgbto .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -6433,13 +4776,13 @@ age_gdiff_out
   border-right-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_bottom_border {
+#yuyfqmgbto .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_col_headings {
+#yuyfqmgbto .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -6454,7 +4797,7 @@ age_gdiff_out
   border-right-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_col_heading {
+#yuyfqmgbto .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6474,7 +4817,7 @@ age_gdiff_out
   overflow-x: hidden;
 }
 
-#ytesxiubxi .gt_column_spanner_outer {
+#yuyfqmgbto .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6486,15 +4829,15 @@ age_gdiff_out
   padding-right: 4px;
 }
 
-#ytesxiubxi .gt_column_spanner_outer:first-child {
+#yuyfqmgbto .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ytesxiubxi .gt_column_spanner_outer:last-child {
+#yuyfqmgbto .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ytesxiubxi .gt_column_spanner {
+#yuyfqmgbto .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -6506,11 +4849,11 @@ age_gdiff_out
   width: 100%;
 }
 
-#ytesxiubxi .gt_spanner_row {
+#yuyfqmgbto .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#ytesxiubxi .gt_group_heading {
+#yuyfqmgbto .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6536,7 +4879,7 @@ age_gdiff_out
   text-align: left;
 }
 
-#ytesxiubxi .gt_empty_group_heading {
+#yuyfqmgbto .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -6551,15 +4894,15 @@ age_gdiff_out
   vertical-align: middle;
 }
 
-#ytesxiubxi .gt_from_md > :first-child {
+#yuyfqmgbto .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#ytesxiubxi .gt_from_md > :last-child {
+#yuyfqmgbto .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#ytesxiubxi .gt_row {
+#yuyfqmgbto .gt_row {
   padding-top: 1px;
   padding-bottom: 1px;
   padding-left: 5px;
@@ -6578,7 +4921,7 @@ age_gdiff_out
   overflow-x: hidden;
 }
 
-#ytesxiubxi .gt_stub {
+#yuyfqmgbto .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6591,7 +4934,7 @@ age_gdiff_out
   padding-right: 5px;
 }
 
-#ytesxiubxi .gt_stub_row_group {
+#yuyfqmgbto .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -6605,15 +4948,15 @@ age_gdiff_out
   vertical-align: top;
 }
 
-#ytesxiubxi .gt_row_group_first td {
+#yuyfqmgbto .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#ytesxiubxi .gt_row_group_first th {
+#yuyfqmgbto .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#ytesxiubxi .gt_summary_row {
+#yuyfqmgbto .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -6623,16 +4966,16 @@ age_gdiff_out
   padding-right: 5px;
 }
 
-#ytesxiubxi .gt_first_summary_row {
+#yuyfqmgbto .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_first_summary_row.thick {
+#yuyfqmgbto .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#ytesxiubxi .gt_last_summary_row {
+#yuyfqmgbto .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6642,7 +4985,7 @@ age_gdiff_out
   border-bottom-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_grand_summary_row {
+#yuyfqmgbto .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -6652,7 +4995,7 @@ age_gdiff_out
   padding-right: 5px;
 }
 
-#ytesxiubxi .gt_first_grand_summary_row {
+#yuyfqmgbto .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6662,7 +5005,7 @@ age_gdiff_out
   border-top-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_last_grand_summary_row_top {
+#yuyfqmgbto .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6672,11 +5015,11 @@ age_gdiff_out
   border-bottom-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_striped {
+#yuyfqmgbto .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ytesxiubxi .gt_table_body {
+#yuyfqmgbto .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -6685,7 +5028,7 @@ age_gdiff_out
   border-bottom-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_footnotes {
+#yuyfqmgbto .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6699,7 +5042,7 @@ age_gdiff_out
   border-right-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_footnote {
+#yuyfqmgbto .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -6708,7 +5051,7 @@ age_gdiff_out
   padding-right: 5px;
 }
 
-#ytesxiubxi .gt_sourcenotes {
+#yuyfqmgbto .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6722,7 +5065,7 @@ age_gdiff_out
   border-right-color: #D3D3D3;
 }
 
-#ytesxiubxi .gt_sourcenote {
+#yuyfqmgbto .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -6730,63 +5073,63 @@ age_gdiff_out
   padding-right: 5px;
 }
 
-#ytesxiubxi .gt_left {
+#yuyfqmgbto .gt_left {
   text-align: left;
 }
 
-#ytesxiubxi .gt_center {
+#yuyfqmgbto .gt_center {
   text-align: center;
 }
 
-#ytesxiubxi .gt_right {
+#yuyfqmgbto .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ytesxiubxi .gt_font_normal {
+#yuyfqmgbto .gt_font_normal {
   font-weight: normal;
 }
 
-#ytesxiubxi .gt_font_bold {
+#yuyfqmgbto .gt_font_bold {
   font-weight: bold;
 }
 
-#ytesxiubxi .gt_font_italic {
+#yuyfqmgbto .gt_font_italic {
   font-style: italic;
 }
 
-#ytesxiubxi .gt_super {
+#yuyfqmgbto .gt_super {
   font-size: 65%;
 }
 
-#ytesxiubxi .gt_footnote_marks {
+#yuyfqmgbto .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#ytesxiubxi .gt_asterisk {
+#yuyfqmgbto .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#ytesxiubxi .gt_indent_1 {
+#yuyfqmgbto .gt_indent_1 {
   text-indent: 5px;
 }
 
-#ytesxiubxi .gt_indent_2 {
+#yuyfqmgbto .gt_indent_2 {
   text-indent: 10px;
 }
 
-#ytesxiubxi .gt_indent_3 {
+#yuyfqmgbto .gt_indent_3 {
   text-indent: 15px;
 }
 
-#ytesxiubxi .gt_indent_4 {
+#yuyfqmgbto .gt_indent_4 {
   text-indent: 20px;
 }
 
-#ytesxiubxi .gt_indent_5 {
+#yuyfqmgbto .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
@@ -6916,23 +5259,23 @@ age_gdiff_u35_out <- maturation_young$age_group_export_final %>% gt() %>%
 age_gdiff_u35_out
 ```
 
-<div id="gwzxsxgyrp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#gwzxsxgyrp table {
+<div id="ygrrmvnmpf" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ygrrmvnmpf table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#gwzxsxgyrp thead, #gwzxsxgyrp tbody, #gwzxsxgyrp tfoot, #gwzxsxgyrp tr, #gwzxsxgyrp td, #gwzxsxgyrp th {
+#ygrrmvnmpf thead, #ygrrmvnmpf tbody, #ygrrmvnmpf tfoot, #ygrrmvnmpf tr, #ygrrmvnmpf td, #ygrrmvnmpf th {
   border-style: none;
 }
 
-#gwzxsxgyrp p {
+#ygrrmvnmpf p {
   margin: 0;
   padding: 0;
 }
 
-#gwzxsxgyrp .gt_table {
+#ygrrmvnmpf .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -6958,12 +5301,12 @@ age_gdiff_u35_out
   border-left-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_caption {
+#ygrrmvnmpf .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#gwzxsxgyrp .gt_title {
+#ygrrmvnmpf .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -6975,7 +5318,7 @@ age_gdiff_u35_out
   border-bottom-width: 0;
 }
 
-#gwzxsxgyrp .gt_subtitle {
+#ygrrmvnmpf .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -6987,7 +5330,7 @@ age_gdiff_u35_out
   border-top-width: 0;
 }
 
-#gwzxsxgyrp .gt_heading {
+#ygrrmvnmpf .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -6999,13 +5342,13 @@ age_gdiff_u35_out
   border-right-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_bottom_border {
+#ygrrmvnmpf .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_col_headings {
+#ygrrmvnmpf .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -7020,7 +5363,7 @@ age_gdiff_u35_out
   border-right-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_col_heading {
+#ygrrmvnmpf .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -7040,7 +5383,7 @@ age_gdiff_u35_out
   overflow-x: hidden;
 }
 
-#gwzxsxgyrp .gt_column_spanner_outer {
+#ygrrmvnmpf .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -7052,15 +5395,15 @@ age_gdiff_u35_out
   padding-right: 4px;
 }
 
-#gwzxsxgyrp .gt_column_spanner_outer:first-child {
+#ygrrmvnmpf .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#gwzxsxgyrp .gt_column_spanner_outer:last-child {
+#ygrrmvnmpf .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#gwzxsxgyrp .gt_column_spanner {
+#ygrrmvnmpf .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -7072,11 +5415,11 @@ age_gdiff_u35_out
   width: 100%;
 }
 
-#gwzxsxgyrp .gt_spanner_row {
+#ygrrmvnmpf .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#gwzxsxgyrp .gt_group_heading {
+#ygrrmvnmpf .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -7102,7 +5445,7 @@ age_gdiff_u35_out
   text-align: left;
 }
 
-#gwzxsxgyrp .gt_empty_group_heading {
+#ygrrmvnmpf .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -7117,15 +5460,15 @@ age_gdiff_u35_out
   vertical-align: middle;
 }
 
-#gwzxsxgyrp .gt_from_md > :first-child {
+#ygrrmvnmpf .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#gwzxsxgyrp .gt_from_md > :last-child {
+#ygrrmvnmpf .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#gwzxsxgyrp .gt_row {
+#ygrrmvnmpf .gt_row {
   padding-top: 1px;
   padding-bottom: 1px;
   padding-left: 5px;
@@ -7144,7 +5487,7 @@ age_gdiff_u35_out
   overflow-x: hidden;
 }
 
-#gwzxsxgyrp .gt_stub {
+#ygrrmvnmpf .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -7157,7 +5500,7 @@ age_gdiff_u35_out
   padding-right: 5px;
 }
 
-#gwzxsxgyrp .gt_stub_row_group {
+#ygrrmvnmpf .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -7171,15 +5514,15 @@ age_gdiff_u35_out
   vertical-align: top;
 }
 
-#gwzxsxgyrp .gt_row_group_first td {
+#ygrrmvnmpf .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#gwzxsxgyrp .gt_row_group_first th {
+#ygrrmvnmpf .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#gwzxsxgyrp .gt_summary_row {
+#ygrrmvnmpf .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -7189,16 +5532,16 @@ age_gdiff_u35_out
   padding-right: 5px;
 }
 
-#gwzxsxgyrp .gt_first_summary_row {
+#ygrrmvnmpf .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_first_summary_row.thick {
+#ygrrmvnmpf .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#gwzxsxgyrp .gt_last_summary_row {
+#ygrrmvnmpf .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -7208,7 +5551,7 @@ age_gdiff_u35_out
   border-bottom-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_grand_summary_row {
+#ygrrmvnmpf .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -7218,7 +5561,7 @@ age_gdiff_u35_out
   padding-right: 5px;
 }
 
-#gwzxsxgyrp .gt_first_grand_summary_row {
+#ygrrmvnmpf .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -7228,7 +5571,7 @@ age_gdiff_u35_out
   border-top-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_last_grand_summary_row_top {
+#ygrrmvnmpf .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -7238,11 +5581,11 @@ age_gdiff_u35_out
   border-bottom-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_striped {
+#ygrrmvnmpf .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#gwzxsxgyrp .gt_table_body {
+#ygrrmvnmpf .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -7251,7 +5594,7 @@ age_gdiff_u35_out
   border-bottom-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_footnotes {
+#ygrrmvnmpf .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -7265,7 +5608,7 @@ age_gdiff_u35_out
   border-right-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_footnote {
+#ygrrmvnmpf .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -7274,7 +5617,7 @@ age_gdiff_u35_out
   padding-right: 5px;
 }
 
-#gwzxsxgyrp .gt_sourcenotes {
+#ygrrmvnmpf .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -7288,7 +5631,7 @@ age_gdiff_u35_out
   border-right-color: #D3D3D3;
 }
 
-#gwzxsxgyrp .gt_sourcenote {
+#ygrrmvnmpf .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -7296,63 +5639,63 @@ age_gdiff_u35_out
   padding-right: 5px;
 }
 
-#gwzxsxgyrp .gt_left {
+#ygrrmvnmpf .gt_left {
   text-align: left;
 }
 
-#gwzxsxgyrp .gt_center {
+#ygrrmvnmpf .gt_center {
   text-align: center;
 }
 
-#gwzxsxgyrp .gt_right {
+#ygrrmvnmpf .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#gwzxsxgyrp .gt_font_normal {
+#ygrrmvnmpf .gt_font_normal {
   font-weight: normal;
 }
 
-#gwzxsxgyrp .gt_font_bold {
+#ygrrmvnmpf .gt_font_bold {
   font-weight: bold;
 }
 
-#gwzxsxgyrp .gt_font_italic {
+#ygrrmvnmpf .gt_font_italic {
   font-style: italic;
 }
 
-#gwzxsxgyrp .gt_super {
+#ygrrmvnmpf .gt_super {
   font-size: 65%;
 }
 
-#gwzxsxgyrp .gt_footnote_marks {
+#ygrrmvnmpf .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#gwzxsxgyrp .gt_asterisk {
+#ygrrmvnmpf .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#gwzxsxgyrp .gt_indent_1 {
+#ygrrmvnmpf .gt_indent_1 {
   text-indent: 5px;
 }
 
-#gwzxsxgyrp .gt_indent_2 {
+#ygrrmvnmpf .gt_indent_2 {
   text-indent: 10px;
 }
 
-#gwzxsxgyrp .gt_indent_3 {
+#ygrrmvnmpf .gt_indent_3 {
   text-indent: 15px;
 }
 
-#gwzxsxgyrp .gt_indent_4 {
+#ygrrmvnmpf .gt_indent_4 {
   text-indent: 20px;
 }
 
-#gwzxsxgyrp .gt_indent_5 {
+#ygrrmvnmpf .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
@@ -7550,23 +5893,23 @@ save_sex_effect_out <-save_sex_effect_final%>% gt() %>%
 save_sex_effect_out
 ```
 
-<div id="ggbogbyrhk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ggbogbyrhk table {
+<div id="fcmmeonlkr" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#fcmmeonlkr table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#ggbogbyrhk thead, #ggbogbyrhk tbody, #ggbogbyrhk tfoot, #ggbogbyrhk tr, #ggbogbyrhk td, #ggbogbyrhk th {
+#fcmmeonlkr thead, #fcmmeonlkr tbody, #fcmmeonlkr tfoot, #fcmmeonlkr tr, #fcmmeonlkr td, #fcmmeonlkr th {
   border-style: none;
 }
 
-#ggbogbyrhk p {
+#fcmmeonlkr p {
   margin: 0;
   padding: 0;
 }
 
-#ggbogbyrhk .gt_table {
+#fcmmeonlkr .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -7592,12 +5935,12 @@ save_sex_effect_out
   border-left-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_caption {
+#fcmmeonlkr .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#ggbogbyrhk .gt_title {
+#fcmmeonlkr .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -7609,7 +5952,7 @@ save_sex_effect_out
   border-bottom-width: 0;
 }
 
-#ggbogbyrhk .gt_subtitle {
+#fcmmeonlkr .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -7621,7 +5964,7 @@ save_sex_effect_out
   border-top-width: 0;
 }
 
-#ggbogbyrhk .gt_heading {
+#fcmmeonlkr .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -7633,13 +5976,13 @@ save_sex_effect_out
   border-right-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_bottom_border {
+#fcmmeonlkr .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_col_headings {
+#fcmmeonlkr .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -7654,7 +5997,7 @@ save_sex_effect_out
   border-right-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_col_heading {
+#fcmmeonlkr .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -7674,7 +6017,7 @@ save_sex_effect_out
   overflow-x: hidden;
 }
 
-#ggbogbyrhk .gt_column_spanner_outer {
+#fcmmeonlkr .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -7686,15 +6029,15 @@ save_sex_effect_out
   padding-right: 4px;
 }
 
-#ggbogbyrhk .gt_column_spanner_outer:first-child {
+#fcmmeonlkr .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ggbogbyrhk .gt_column_spanner_outer:last-child {
+#fcmmeonlkr .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ggbogbyrhk .gt_column_spanner {
+#fcmmeonlkr .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -7706,11 +6049,11 @@ save_sex_effect_out
   width: 100%;
 }
 
-#ggbogbyrhk .gt_spanner_row {
+#fcmmeonlkr .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#ggbogbyrhk .gt_group_heading {
+#fcmmeonlkr .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -7736,7 +6079,7 @@ save_sex_effect_out
   text-align: left;
 }
 
-#ggbogbyrhk .gt_empty_group_heading {
+#fcmmeonlkr .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -7751,15 +6094,15 @@ save_sex_effect_out
   vertical-align: middle;
 }
 
-#ggbogbyrhk .gt_from_md > :first-child {
+#fcmmeonlkr .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#ggbogbyrhk .gt_from_md > :last-child {
+#fcmmeonlkr .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#ggbogbyrhk .gt_row {
+#fcmmeonlkr .gt_row {
   padding-top: 1px;
   padding-bottom: 1px;
   padding-left: 5px;
@@ -7778,7 +6121,7 @@ save_sex_effect_out
   overflow-x: hidden;
 }
 
-#ggbogbyrhk .gt_stub {
+#fcmmeonlkr .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -7791,7 +6134,7 @@ save_sex_effect_out
   padding-right: 5px;
 }
 
-#ggbogbyrhk .gt_stub_row_group {
+#fcmmeonlkr .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -7805,15 +6148,15 @@ save_sex_effect_out
   vertical-align: top;
 }
 
-#ggbogbyrhk .gt_row_group_first td {
+#fcmmeonlkr .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#ggbogbyrhk .gt_row_group_first th {
+#fcmmeonlkr .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#ggbogbyrhk .gt_summary_row {
+#fcmmeonlkr .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -7823,16 +6166,16 @@ save_sex_effect_out
   padding-right: 5px;
 }
 
-#ggbogbyrhk .gt_first_summary_row {
+#fcmmeonlkr .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_first_summary_row.thick {
+#fcmmeonlkr .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#ggbogbyrhk .gt_last_summary_row {
+#fcmmeonlkr .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -7842,7 +6185,7 @@ save_sex_effect_out
   border-bottom-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_grand_summary_row {
+#fcmmeonlkr .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -7852,7 +6195,7 @@ save_sex_effect_out
   padding-right: 5px;
 }
 
-#ggbogbyrhk .gt_first_grand_summary_row {
+#fcmmeonlkr .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -7862,7 +6205,7 @@ save_sex_effect_out
   border-top-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_last_grand_summary_row_top {
+#fcmmeonlkr .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -7872,11 +6215,11 @@ save_sex_effect_out
   border-bottom-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_striped {
+#fcmmeonlkr .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ggbogbyrhk .gt_table_body {
+#fcmmeonlkr .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -7885,7 +6228,7 @@ save_sex_effect_out
   border-bottom-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_footnotes {
+#fcmmeonlkr .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -7899,7 +6242,7 @@ save_sex_effect_out
   border-right-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_footnote {
+#fcmmeonlkr .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -7908,7 +6251,7 @@ save_sex_effect_out
   padding-right: 5px;
 }
 
-#ggbogbyrhk .gt_sourcenotes {
+#fcmmeonlkr .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -7922,7 +6265,7 @@ save_sex_effect_out
   border-right-color: #D3D3D3;
 }
 
-#ggbogbyrhk .gt_sourcenote {
+#fcmmeonlkr .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -7930,63 +6273,63 @@ save_sex_effect_out
   padding-right: 5px;
 }
 
-#ggbogbyrhk .gt_left {
+#fcmmeonlkr .gt_left {
   text-align: left;
 }
 
-#ggbogbyrhk .gt_center {
+#fcmmeonlkr .gt_center {
   text-align: center;
 }
 
-#ggbogbyrhk .gt_right {
+#fcmmeonlkr .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ggbogbyrhk .gt_font_normal {
+#fcmmeonlkr .gt_font_normal {
   font-weight: normal;
 }
 
-#ggbogbyrhk .gt_font_bold {
+#fcmmeonlkr .gt_font_bold {
   font-weight: bold;
 }
 
-#ggbogbyrhk .gt_font_italic {
+#fcmmeonlkr .gt_font_italic {
   font-style: italic;
 }
 
-#ggbogbyrhk .gt_super {
+#fcmmeonlkr .gt_super {
   font-size: 65%;
 }
 
-#ggbogbyrhk .gt_footnote_marks {
+#fcmmeonlkr .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#ggbogbyrhk .gt_asterisk {
+#fcmmeonlkr .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#ggbogbyrhk .gt_indent_1 {
+#fcmmeonlkr .gt_indent_1 {
   text-indent: 5px;
 }
 
-#ggbogbyrhk .gt_indent_2 {
+#fcmmeonlkr .gt_indent_2 {
   text-indent: 10px;
 }
 
-#ggbogbyrhk .gt_indent_3 {
+#fcmmeonlkr .gt_indent_3 {
   text-indent: 15px;
 }
 
-#ggbogbyrhk .gt_indent_4 {
+#fcmmeonlkr .gt_indent_4 {
   text-indent: 20px;
 }
 
-#ggbogbyrhk .gt_indent_5 {
+#fcmmeonlkr .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
@@ -8232,23 +6575,23 @@ save_dosage_effect_ap_out <-save_dosage_effect_ap_final%>% gt() %>%
 save_dosage_effect_ap_out
 ```
 
-<div id="gclmdqfnjm" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#gclmdqfnjm table {
+<div id="elabosuvcz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#elabosuvcz table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#gclmdqfnjm thead, #gclmdqfnjm tbody, #gclmdqfnjm tfoot, #gclmdqfnjm tr, #gclmdqfnjm td, #gclmdqfnjm th {
+#elabosuvcz thead, #elabosuvcz tbody, #elabosuvcz tfoot, #elabosuvcz tr, #elabosuvcz td, #elabosuvcz th {
   border-style: none;
 }
 
-#gclmdqfnjm p {
+#elabosuvcz p {
   margin: 0;
   padding: 0;
 }
 
-#gclmdqfnjm .gt_table {
+#elabosuvcz .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -8274,12 +6617,12 @@ save_dosage_effect_ap_out
   border-left-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_caption {
+#elabosuvcz .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#gclmdqfnjm .gt_title {
+#elabosuvcz .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -8291,7 +6634,7 @@ save_dosage_effect_ap_out
   border-bottom-width: 0;
 }
 
-#gclmdqfnjm .gt_subtitle {
+#elabosuvcz .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -8303,7 +6646,7 @@ save_dosage_effect_ap_out
   border-top-width: 0;
 }
 
-#gclmdqfnjm .gt_heading {
+#elabosuvcz .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -8315,13 +6658,13 @@ save_dosage_effect_ap_out
   border-right-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_bottom_border {
+#elabosuvcz .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_col_headings {
+#elabosuvcz .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -8336,7 +6679,7 @@ save_dosage_effect_ap_out
   border-right-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_col_heading {
+#elabosuvcz .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -8356,7 +6699,7 @@ save_dosage_effect_ap_out
   overflow-x: hidden;
 }
 
-#gclmdqfnjm .gt_column_spanner_outer {
+#elabosuvcz .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -8368,15 +6711,15 @@ save_dosage_effect_ap_out
   padding-right: 4px;
 }
 
-#gclmdqfnjm .gt_column_spanner_outer:first-child {
+#elabosuvcz .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#gclmdqfnjm .gt_column_spanner_outer:last-child {
+#elabosuvcz .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#gclmdqfnjm .gt_column_spanner {
+#elabosuvcz .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -8388,11 +6731,11 @@ save_dosage_effect_ap_out
   width: 100%;
 }
 
-#gclmdqfnjm .gt_spanner_row {
+#elabosuvcz .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#gclmdqfnjm .gt_group_heading {
+#elabosuvcz .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -8418,7 +6761,7 @@ save_dosage_effect_ap_out
   text-align: left;
 }
 
-#gclmdqfnjm .gt_empty_group_heading {
+#elabosuvcz .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -8433,15 +6776,15 @@ save_dosage_effect_ap_out
   vertical-align: middle;
 }
 
-#gclmdqfnjm .gt_from_md > :first-child {
+#elabosuvcz .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#gclmdqfnjm .gt_from_md > :last-child {
+#elabosuvcz .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#gclmdqfnjm .gt_row {
+#elabosuvcz .gt_row {
   padding-top: 1px;
   padding-bottom: 1px;
   padding-left: 5px;
@@ -8460,7 +6803,7 @@ save_dosage_effect_ap_out
   overflow-x: hidden;
 }
 
-#gclmdqfnjm .gt_stub {
+#elabosuvcz .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -8473,7 +6816,7 @@ save_dosage_effect_ap_out
   padding-right: 5px;
 }
 
-#gclmdqfnjm .gt_stub_row_group {
+#elabosuvcz .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -8487,15 +6830,15 @@ save_dosage_effect_ap_out
   vertical-align: top;
 }
 
-#gclmdqfnjm .gt_row_group_first td {
+#elabosuvcz .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#gclmdqfnjm .gt_row_group_first th {
+#elabosuvcz .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#gclmdqfnjm .gt_summary_row {
+#elabosuvcz .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -8505,16 +6848,16 @@ save_dosage_effect_ap_out
   padding-right: 5px;
 }
 
-#gclmdqfnjm .gt_first_summary_row {
+#elabosuvcz .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_first_summary_row.thick {
+#elabosuvcz .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#gclmdqfnjm .gt_last_summary_row {
+#elabosuvcz .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -8524,7 +6867,7 @@ save_dosage_effect_ap_out
   border-bottom-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_grand_summary_row {
+#elabosuvcz .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -8534,7 +6877,7 @@ save_dosage_effect_ap_out
   padding-right: 5px;
 }
 
-#gclmdqfnjm .gt_first_grand_summary_row {
+#elabosuvcz .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -8544,7 +6887,7 @@ save_dosage_effect_ap_out
   border-top-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_last_grand_summary_row_top {
+#elabosuvcz .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -8554,11 +6897,11 @@ save_dosage_effect_ap_out
   border-bottom-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_striped {
+#elabosuvcz .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#gclmdqfnjm .gt_table_body {
+#elabosuvcz .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -8567,7 +6910,7 @@ save_dosage_effect_ap_out
   border-bottom-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_footnotes {
+#elabosuvcz .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -8581,7 +6924,7 @@ save_dosage_effect_ap_out
   border-right-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_footnote {
+#elabosuvcz .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -8590,7 +6933,7 @@ save_dosage_effect_ap_out
   padding-right: 5px;
 }
 
-#gclmdqfnjm .gt_sourcenotes {
+#elabosuvcz .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -8604,7 +6947,7 @@ save_dosage_effect_ap_out
   border-right-color: #D3D3D3;
 }
 
-#gclmdqfnjm .gt_sourcenote {
+#elabosuvcz .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -8612,63 +6955,63 @@ save_dosage_effect_ap_out
   padding-right: 5px;
 }
 
-#gclmdqfnjm .gt_left {
+#elabosuvcz .gt_left {
   text-align: left;
 }
 
-#gclmdqfnjm .gt_center {
+#elabosuvcz .gt_center {
   text-align: center;
 }
 
-#gclmdqfnjm .gt_right {
+#elabosuvcz .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#gclmdqfnjm .gt_font_normal {
+#elabosuvcz .gt_font_normal {
   font-weight: normal;
 }
 
-#gclmdqfnjm .gt_font_bold {
+#elabosuvcz .gt_font_bold {
   font-weight: bold;
 }
 
-#gclmdqfnjm .gt_font_italic {
+#elabosuvcz .gt_font_italic {
   font-style: italic;
 }
 
-#gclmdqfnjm .gt_super {
+#elabosuvcz .gt_super {
   font-size: 65%;
 }
 
-#gclmdqfnjm .gt_footnote_marks {
+#elabosuvcz .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#gclmdqfnjm .gt_asterisk {
+#elabosuvcz .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#gclmdqfnjm .gt_indent_1 {
+#elabosuvcz .gt_indent_1 {
   text-indent: 5px;
 }
 
-#gclmdqfnjm .gt_indent_2 {
+#elabosuvcz .gt_indent_2 {
   text-indent: 10px;
 }
 
-#gclmdqfnjm .gt_indent_3 {
+#elabosuvcz .gt_indent_3 {
   text-indent: 15px;
 }
 
-#gclmdqfnjm .gt_indent_4 {
+#elabosuvcz .gt_indent_4 {
   text-indent: 20px;
 }
 
-#gclmdqfnjm .gt_indent_5 {
+#elabosuvcz .gt_indent_5 {
   text-indent: 25px;
 }
 </style>
@@ -8789,7 +7132,7 @@ test_sx_lmm <- function(formula, data){
 print("Verbal IQ:")
 ```
 
-    ## [1] "Verbal IQ:"
+\[1\] “Verbal IQ:”
 
 ``` r
 groups <- c("PATIENT-DEL","PATIENT-DUP","CONTROL")
@@ -8798,48 +7141,33 @@ names(hipp_tail_viq) <- groups
 hipp_tail_viq
 ```
 
-    ## $`PATIENT-DEL`
-    ##                                   Estimate Std. Error        df    t value
-    ## (Intercept)                      37.691814  1.5817466 109.19597 23.8292375
-    ## Hip_Hippocampal_tail.combat.norm  1.860354  0.7212128 130.96120  2.5794800
-    ## SEX                               1.030443  1.8006149  89.61745  0.5722727
-    ## site                              4.373378  1.0133889 147.85197  4.3155969
-    ##                                      Pr(>|t|)
-    ## (Intercept)                      4.527159e-45
-    ## Hip_Hippocampal_tail.combat.norm 1.099840e-02
-    ## SEX                              5.685701e-01
-    ## site                             2.899232e-05
-    ## 
-    ## $`PATIENT-DUP`
-    ##                                    Estimate Std. Error       df    t value
-    ## (Intercept)                      47.6449092   3.209040 39.35927 14.8470898
-    ## Hip_Hippocampal_tail.combat.norm  2.5438232   1.688942 57.57944  1.5061640
-    ## SEX                              -2.4372811   4.234338 34.31285 -0.5755991
-    ## site                             -0.8577922   1.391474 31.98451 -0.6164631
-    ##                                      Pr(>|t|)
-    ## (Intercept)                      1.014745e-17
-    ## Hip_Hippocampal_tail.combat.norm 1.374919e-01
-    ## SEX                              5.686422e-01
-    ## site                             5.419521e-01
-    ## 
-    ## $CONTROL
-    ##                                    Estimate Std. Error        df    t value
-    ## (Intercept)                      62.7656754   2.144863  86.47614 29.2632603
-    ## Hip_Hippocampal_tail.combat.norm -0.9366697   1.310072 101.07921 -0.7149759
-    ## SEX                              -6.0389277   2.791619  74.01856 -2.1632346
-    ## site                             -3.9322620   2.286445 118.47454 -1.7198151
-    ##                                      Pr(>|t|)
-    ## (Intercept)                      1.235490e-46
-    ## Hip_Hippocampal_tail.combat.norm 4.762721e-01
-    ## SEX                              3.375205e-02
-    ## site                             8.807729e-02
+\$`PATIENT-DEL` Estimate Std. Error df t value (Intercept) 37.691814
+1.5817466 109.19597 23.8292375 Hip_Hippocampal_tail.combat.norm 1.860354
+0.7212128 130.96120 2.5794800 SEX 1.030443 1.8006149 89.61745 0.5722727
+site 4.373378 1.0133889 147.85197 4.3155969 Pr(\>\|t\|) (Intercept)
+4.527159e-45 Hip_Hippocampal_tail.combat.norm 1.099840e-02 SEX
+5.685701e-01 site 2.899232e-05
+
+\$`PATIENT-DUP` Estimate Std. Error df t value (Intercept) 47.6449092
+3.209040 39.35927 14.8470898 Hip_Hippocampal_tail.combat.norm 2.5438232
+1.688942 57.57944 1.5061640 SEX -2.4372811 4.234338 34.31285 -0.5755991
+site -0.8577922 1.391474 31.98451 -0.6164631 Pr(\>\|t\|) (Intercept)
+1.014745e-17 Hip_Hippocampal_tail.combat.norm 1.374919e-01 SEX
+5.686422e-01 site 5.419521e-01
+
+\$CONTROL Estimate Std. Error df t value (Intercept) 62.7656754 2.144863
+86.47614 29.2632603 Hip_Hippocampal_tail.combat.norm -0.9366697 1.310072
+101.07921 -0.7149759 SEX -6.0389277 2.791619 74.01856 -2.1632346 site
+-3.9322620 2.286445 118.47454 -1.7198151 Pr(\>\|t\|) (Intercept)
+1.235490e-46 Hip_Hippocampal_tail.combat.norm 4.762721e-01 SEX
+3.375205e-02 site 8.807729e-02
 
 ``` r
 # matrix IQ vs hipp tail in each group
 print("Matrix IQ:")
 ```
 
-    ## [1] "Matrix IQ:"
+\[1\] “Matrix IQ:”
 
 ``` r
 groups <- c("PATIENT-DEL","PATIENT-DUP","CONTROL")
@@ -8848,48 +7176,33 @@ names(hipp_tail_miq) <- groups
 hipp_tail_miq
 ```
 
-    ## $`PATIENT-DEL`
-    ##                                    Estimate Std. Error        df    t value
-    ## (Intercept)                      33.2186204   1.921771 111.67110 17.2854187
-    ## Hip_Hippocampal_tail.combat.norm -0.5652688   0.875984 131.59252 -0.6452958
-    ## SEX                               1.9855327   2.168126  92.60277  0.9157828
-    ## site                              3.7276525   1.254189 151.59184  2.9721614
-    ##                                      Pr(>|t|)
-    ## (Intercept)                      2.394472e-33
-    ## Hip_Hippocampal_tail.combat.norm 5.198591e-01
-    ## SEX                              3.621595e-01
-    ## site                             3.440448e-03
-    ## 
-    ## $`PATIENT-DUP`
-    ##                                    Estimate Std. Error       df    t value
-    ## (Intercept)                      47.2607877   3.173685 46.41537 14.8914545
-    ## Hip_Hippocampal_tail.combat.norm  1.5421672   1.791183 43.76239  0.8609770
-    ## SEX                               0.5024728   3.846671 33.72805  0.1306254
-    ## site                              1.1643918   2.172564 40.14848  0.5359527
-    ##                                      Pr(>|t|)
-    ## (Intercept)                      2.674445e-19
-    ## Hip_Hippocampal_tail.combat.norm 3.939435e-01
-    ## SEX                              8.968477e-01
-    ## site                             5.949483e-01
-    ## 
-    ## $CONTROL
-    ##                                    Estimate Std. Error        df    t value
-    ## (Intercept)                      55.8543673   1.893697  85.22077 29.4948779
-    ## Hip_Hippocampal_tail.combat.norm -0.2496773   1.172768  91.90799 -0.2128957
-    ## SEX                              -3.4123523   2.424433  74.16283 -1.4074849
-    ## site                              0.5301897   2.177880 121.91154  0.2434431
-    ##                                      Pr(>|t|)
-    ## (Intercept)                      1.714465e-46
-    ## Hip_Hippocampal_tail.combat.norm 8.318798e-01
-    ## SEX                              1.634612e-01
-    ## site                             8.080714e-01
+\$`PATIENT-DEL` Estimate Std. Error df t value (Intercept) 33.2186204
+1.921771 111.67110 17.2854187 Hip_Hippocampal_tail.combat.norm
+-0.5652688 0.875984 131.59252 -0.6452958 SEX 1.9855327 2.168126 92.60277
+0.9157828 site 3.7276525 1.254189 151.59184 2.9721614 Pr(\>\|t\|)
+(Intercept) 2.394472e-33 Hip_Hippocampal_tail.combat.norm 5.198591e-01
+SEX 3.621595e-01 site 3.440448e-03
+
+\$`PATIENT-DUP` Estimate Std. Error df t value (Intercept) 47.2607877
+3.173685 46.41537 14.8914545 Hip_Hippocampal_tail.combat.norm 1.5421672
+1.791183 43.76239 0.8609770 SEX 0.5024728 3.846671 33.72805 0.1306254
+site 1.1643918 2.172564 40.14848 0.5359527 Pr(\>\|t\|) (Intercept)
+2.674445e-19 Hip_Hippocampal_tail.combat.norm 3.939435e-01 SEX
+8.968477e-01 site 5.949483e-01
+
+\$CONTROL Estimate Std. Error df t value (Intercept) 55.8543673 1.893697
+85.22077 29.4948779 Hip_Hippocampal_tail.combat.norm -0.2496773 1.172768
+91.90799 -0.2128957 SEX -3.4123523 2.424433 74.16283 -1.4074849 site
+0.5301897 2.177880 121.91154 0.2434431 Pr(\>\|t\|) (Intercept)
+1.714465e-46 Hip_Hippocampal_tail.combat.norm 8.318798e-01 SEX
+1.634612e-01 site 8.080714e-01
 
 ``` r
 # verbal controlling for matrix IQ vs hipp tail in each group
 print("Verbal controlling for Matrix IQ:")
 ```
 
-    ## [1] "Verbal controlling for Matrix IQ:"
+\[1\] “Verbal controlling for Matrix IQ:”
 
 ``` r
 groups <- c("PATIENT-DEL","PATIENT-DUP","CONTROL")
@@ -8898,47 +7211,29 @@ names(hipp_tail_ciq) <- groups
 hipp_tail_ciq
 ```
 
-    ## $`PATIENT-DEL`
-    ##                                    Estimate Std. Error        df    t value
-    ## (Intercept)                      28.9652286 2.38231143 155.37375 12.1584560
-    ## Hip_Hippocampal_tail.combat.norm  2.0722725 0.64696712 109.73894  3.2030570
-    ## WASI_matrix                       0.2670440 0.05761027 177.65798  4.6353542
-    ## SEX                               0.5434794 1.56631125  80.63078  0.3469804
-    ## site                              3.2360671 1.03395651 159.86165  3.1297903
-    ##                                      Pr(>|t|)
-    ## (Intercept)                      2.523368e-24
-    ## Hip_Hippocampal_tail.combat.norm 1.779938e-03
-    ## WASI_matrix                      6.878185e-06
-    ## SEX                              7.295100e-01
-    ## site                             2.079898e-03
-    ## 
-    ## $`PATIENT-DUP`
-    ##                                    Estimate Std. Error       df    t value
-    ## (Intercept)                      36.3005557  5.5194857 56.34834  6.5768005
-    ## Hip_Hippocampal_tail.combat.norm  2.4827804  1.5953844 48.26318  1.5562271
-    ## WASI_matrix                       0.2441939  0.1005468 47.04098  2.4286578
-    ## SEX                              -2.7225259  3.7187127 25.93705 -0.7321152
-    ## site                             -1.3579982  1.5187235 26.04776 -0.8941708
-    ##                                      Pr(>|t|)
-    ## (Intercept)                      1.684495e-08
-    ## Hip_Hippocampal_tail.combat.norm 1.261879e-01
-    ## WASI_matrix                      1.903074e-02
-    ## SEX                              4.706625e-01
-    ## site                             3.794186e-01
-    ## 
-    ## $CONTROL
-    ##                                    Estimate Std. Error        df    t value
-    ## (Intercept)                      26.8325617 4.68275555 115.83591  5.7300795
-    ## Hip_Hippocampal_tail.combat.norm -0.4473155 0.99523829  82.45147 -0.4494557
-    ## WASI_matrix                       0.6419459 0.07890426 119.61362  8.1357582
-    ## SEX                              -3.8389362 2.05347527  68.00817 -1.8694826
-    ## site                             -3.8275232 1.89718523 119.37816 -2.0174747
-    ##                                      Pr(>|t|)
-    ## (Intercept)                      8.086510e-08
-    ## Hip_Hippocampal_tail.combat.norm 6.542823e-01
-    ## WASI_matrix                      4.370185e-13
-    ## SEX                              6.586147e-02
-    ## site                             4.588874e-02
+\$`PATIENT-DEL` Estimate Std. Error df t value (Intercept) 28.9652286
+2.38231143 155.37375 12.1584560 Hip_Hippocampal_tail.combat.norm
+2.0722725 0.64696712 109.73894 3.2030570 WASI_matrix 0.2670440
+0.05761027 177.65798 4.6353542 SEX 0.5434794 1.56631125 80.63078
+0.3469804 site 3.2360671 1.03395651 159.86165 3.1297903 Pr(\>\|t\|)
+(Intercept) 2.523368e-24 Hip_Hippocampal_tail.combat.norm 1.779938e-03
+WASI_matrix 6.878185e-06 SEX 7.295100e-01 site 2.079898e-03
+
+\$`PATIENT-DUP` Estimate Std. Error df t value (Intercept) 36.3005557
+5.5194857 56.34834 6.5768005 Hip_Hippocampal_tail.combat.norm 2.4827804
+1.5953844 48.26318 1.5562271 WASI_matrix 0.2441939 0.1005468 47.04098
+2.4286578 SEX -2.7225259 3.7187127 25.93705 -0.7321152 site -1.3579982
+1.5187235 26.04776 -0.8941708 Pr(\>\|t\|) (Intercept) 1.684495e-08
+Hip_Hippocampal_tail.combat.norm 1.261879e-01 WASI_matrix 1.903074e-02
+SEX 4.706625e-01 site 3.794186e-01
+
+\$CONTROL Estimate Std. Error df t value (Intercept) 26.8325617
+4.68275555 115.83591 5.7300795 Hip_Hippocampal_tail.combat.norm
+-0.4473155 0.99523829 82.45147 -0.4494557 WASI_matrix 0.6419459
+0.07890426 119.61362 8.1357582 SEX -3.8389362 2.05347527 68.00817
+-1.8694826 site -3.8275232 1.89718523 119.37816 -2.0174747 Pr(\>\|t\|)
+(Intercept) 8.086510e-08 Hip_Hippocampal_tail.combat.norm 6.542823e-01
+WASI_matrix 4.370185e-13 SEX 6.586147e-02 site 4.588874e-02
 
 plot verbal IQ vs hippocampus tail
 
