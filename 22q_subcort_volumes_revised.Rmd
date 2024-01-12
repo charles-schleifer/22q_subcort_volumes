@@ -572,40 +572,6 @@ sc_vol_combat_data <- sc_vol_combat$data_combat
 demo_combat <- merge(x=demo_sc, y=sc_vol_combat_data, by=c("MRI_S_ID","visit_index","site"))
 ```
 
-export table of roi sizes
-```{r}
-# get average roi per group
-group_mean_vols <- data.frame(Region=sc_names)
-for(c in sc_names){
-  group_mean_vols[which(group_mean_vols$Region == c),"22qDel"] <- mean(filter(demo_sc, SUBJECT_IDENTITY=="PATIENT-DEL")[,c],na.rm = TRUE) %>% round(., digits=0)
-  group_mean_vols[which(group_mean_vols$Region == c),"TD"] <- mean(filter(demo_sc, SUBJECT_IDENTITY=="CONTROL")[,c],na.rm = TRUE) %>% round(., digits=0)
-  group_mean_vols[which(group_mean_vols$Region == c),"22qDup"] <- mean(filter(demo_sc, SUBJECT_IDENTITY=="PATIENT-DUP")[,c],na.rm = TRUE) %>% round(., digits=0)
-}
-group_mean_vols <- group_mean_vols[order(group_mean_vols$TD),]
-
-# get region names for matching
-group_mean_vols$r <- gsub("Thal_","",group_mean_vols$Region)
-group_mean_vols$r <- gsub("Amy_","",group_mean_vols$r)
-group_mean_vols$r <- gsub("Hip_","",group_mean_vols$r)
-
-# merge with full names
-#save_dosage_effect <- merge(x=save_dosage_effect, y=lut[c("Structure","Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
-group_mean_match <- merge(x=group_mean_vols, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="r",by.y="bilat_match", all.x=TRUE)
-
-# select cols
-group_mean_out <- group_mean_match[order(group_mean_match[,"22qDel"]),c("Structure","bilat_name","22qDel","TD","22qDup")] %>% rename("Region"="bilat_name")
-
-group_mean_table <- group_mean_out %>% gt() %>% 
-  tab_style(style = cell_text(weight = "bold"),locations = list(cells_title(),cells_column_labels())) %>%
-  cols_align(align="right", columns=everything()) %>% 
-  tab_header("Average volumes (mm^3) by group")%>%
-  tab_options(data_row.padding = px(1)) 
-
-# gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.pdf"))
-# gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.png"))
-# gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.rtf"))
-```
-
 ## gene dosage and age models
 first, set up data frame
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
@@ -928,7 +894,7 @@ export_demo_table <- print(demo_match_final, quote=F, noSpaces=F, printToggle=T)
 
 final baseline demo table 
 note: some interim variable names re-used from longitudinal table but final df_demo_table and df_demo_table_bl should be accurate)
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 #dir <- "/Users/charlie/Dropbox/PhD/bearden_lab/22q/analyses/striatum_thalamus_fc"
 
 # get variables from demo_mri
@@ -1121,9 +1087,22 @@ export_demo_table_bl <- print(demo_match_final_bl, quote=F, noSpaces=F, printTog
 demo_edit <- read.csv(file.path(project,"figures/demographics/table1_demographics_edit.csv")) %>% rename(" "="X") %>% rename("22qDel"="X22qDel") %>% rename("22qDup"="X22qDup") %>% rename("p-value"="p.value")
 #demo_edit$`p-value` %<>% as.numeric %>% formatC(., format = "g", digits = 2)
 
+# add info on scanner by visit
+get_scanner_by_visit <- function(df_long=df_demo, visit){
+  df <- filter(df_long, visit_index==visit)
+  t <- CreateTableOne(data=df,vars="site",strata="SUBJECT_IDENTITY") 
+  out <- print(t, showAllLevels=TRUE)["site (%)",] 
+  return(out)
+}
+scanner_visit <- lapply(1:6, function(i) get_scanner_by_visit(visit=i)) %>% do.call(rbind,.) %>% as.data.frame
+scanner_visit_final <- scanner_visit 
+scanner_visit_final[1:6,1] <- paste("Visit",1:6, "Prisma scanner, n (%)")
+colnames(scanner_visit_final) <- colnames(demo_edit)
+demo_edit_final <- rbind(demo_edit,scanner_visit_final[1:6,1:5])
+
 # export table
-demo_out <- demo_edit %>% gt() %>% 
-  tab_style(style = cell_text(weight = "bold"),locations = list(cells_body(columns = 1,rows = 1:nrow(demo_edit)), cells_column_labels())) %>%
+demo_out <- demo_edit_final %>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_body(columns = 1,rows = 1:nrow(demo_edit_final)), cells_column_labels())) %>%
   cols_align(align="right", columns=everything())
 
 # gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.pdf"))
@@ -1230,16 +1209,17 @@ save_dosage_effect$Region <- gsub("Hip_","",save_dosage_effect$Region)
 save_dosage_effect <- merge(x=save_dosage_effect, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="Region",by.y="bilat_match", all.x=TRUE)
 
 # edit structure label
-save_dosage_effect$Structure <- paste(save_dosage_effect$Structure, "subregions") 
+save_dosage_effect$Structure <- paste(save_dosage_effect$Structure, "subregions") %>% gsub("whole brain subregions", "whole brain",.)
+
 
 # add total ICV name
 #save_dosage_effect[which(save_dosage_effect$Region=="eTIVnormed"),c("Structure","bilat_name")] <-  c("whole brain","total ICV")
 
 # change structure label for whole thal, hip, amy
-save_dosage_effect[which(save_dosage_effect$Region %in% c("Whole_amygdala","Whole_thalamus","Whole_hippocampus")),"Structure"] <-  "whole structures"
+save_dosage_effect[which(save_dosage_effect$Region %in% c("Whole_amygdala","Whole_thalamus","Whole_hippocampus")),"Structure"] <-  "whole volumes"
 
 # set order
-save_dosage_effect$struct_order <- save_dosage_effect$Structure %>% gsub("whole brain",1,.) %>% gsub("whole structures",2,.) %>% gsub("thalamus subregions",3,.) %>% gsub("hippocampus subregions",4,.) %>% gsub("amygdala subregions",5,.)
+save_dosage_effect$struct_order <- save_dosage_effect$Structure %>% gsub("whole brain",1,.) %>% gsub("whole volumes",2,.) %>% gsub("thalamus subregions",3,.) %>% gsub("hippocampus subregions",4,.) %>% gsub("amygdala subregions",5,.)
 
 save_dosage_effect <- save_dosage_effect[with(save_dosage_effect, order(struct_order,beta)),]
 
@@ -1274,9 +1254,9 @@ save_dosage_effect_out <- save_dosage_effect_final %>% gt() %>%
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything())
 
-# gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.png"))
-# gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.pdf"))
-# gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.rtf"))
+gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.png"))
+gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.pdf"))
+gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.rtf"))
 # gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.tex"))
 ```
 plot gene dosage effects
@@ -1893,6 +1873,10 @@ plot_age_gd
 #ggsave(plot=plot_age_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_full.pdf"), width=12, height=7, device = "pdf")
 #ggsave(plot=plot_age_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_full.png"), width=12, height=7, device = "png", dpi = 300)
 ```
+check some additional ones
+```{r}
+plot_gamm_gdiff(list=mat_full_gdiff, name="Thal_VA_all.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Ventral Anterior Thalamus")
+```
 
 plot age gamms for young sample
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
@@ -1932,6 +1916,44 @@ plot_age_young_gd
 ```
 
 ## supplemental
+export table of roi sizes
+```{r}
+# get average roi per group
+group_mean_vols <- data.frame(Region=sc_names)
+for(c in sc_names){
+  group_mean_vols[which(group_mean_vols$Region == c),"22qDel"] <- mean(filter(demo_sc, SUBJECT_IDENTITY=="PATIENT-DEL")[,c],na.rm = TRUE) %>% round(., digits=0)
+  group_mean_vols[which(group_mean_vols$Region == c),"TD"] <- mean(filter(demo_sc, SUBJECT_IDENTITY=="CONTROL")[,c],na.rm = TRUE) %>% round(., digits=0)
+  group_mean_vols[which(group_mean_vols$Region == c),"22qDup"] <- mean(filter(demo_sc, SUBJECT_IDENTITY=="PATIENT-DUP")[,c],na.rm = TRUE) %>% round(., digits=0)
+}
+group_mean_vols <- group_mean_vols[order(group_mean_vols$TD),]
+
+# get region names for matching
+group_mean_vols$r <- gsub("Thal_","",group_mean_vols$Region)
+group_mean_vols$r <- gsub("Amy_","",group_mean_vols$r)
+group_mean_vols$r <- gsub("Hip_","",group_mean_vols$r)
+
+# merge with full names
+#save_dosage_effect <- merge(x=save_dosage_effect, y=lut[c("Structure","Name","region_match")], by.x="Region",by.y="region_match", all.x=TRUE)
+group_mean_match <- merge(x=group_mean_vols, y=lut_unique[,c("Structure","bilat_name","bilat_match")], by.x="r",by.y="bilat_match", all.x=TRUE)
+
+# select cols
+group_mean_out <- group_mean_match[order(group_mean_match[,"22qDel"]),c("Structure","bilat_name","22qDel","TD","22qDup")] %>% rename("Region"="bilat_name")
+
+group_mean_table <- group_mean_out %>% gt() %>% 
+  tab_style(style = cell_text(weight = "bold"),locations = list(cells_title(),cells_column_labels())) %>%
+  cols_align(align="right", columns=everything()) %>% 
+  tab_header("Average volumes (mm^3) by group")%>%
+  tab_options(data_row.padding = px(1)) 
+
+# gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.pdf"))
+# gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.png"))
+# gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.rtf"))
+
+# list in order for methods
+group_mean_write <- group_mean_out
+setorder(group_mean_write,Structure,Region)
+```
+
 To test for group differences, not just gene dosage effects (e.g. del < TD & Dup < TD or Del < TD = Dup), use a model with a binary variable for each group? or two separate case/control models? 
 ```{r warning=FALSE}
 #gamm_combat <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r), data=demo_combat_na_gam, selection=TRUE, method="REML", na.action="na.omit"))
@@ -2057,9 +2079,9 @@ age_gdiff_out <- maturation_full$age_group_export_final %>% gt() %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
 
-gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.png"))
-gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.pdf"))
-gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.rtf"))
+# gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.png"))
+# gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.pdf"))
+# gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.rtf"))
 
 # export table full age range
 age_gdiff_u35_out <- maturation_young$age_group_export_final %>% gt() %>% 
@@ -2368,60 +2390,6 @@ sipspr_effect$fdr_sig <- sipspr_effect$fdr_q < 0.05
 
 ```
 
-
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-#lapply(lme_combat, plot)
-
-plot_var_resid <- function(modlist, variable, region, df){
-  mod <- modlist[[region]]
-  df$testcol <- df[,region]
-  var <- filter(df, !is.na(testcol))[,variable]
-  res <- residuals(mod,type="pearson")
-  dat <- data.frame(variable=var, residual=res)
-  plot <- ggplot(dat, aes(x=variable, y=residual))+
-    geom_point()+
-    geom_hline(yintercept = 0)+
-    ggtitle(region)+
-    xlab(variable)+
-    theme_classic()
-  return(plot)
-}
-
-#plot_var_resid(modlist=lme_combat, variable="gene_dosage", region="Hip_Whole_hippocampus.combat.norm",df=demo_combat_normed)
-#lapply(sc_names_normed, function(n) plot_var_resid(modlist=lme_combat, variable="gene_dosage", region=n, df=demo_combat_normed))
-
-get_group_avg_resid <- function(modlist, group, region, df){
-  mod <- modlist[[region]]
-  df$testcol <- df[,region]
-  dff <- filter(df, !is.na(testcol))
-  dff$res <- residuals(mod,type="pearson")
-  dfg <- filter(dff, SUBJECT_IDENTITY==group)
-  mn <- round(mean(dfg$res), digits = 3)
-  #md <- round(median(dfg$res), digits = 3)
-  #out <- data.frame(mean=mn, median=md)
-  out <- data.frame(mean=mn)
-  return(out)
-}
-
-resids_del <- lapply(sc_names_normed, function(n) get_group_avg_resid(modlist=lme_combat, group="PATIENT-DEL", region=n,df=demo_combat_normed)) %>% do.call(rbind,.)
-resids_td <- lapply(sc_names_normed, function(n) get_group_avg_resid(modlist=lme_combat, group="CONTROL", region=n,df=demo_combat_normed)) %>% do.call(rbind,.)
-resids_dup <- lapply(sc_names_normed, function(n) get_group_avg_resid(modlist=lme_combat, group="PATIENT-DUP", region=n,df=demo_combat_normed)) %>% do.call(rbind,.)
-resids_all <- cbind(resids_del, resids_td, resids_dup)
-colnames(resids_all) <- c("22qDel_mean_resid","TD_mean_resid","22qDup_mean_resid")
-resids_all$r <- sc_names_normed
-
-# get region names for matching
-resids_all$r <- gsub(".combat.norm","",resids_all$r)
-resids_all$r <- gsub("Thal_","",resids_all$r)
-resids_all$r <- gsub("Amy_","",resids_all$r)
-resids_all$r <- gsub("Hip_","",resids_all$r)
-
-# merge with full names
-resids_all <- merge(x=resids_all, y=lut_unique[,c("bilat_name","bilat_match")], by.x="r",by.y="bilat_match", all.x=TRUE)
-
-# merge with final gene dosage table
-resids_merge <- merge(x=save_dosage_effect_final, y=resids_all[,c("bilat_name","22qDel_mean_resid","TD_mean_resid","22qDup_mean_resid")], by.x="Region", by.y="bilat_name")
-```
 
 ## save workspace
 save package info as package_versions.txt
