@@ -12,21 +12,21 @@ attached base packages:
 [1] grid      stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] itsadug_2.4.1          plotfunctions_1.4      tidymv_3.4.2           gratia_0.8.1           longCombat_0.0.0.90000 effects_4.2-2          carData_3.0-5         
- [8] lmerTest_3.1-3         lme4_1.1-31            Matrix_1.5-3           DDoutlier_0.1.0        DMwR_0.4.1             lattice_0.20-45        patchwork_1.1.2       
-[15] viridis_0.6.2          viridisLite_0.4.1      ggnewscale_0.4.9       gt_0.10.0              gghalves_0.1.4         tableone_0.13.2        readxl_1.4.2          
-[22] data.table_1.14.8      tidyr_1.3.0            stringr_1.5.0          dplyr_1.1.0            magrittr_2.0.3         here_1.0.1             conflicted_1.2.0      
-[29] mgcViz_0.1.11          ggplot2_3.4.4          qgam_1.3.4             mgcv_1.8-42            nlme_3.1-162          
+ [1] tinytex_0.44           itsadug_2.4.1          plotfunctions_1.4      tidymv_3.4.2           gratia_0.8.1           longCombat_0.0.0.90000 effects_4.2-2         
+ [8] carData_3.0-5          lmerTest_3.1-3         lme4_1.1-31            Matrix_1.5-3           DDoutlier_0.1.0        DMwR_0.4.1             lattice_0.20-45       
+[15] patchwork_1.1.2        viridis_0.6.2          viridisLite_0.4.1      ggnewscale_0.4.9       gt_0.10.0              gghalves_0.1.4         tableone_0.13.2       
+[22] readxl_1.4.2           data.table_1.14.8      tidyr_1.3.0            stringr_1.5.0          dplyr_1.1.0            magrittr_2.0.3         here_1.0.1            
+[29] conflicted_1.2.0       mgcViz_0.1.11          ggplot2_3.4.4          qgam_1.3.4             mgcv_1.8-42            nlme_3.1-162          
 
 loaded via a namespace (and not attached):
- [1] websocket_1.4.1     minqa_1.2.5         colorspace_2.1-0    ellipsis_0.3.2      class_7.3-21        rprojroot_2.0.3     estimability_1.4.1  fs_1.6.1            proxy_0.4-27       
-[10] rstudioapi_0.14     farver_2.1.1        chromote_0.1.2      fansi_1.0.4         xml2_1.3.3          codetools_0.2-19    splines_4.2.2       doParallel_1.0.17   cachem_1.0.7       
-[19] knitr_1.42          jsonlite_1.8.4      nloptr_2.0.3        shiny_1.7.4         compiler_4.2.2      fastmap_1.1.1       survey_4.1-1        cli_3.6.0           later_1.3.0        
-[28] htmltools_0.5.4     tools_4.2.2         gtable_0.3.1        glue_1.6.2          reshape2_1.4.4      Rcpp_1.0.10         cellranger_1.1.0    vctrs_0.5.2         iterators_1.0.14   
-[37] insight_0.19.1      xfun_0.37           ps_1.7.2            mime_0.12           miniUI_0.1.1.1      lifecycle_1.0.3     MASS_7.3-58.3       zoo_1.8-11          scales_1.2.1       
-[46] hms_1.1.2           promises_1.2.0.1    parallel_4.2.2      RColorBrewer_1.1-3  gamm4_0.2-6         yaml_2.3.7          quantmod_0.4.20     mvnfast_0.2.8       curl_5.0.0         
-[55] memoise_2.0.1       gridExtra_2.3       sass_0.4.5          labelled_2.10.0     rpart_4.1.19        stringi_1.7.12      foreach_1.5.2       e1071_1.7-13        TTR_0.24.3         
-[64] boot_1.3-28.1       rlang_1.1.2         pkgconfig_2.0.3     matrixStats_0.63.0  evaluate_0.20       ROCR_1.0-11         purrr_1.0.1         labeling_0.4.2      ggstats_0.5.1      
-[73] processx_3.8.0      tidyselect_1.2.0    GGally_2.2.0        plyr_1.8.8          R6_2.5.1            generics_0.1.3      DBI_1.1.3           haven_2.5.2         pillar_1.8.1       
-[82] withr_2.5.0         xts_0.13.0          survival_3.5-3      abind_1.4-5         nnet_7.3-18         tibble_3.1.8        crayon_1.5.2        KernSmooth_2.23-20  utf8_1.2.3         
-[91] webshot2_0.1.1      rmarkdown_2.20      forcats_1.0.0       digest_0.6.31       xtable_1.8-4        httpuv_1.6.9        numDeriv_2016.8-1.1 munsell_0.5.0       mitools_2.4        
+ [1] minqa_1.2.5         colorspace_2.1-0    ellipsis_0.3.2      class_7.3-21        rprojroot_2.0.3     estimability_1.4.1  proxy_0.4-27        rstudioapi_0.14     farver_2.1.1       
+[10] fansi_1.0.4         xml2_1.3.3          codetools_0.2-19    splines_4.2.2       doParallel_1.0.17   cachem_1.0.7        knitr_1.42          nloptr_2.0.3        pbkrtest_0.5.2     
+[19] broom_1.0.3         shiny_1.7.4         compiler_4.2.2      backports_1.4.1     fastmap_1.1.1       survey_4.1-1        cli_3.6.0           later_1.3.0         htmltools_0.5.4    
+[28] tools_4.2.2         gtable_0.3.1        glue_1.6.2          reshape2_1.4.4      Rcpp_1.0.10         cellranger_1.1.0    vctrs_0.5.2         iterators_1.0.14    insight_0.19.1     
+[37] xfun_0.37           mime_0.12           miniUI_0.1.1.1      lifecycle_1.0.3     MASS_7.3-58.3       zoo_1.8-11          scales_1.2.1        hms_1.1.2           promises_1.2.0.1   
+[46] parallel_4.2.2      RColorBrewer_1.1-3  gamm4_0.2-6         yaml_2.3.7          quantmod_0.4.20     mvnfast_0.2.8       curl_5.0.0          memoise_2.0.1       gridExtra_2.3      
+[55] sass_0.4.5          labelled_2.10.0     rpart_4.1.19        stringi_1.7.12      foreach_1.5.2       e1071_1.7-13        TTR_0.24.3          boot_1.3-28.1       rlang_1.1.2        
+[64] pkgconfig_2.0.3     matrixStats_0.63.0  evaluate_0.20       ROCR_1.0-11         purrr_1.0.1         labeling_0.4.2      ggstats_0.5.1       tidyselect_1.2.0    GGally_2.2.0       
+[73] plyr_1.8.8          R6_2.5.1            generics_0.1.3      DBI_1.1.3           haven_2.5.2         pillar_1.8.1        withr_2.5.0         xts_0.13.0          survival_3.5-3     
+[82] abind_1.4-5         nnet_7.3-18         tibble_3.1.8        crayon_1.5.2        KernSmooth_2.23-20  utf8_1.2.3          rmarkdown_2.20      forcats_1.0.0       digest_0.6.31      
+[91] xtable_1.8-4        httpuv_1.6.9        numDeriv_2016.8-1.1 munsell_0.5.0       mitools_2.4        
