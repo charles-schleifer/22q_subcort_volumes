@@ -2,7 +2,7 @@
 title: "22q_subcort_volumes"
 author: "Charles Schleifer"
 date: "Jan 11, 2024"
-output: pdf_document
+output: rmarkdown::github_document
 ---
 ## Overview
 Subcortical nuclei volumes for Thalamus, Hippocampus, and Amygdala were generated with FreeSurfer 7.3.2 segment_structures.
@@ -39,7 +39,7 @@ rm(list = ls(all.names = TRUE))
 #remotes::install_github("cran/DMwR")
 
 # list packages to load
-packages <- c("mgcViz","conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone", "ggplot2", "gghalves", "gt", "ggnewscale", "viridis", "patchwork", "DMwR", "DDoutlier", "lmerTest", "effects", "longCombat", "mgcv", "gratia", "tidymv", "itsadug")
+packages <- c("mgcViz","conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone", "ggplot2", "gghalves", "gt", "ggnewscale", "viridis", "patchwork", "DMwR", "lmerTest", "effects", "longCombat", "mgcv", "gratia", "tidymv")
 
 # install packages if not yet installed
 all_packages <- rownames(installed.packages())
