@@ -1103,7 +1103,7 @@ demo_edit_final <- rbind(demo_edit,scanner_visit_final[1:6,1:5])
 demo_out <- demo_edit_final %>% gt() %>% 
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_body(columns = 1,rows = 1:nrow(demo_edit_final)), cells_column_labels())) %>%
   cols_align(align="right", columns=everything())
-demo_out
+as_raw_html(demo_out)
 # gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.pdf"))
 # gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.png"))
 # gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.rtf"))
@@ -1245,7 +1245,7 @@ save_dosage_effect_final <- save_dosage_effect[,c("Structure","Region","beta","p
 save_dosage_effect_out <- save_dosage_effect_final %>% gt() %>% 
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything())
-save_dosage_effect_out
+as_raw_html(save_dosage_effect_out)
 # gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.png"))
 # gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.pdf"))
 # gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.rtf"))
@@ -1928,7 +1928,7 @@ group_mean_table <- group_mean_out %>% gt() %>%
   cols_align(align="right", columns=everything()) %>% 
   tab_header("Average volumes (mm^3) by group")%>%
   tab_options(data_row.padding = px(1)) 
-group_mean_table
+as_raw_html(group_mean_table)
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.pdf"))
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.png"))
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.rtf"))
@@ -2035,7 +2035,7 @@ group_compare_del_out <- group_compare_del[,c("Structure","Region","beta","p","F
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-group_compare_del_out
+as_raw_html(group_compare_del_out)
 # gtsave(group_compare_del_out, filename = file.path(project,"figures/gene_dosage/del_vs_td_volumes.png"))
 # gtsave(group_compare_del_out, filename = file.path(project,"figures/gene_dosage/del_vs_td_volumes.pdf"))
 # gtsave(group_compare_del_out, filename = file.path(project,"figures/gene_dosage/del_vs_td_volumes.rtf"))
@@ -2046,7 +2046,7 @@ group_compare_dup_out <- group_compare_dup[,c("Structure","Region","beta","p","F
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-group_compare_dup_out
+as_raw_html(group_compare_dup_out)
 # gtsave(group_compare_dup_out, filename = file.path(project,"figures/gene_dosage/dup_vs_td_volumes.png"))
 # gtsave(group_compare_dup_out, filename = file.path(project,"figures/gene_dosage/dup_vs_td_volumes.pdf"))
 # gtsave(group_compare_dup_out, filename = file.path(project,"figures/gene_dosage/dup_vs_td_volumes.rtf"))
@@ -2059,7 +2059,7 @@ age_gdiff_out <- maturation_full$age_group_export_final %>% gt() %>%
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-age_gdiff_out
+as_raw_html(age_gdiff_out)
 # gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.png"))
 # gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.pdf"))
 # gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.rtf"))
@@ -2069,7 +2069,7 @@ age_gdiff_u35_out <- maturation_young$age_group_export_final %>% gt() %>%
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-age_gdiff_u35_out
+as_raw_html(age_gdiff_u35_out)
 # gtsave(age_gdiff_u35_out, filename = file.path(project,"figures/age/age_gdiff_u35.png"))
 # gtsave(age_gdiff_u35_out, filename = file.path(project,"figures/age/age_gdiff_u35.pdf"))
 # gtsave(age_gdiff_u35_out, filename = file.path(project,"figures/age/age_gdiff_u35.rtf"))
@@ -2145,7 +2145,7 @@ save_sex_effect_out <-save_sex_effect_final%>% gt() %>%
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-save_sex_effect_out
+as_raw_html(save_sex_effect_out)
 # gtsave(save_sex_effect_out, filename = file.path(project,"figures/gene_dosage/sex_main_effect.png"))
 # gtsave(save_sex_effect_out, filename = file.path(project,"figures/gene_dosage/sex_main_effect.pdf"))
 # gtsave(save_sex_effect_out, filename = file.path(project,"figures/gene_dosage/sex_main_effect.rtf"))
@@ -2230,7 +2230,7 @@ save_dosage_effect_ap_out <-save_dosage_effect_ap_final%>% gt() %>%
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-save_dosage_effect_ap_out
+as_raw_html(save_dosage_effect_ap_out)
 # gtsave(save_dosage_effect_ap_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_antipsychotic.png"))
 # gtsave(save_dosage_effect_ap_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_antipsychotic.pdf"))
 # gtsave(save_dosage_effect_ap_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_antipsychotic.rtf"))
