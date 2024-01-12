@@ -16,6 +16,14 @@ Charles H. Schleifer, Kathleen P. O’Hora, Hoki Fung, Jennifer Xu, Taylor-Ann R
 https://doi.org/10.1101/2023.10.31.564553 
 
 ## set up workspace
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      results = "hide",
+                      error=FALSE,
+                      warning=FALSE,
+                      message=FALSE)
+```
+
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # clear workspace
 rm(list = ls(all.names = TRUE))
