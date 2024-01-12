@@ -1,15 +1,15 @@
 ---
 title: "22q_subcort_volumes"
 author: "charlie schleifer"
-date: "2/8/23"
+date: "1/11/24"
 output: html_document
 ---
 ## Overview
 Subcortical nuclei volumes for Thalamus, Hippocampus, and Amygdala were generated with FreeSurfer 7.3.2 segment_structures
-This script is for analysis of those results in 22qDel, 22qDup, and HCS
+This script is for analysis of those results in 22qDel, 22qDup, and TD controls
 
 ## set up workspace
-```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # clear workspace
 rm(list = ls(all.names = TRUE))
 
@@ -26,7 +26,7 @@ rm(list = ls(all.names = TRUE))
 #remotes::install_github("cran/DMwR")
 
 # list packages to load
-packages <- c("mgcViz","conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone","ggplot2","gghalves","gt","ggnewscale","viridis","patchwork","DMwR","DDoutlier","lmerTest","effects","longCombat","mgcv","gratia","tidymv", "itsadug")
+packages <- c("mgcViz","conflicted", "here", "magrittr", "dplyr","stringr","tidyr", "data.table", "readxl", "tableone", "ggplot2", "gghalves", "gt", "ggnewscale", "viridis", "patchwork", "DMwR", "DDoutlier", "lmerTest", "effects", "longCombat", "mgcv", "gratia", "tidymv", "itsadug")
 
 # install packages if not yet installed
 all_packages <- rownames(installed.packages())
@@ -42,17 +42,15 @@ conflict_prefer("filter", "dplyr")
 # get path to project repo directory
 project <- here()
 print(paste("Project directory:", project))
-
 ```
 
 ## read MRI data
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # path to data (organized with subject directories containing only the relevant files)
 dpath <- file.path(project,"volume_data")
 
 # get files
 sessions_all <- list.files(path=dpath, pattern="Q_[0-9]")
-
 
 read_fssubcort_long <- function(path, sesh, name){
   file <- file.path(dpath,sesh,name)
@@ -93,7 +91,7 @@ etiv <- read.csv(file.path(dpath,"etiv_cross_sectional.txt"), header=TRUE)
 ```
 
 exclude data and combine regions
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # store original subcort_all
 subcort_all_orig <- subcort_all
 
@@ -106,7 +104,6 @@ subcort_all <- subset(subcort_all, select = -c(Thal_Left_PuM,Thal_Right_PuM,Thal
 
 # exclude whole hippocampal body and head (redundant with more fine grained regions)
 subcort_all <- subset(subcort_all, select = -c(Hip_Right_Whole_hippocampal_body, Hip_Left_Whole_hippocampal_body, Hip_Right_Whole_hippocampal_head, Hip_Left_Whole_hippocampal_head))
-
 
 # exclude bilateral thalamus from n=4 sessions that have visibly poor thalamic segmentation (part of striatum appears to be included in some lateral thalamic ROIs)
 thal_exclude <- c("Q_0244_09162013", "Q_0244_09232014", "Q_0304_12202016", "Q_0425_11052019")
@@ -186,12 +183,12 @@ sc_names <- names(subcort_all)[which(names(subcort_all) != "MRI_S_ID")]
 ```
 
 histograms for each region
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 #lapply(sc_names, function(n)hist(subcort_all[,n],main=n))
 ```
 
 outlier from standard deviation
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 sc_long  <- reshape2::melt(subcort_all, id.vars="MRI_S_ID", measure.vars=sc_names, value.name="volume") 
 
 # get mean, sd, and upper and lower bounds (mean +/- 3*SD) for each roi
@@ -220,10 +217,9 @@ out_filter <- filter(sc_out_long, outlier == TRUE)
 
 # get non-outliers
 sc_long_inlier <- filter(sc_out_long, outlier == FALSE)[,c("MRI_S_ID", "variable", "volume")]
-
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 outlier_plot <- function(roi){
   df <- filter(sc_out_long, variable==roi)
   ggplot(df, aes(x=volume, y="", color=outlier, fill=outlier))+
@@ -248,12 +244,12 @@ oplots <- lapply(sc_names, outlier_plot)
 names(oplots) <- sc_names
 
 oplots_out <- (oplots$Thal_Left_MGN + oplots$Thal_Right_MGN)/(oplots$Thal_Left_LGN + oplots$Thal_Right_LGN)+plot_annotation(title=element_text("Outlier plots for thalamus MGN and LGN"))
-
+oplots_out
 #ggsave(oplots_out, file=file.path(project,"figures/review_response/outlier_plots.png"), device="png", width=7, height=4)
 ```
 
 merge hemispheres by averaging whenever bilateral data are available
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # match left and right hemispheres in same row
 sc_long_hemi <- sc_long_inlier
 sc_long_hemi$bl_region <-  sc_long_hemi$variable %>% gsub("_Left","",.) %>% gsub("_Right","",.)
@@ -273,7 +269,7 @@ subcort_bilat <- dcast(sc_long_hemi_avg, MRI_S_ID ~ bl_region, value.var="bl_vol
 ```
 
 lookup table for ROI info
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # read edited lookup table matching freesurfer names to full names
 #lut <- read.csv(file.path(project,"lut_names_thal_hip_amy_match.txt"), header=TRUE)
 lut <- read.csv(file.path(project,"lut_names_thal_hip_amy_match_combine.csv"), header=TRUE)
@@ -287,17 +283,17 @@ lut_bilat$bilat_match <- lut_bilat$region_match %>% gsub("Right_","",.) %>% gsub
 lut_bilat$bilat_name <- lut_bilat$Name %>% gsub("right","",.) %>% gsub("left","",.)
 lut_bilat_n <- lut_bilat[,c("bilat_name","bilat_match","Structure")]
 lut_unique <- lut_bilat_n[!duplicated(lut_bilat_n),]
+lut_unique
 
 # add eTIVnormed
 lut_unique <- rbind(lut_unique, data.frame(bilat_name="total ICV", bilat_match="eTIVnormed", Structure="whole brain"))
-
 ```
 
 ## load sistat data and get lists of scans to use
 all sistat tables should be exported as CSVs into a single directory
 the next several chunks deal with reading, cleaning and annotating the data exported from sistat, and then age matching
 the hcs sample is younger than del due to a large amount of very young hcs subjects. plan is to match samples by using followup timepoints rather than baseline for some younger participants, and dropping several older del subjects, and younger hcs subjects (prioritizing dropping subjects with worse motion stats when possible)
-```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # set location of directory with ucla sistat CSVs
 csvdir_ucla <- file.path(project,"demographics/ucla_sistat")
 
@@ -326,7 +322,7 @@ ucla_demo$SEX <- factor(ucla_demo$SEX,levels=c(0,1),labels=c("F","M"))
 ```
 
 read temporary csv with several subjects not yet in sistat
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # TODO: this chunk is temporary until sistat is updated 
 # TODO: note: q_0526 sex was "na" in original sheet, changed to M because combat can't have NAs
 # read new data
@@ -348,7 +344,7 @@ ucla_demo <- rbind(ucla_demo,demo_add)
 ```
  
 continue regular steps
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # manually fix missing sex for Q_0381_09102019
 # TODO: fix in sistat and re-export
 ucla_demo[which(ucla_demo$MRI_S_ID == "Q_0381_09102019"),"SEX"] <- "F"
@@ -405,28 +401,27 @@ ucla_demo_tp_agelim %<>% droplevels
 ```
 
 All timepoints, demographics summary
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 demo_summary <- CreateTableOne(data=ucla_demo_tp_agelim,vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
 print(demo_summary, showAllLevels=T)
 #print(demo_summary, showAllLevels=F)
 
 ```
 under 35, demographics summary
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 demo_summary_young <- CreateTableOne(data=filter(ucla_demo_tp_agelim, AGE < 35),vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
 print(demo_summary_young, showAllLevels=T)
 #print(demo_summary, showAllLevels=F)
-
 ```
 
 Baseline summary
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 demo_summary_bl <- CreateTableOne(data=filter(ucla_demo_tp_agelim, visit_index == 1),vars=c("AGE","SEX"),strata="SUBJECT_IDENTITY",addOverall=F)
 print(demo_summary_bl)
 ```
 
 Age waterfall plot
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 ucla_demo_waterfall <- ucla_demo_tp_agelim
 ucla_demo_waterfall$Scanner <- gsub("-[0-9]","",ucla_demo_waterfall$converted_timepoint)
 ucla_demo_waterfall$Scanner %<>% gsub("T","trio",.)
@@ -459,13 +454,11 @@ waterfall
 
 #ggsave(plot=waterfall, filename=file.path(project,"figures/demographics/waterfall_subcort_age.pdf"), width=6, height=6, device = "pdf")
 #ggsave(plot=waterfall, filename=file.path(project,"figures/demographics/waterfall_subcort_age.png"), width=6, height=6, device = "png")
-
-
 ```
 
 ## Harmonize sites
 merge imaging with demographics
-```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # add site column
 ucla_demo_tp_agelim$site <- gsub("*-[0-9]","",ucla_demo_tp_agelim$converted_timepoint)
 
@@ -489,7 +482,7 @@ sc_names <- names(subcort_bilat)[which(names(subcort_bilat) != "MRI_S_ID")]
 ```
 
 impute outliers and excluded data (ComBat can't have NAs in input)
-```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # list of thalamus regions
 #thal_names_final <- names(subcort_all)[grep("Thal",names(subcort_all))]
 thal_names_final <- names(subcort_bilat)[grep("Thal",names(subcort_bilat))]
@@ -543,7 +536,7 @@ for (i in 1:nrow(sparse_remove)){
 ```
 
 run longComBat
-```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # set up longCombat variables
 # formula should match fixed effects in your subsequent analysis
 # subject id coded as random effect by (1|subject id variable)
@@ -563,7 +556,7 @@ ranef <- '(1|SUBJECTID)'
 combat_input<- demo_sc_impute[,c(demovars,features)]
 
 # run longCombat
-sc_vol_combat <- longCombat(data=combat_input, idvar=idvar, timevar=timevar, batchvar=batchvar, features=features, formula=formula, ranef=ranef)
+sc_vol_combat <- longCombat(data=combat_input, idvar=idvar, timevar=timevar, batchvar=batchvar, features=features, formula=formula, ranef=ranef, verbose=FALSE)
 
 # get the harmonized data
 sc_vol_combat_data <- sc_vol_combat$data_combat
@@ -633,16 +626,14 @@ for (r in 1:nrow(demo_combat_normed)){
 td_mean_icv <- filter(demo_combat_normed, gene_dosage==2)$eTIV %>% mean
 td_sd_icv <- filter(demo_combat_normed, gene_dosage==2)$eTIV %>% sd
 demo_combat_normed$eTIVnormed <- (demo_combat_normed$eTIV - td_mean_icv)/td_sd_icv
-
 ```
 
 longitudinal demo table 
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 #dir <- "/Users/charlie/Dropbox/PhD/bearden_lab/22q/analyses/striatum_thalamus_fc"
 
 # get variables from demo_mri
 df_demo <- demo_combat_na
-
 
 ### hand
 # get handedness item scores coded in sistat as 1=L, 2=R, 3=either, 0=no experience
@@ -782,7 +773,6 @@ df_demo <- cbind(df_demo,asd_col)
 # remove SCID_ASD column, redundant with summPsych
 dx_use <- dx_use[dx_use != "SCID_ASD"]
 
-
 # function to get psychosis status from SIPS
 # to be applied to the row indices of a demographics df, and also given the SIPS df
 get_sips <- function(r,demo,sips){
@@ -844,7 +834,6 @@ df_demo <- merge(x=df_demo, y=demo_table_sips[,c("SUBJECTID","CONVERTEDVISITNUM"
 df_demo %<>% mutate_at(vars("SIPS_prodromal"), ~as.logical(.))
 df_demo %<>% mutate_at(vars("SIPS_total","SIPS_p_sum"), ~as.numeric(.))
 
-
 # get IQ
 # WASI, WISC-IV, DKEFS and trail making all under df_all$DKEFS for trio data
 # IQSS -- full scale WASI
@@ -876,7 +865,6 @@ demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0529_07202022"),"TESTDATE"] <- 
 demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0561_11032022"),"TESTDATE"] <- "11/03/2022"
 demo_combat_na[which(demo_combat_na$MRI_S_ID=="Q_0568_10252022"),"TESTDATE"] <- "10/25/2022"
 
-
 # vector of variables for demo table
 #vars_use <- c("AGE","SEX","EDUDAD","EDUMOM","EDUYEARS","hand", "percent_BOLD_scrubbed", "IQ_full","WASI_verbal","WASI_matrix", "SIPS_total","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds")
 vars_use <- c("AGE","SEX","hand", "IQ_full", "SIPS_total","SIPS_p_sum","SIPS_prodromal", dx_use, "summPsych_ASD", "psych_meds")
@@ -888,13 +876,11 @@ demo_match_final
 # export tableone
 export_demo_table <- print(demo_match_final, quote=F, noSpaces=F, printToggle=T)
 #write.csv(export_demo_table, file=file.path(project,"table1_demographics.csv"))
-
 ```
-
 
 final baseline demo table 
 note: some interim variable names re-used from longitudinal table but final df_demo_table and df_demo_table_bl should be accurate)
-```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 #dir <- "/Users/charlie/Dropbox/PhD/bearden_lab/22q/analyses/striatum_thalamus_fc"
 
 # get variables from demo_mri
@@ -977,7 +963,6 @@ dx_use <- dx_use[dx_use != "SCID_ASD"]
 #neurocog <- df_all$neurocogTest[,c("SUBJECTID","CONVERTEDVISITNUM","IQ_SCORE","VOCA_TSCORE","MATRIX_TSCORE")]
 #df_demo_table_full <- merge(x=df_demo_table_full, y=neurocog, by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=T)
 
-
 # get sips 
 demo_table_sips <- lapply(1:nrow(df_demo_table_bl), function(r) get_sips(r=r, demo=df_demo_table_bl, sips=df_all_ucla$SIPS)) %>% do.call(rbind,.)
 
@@ -987,7 +972,6 @@ df_demo_table_bl <- merge(x=df_demo_table_bl, y=demo_table_sips[,c("SUBJECTID","
 df_demo_table_bl %<>% mutate_at(vars("SIPS_prodromal"), ~as.logical(.))
 df_demo_table_bl %<>% mutate_at(vars("SIPS_total"), ~as.numeric(.))
 df_demo_table_bl %<>% mutate_at(vars("SIPS_p_sum"), ~as.numeric(.))
-
 
 # also merge full SIPS codes
 sips_sev <- grep("SEV",names(df_all_ucla$SIPS), value=TRUE)
@@ -999,7 +983,6 @@ df_demo_table_bl <- merge(x=df_demo_table_bl, y=df_all_ucla$SRS[,cbind(srs_ts, "
 # get SRS items
 srs_items <- grep("SRS",names(df_all_ucla$SRS), value=TRUE)
 df_demo_table_bl <- merge(x=df_demo_table_bl, y=df_all_ucla$SRS[,cbind(srs_items, "SUBJECTID","CONVERTEDVISITNUM")], by=c("SUBJECTID","CONVERTEDVISITNUM"), all.x=TRUE)
-
 
 # get IQ
 # WASI, WISC-IV, DKEFS and trail making all under df_all$DKEFS for trio data
@@ -1014,7 +997,6 @@ df_demo_table_bl <- merge(x=df_demo_table_bl, y=ucla_neuro[,c("SUBJECTID","CONVE
 # record IQ instrument
 df_demo_table_bl$IQ_measure <- NA
 df_demo_table_bl$IQ_measure[!is.na(df_demo_table_bl$IQ_full)] <- "WASI_full_scale"
-
 
 # visit counts
 # get number of longitudinal visits per subject
@@ -1082,7 +1064,10 @@ export_demo_table_bl <- print(demo_match_final_bl, quote=F, noSpaces=F, printTog
 
 #export_demo_table
 #write.csv(export_demo_table_bl, file=file.path(project,"/figures/demographics/table1_demographics.csv"))
+```
 
+make demo table for export
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # read manually edited demo table back in
 demo_edit <- read.csv(file.path(project,"figures/demographics/table1_demographics_edit.csv")) %>% rename(" "="X") %>% rename("22qDel"="X22qDel") %>% rename("22qDup"="X22qDup") %>% rename("p-value"="p.value")
 #demo_edit$`p-value` %<>% as.numeric %>% formatC(., format = "g", digits = 2)
@@ -1099,30 +1084,28 @@ scanner_visit_final <- scanner_visit
 scanner_visit_final[1:6,1] <- paste("Visit",1:6, "Prisma scanner, n (%)")
 colnames(scanner_visit_final) <- colnames(demo_edit)
 demo_edit_final <- rbind(demo_edit,scanner_visit_final[1:6,1:5])
-
+```
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # export table
 demo_out <- demo_edit_final %>% gt() %>% 
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_body(columns = 1,rows = 1:nrow(demo_edit_final)), cells_column_labels())) %>%
   cols_align(align="right", columns=everything())
-
+demo_out
 # gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.pdf"))
 # gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.png"))
 # gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.rtf"))
 # gtsave(demo_out, filename = file.path(project,"figures/demographics/table1.tex"))
-
 ```
-
 
 ## GAMMs
 GAMMs in at every ROI with a factor-smooth term for age by group
-```{r message=FALSE, warning=FALSE, paged.print=FALSE, include=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # subjectID must be factor. Site and sex should be numeric
 #demo_combat_na_gam <- demo_combat_na 
 demo_combat_na_gam <- demo_combat_normed 
 demo_combat_na_gam$SUBJECTID %<>% as.factor
 demo_combat_na_gam$site <- demo_combat_na_gam$site %>% gsub("T","0",.) %>% gsub("P","1",.) %>% as.numeric 
 demo_combat_na_gam$SEX <- demo_combat_na_gam$SEX %>% gsub("F","0",.) %>% gsub("M","1",.) %>% as.numeric 
-
 
 # per reviewer suggestion, run with fixed DoF by setting k and using fx=TRUE
 # try two DoF because most estimated were between 1 and 3 and want to prevent overfitting on linear data
@@ -1139,11 +1122,10 @@ gamm_combat$eTIVnormed.combat.norm <-  gamm_etiv
 
 # add eTIVnormed to list of names
 all_names_normed <- c(sc_names_normed,"eTIVnormed.combat.norm")
-
 ```
 
 same GAMM for restricted age range (<35)
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 gamm_combat_young <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)","gene_dosage", "SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r), data=filter(demo_combat_na_gam, AGE <= 35), selection=TRUE, method="REML", na.action="na.omit"))
 
 # name gamm list
@@ -1186,11 +1168,10 @@ gene_dosage_effect$sig <- NA
 for(i in 1:nrow(gene_dosage_effect)){ 
   gene_dosage_effect[i,"sig"] <- give_stars(fdr=gene_dosage_effect[i,"fdr_sig"], bonf=gene_dosage_effect[i,"bonf_sig"])
 }
-
 ```
 
 make table for export with subregion gene dosage effects
-```{r paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # create data frame for export
 save_dosage_effect <- filter(gene_dosage_effect, gene_dosage_fdr_q<0.05)[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region","sig")]
 
@@ -1210,7 +1191,6 @@ save_dosage_effect <- merge(x=save_dosage_effect, y=lut_unique[,c("Structure","b
 
 # edit structure label
 save_dosage_effect$Structure <- paste(save_dosage_effect$Structure, "subregions") %>% gsub("whole brain subregions", "whole brain",.)
-
 
 # add total ICV name
 #save_dosage_effect[which(save_dosage_effect$Region=="eTIVnormed"),c("Structure","bilat_name")] <-  c("whole brain","total ICV")
@@ -1247,21 +1227,21 @@ for(i in 1:length(structure_dup)){
 }
 
 save_dosage_effect_final <- save_dosage_effect[,c("Structure","Region","beta","p","FDR q","sig")]
-save_dosage_effect_final
 
 # export table
 save_dosage_effect_out <- save_dosage_effect_final %>% gt() %>% 
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything())
-
-gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.png"))
-gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.pdf"))
-gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.rtf"))
+save_dosage_effect_out
+# gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.png"))
+# gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.pdf"))
+# gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.rtf"))
 # gtsave(save_dosage_effect_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_table.tex"))
 ```
+
 plot gene dosage effects
 whole structure scatterplots
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 #  whole thal
 #Thal_Whole <- effect(term="gene_dosage", mod=lme4::lmer(formula="Thal_Whole_thalamus.combat ~ gene_dosage + AGE + AGE2 + SEX + eTIVscaled + site + (1|SUBJECTID)",data=demo_combat_na, REML=TRUE)) %>% as.data.frame
 
@@ -1296,7 +1276,6 @@ gene_dosage_gamm_plot <- function(gam_list, name, title="", xlab="", ylab="",xla
   return(plot)
 }
 
-
 plot_ICV <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="eTIVnormed.combat.norm", title="Total ICV", ribbon_fill="rosybrown1", xlabels=c("22qDel (1)","TD (2)","22qDup (3)"), ylab="volume partial effect", xlab="22q11.2 CNV dosage")
 plot_Thal_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_Whole_thalamus.combat.norm", title="Thalamus", ribbon_fill="lightgrey")
 plot_Amy_Whole <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Amy_Whole_amygdala.combat.norm", title="Amygdala", ribbon_fill="lightgrey")
@@ -1306,24 +1285,18 @@ plot_Thal_MV <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Thal_MV_Re_.co
 plot_Amy_basal <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Amy_Basal_nucleus.combat.norm", title="Amygdala Basal", ribbon_fill="rosybrown1")
 plot_Hip_tail <- gene_dosage_gamm_plot(gam_list=gamm_combat, name="Hip_Hippocampal_tail.combat.norm", title="Hippocampus Tail", ribbon_fill="rosybrown1")
 
-
 #ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.svg"), width=5, height=6, device = "svg")
 #ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.pdf"), width=5, height=6, device = "pdf")
 #ggsave(plot=plot_Thal_Whole, filename=file.path(project,"figures/gene_dosage/Thal_Whole.png"), width=5, height=6, device = "png", dpi=300)
-
 ```
 
 Create figure with all lm plots
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # whole structure plots on top, selected subregions second row, panels labeled with bold letters
 lm_fig_top <- (plot_ICV + plot_Thal_Whole + plot_Amy_Whole + plot_Hip_Whole) +plot_layout(ncol = 4,nrow = 1)
 lm_fig_bottom <- (plot_Thal_MD + plot_Thal_MV + plot_Amy_basal + plot_Hip_tail) +plot_layout(ncol = 4,nrow = 1)
 
 lm_fig_all <- lm_fig_top/lm_fig_bottom  + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Volume Predicted by Gene Dosage") & theme(plot.tag = element_text(face = 'bold'),plot.title = element_text(size = 18,hjust = 0)) + theme(legend.position = "bottom", legend.text=element_text(size=18), legend.title=element_text(size=18))
-
-
-
-#+ plot_annotation(tag_levels = 'A', title="Developmental Trajectories") & theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0))
 
 lm_fig_all
 
@@ -1334,7 +1307,7 @@ lm_fig_all
 # Age curves from GAMMs
 wrap all maturational analyses in a function so that they can be repeated with a truncated age subset of the input
 function allows for exact replication of age analyses with multiple age ranges 
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # the next few functions will be used inside of main_maturation() 
 # function to estimate smooths for plotting
 smooth_estimates_se <- function(gamm,smooth,n){
@@ -1626,7 +1599,7 @@ main_maturation <- function(gam_list){
 ```
 
 do maturation analyses
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # full age range
 maturation_full <- main_maturation(gam_list=gamm_combat)
 # removing oldest participants (over 35 years)
@@ -1709,19 +1682,20 @@ mat_young_gdiff <- gdiff_smooth(maturation_young)
 ```
 
 save GAMM comparison plots
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # full age range
+maturation_full$gamm_compare+ggtitle("Significant Age Effects by Cohort\nFull age range")
 #ggsave(plot=maturation_full$gamm_compare+ggtitle("Significant Age Effects by Cohort\nFull age range"), filename=file.path(project,"figures/age/age_gamm_group_compare_full.pdf"), width=7, height=5, device = "pdf")
 #ggsave(plot=maturation_full$gamm_compare+ggtitle("Significant Age Effects by Cohort\nFull age range"), filename=file.path(project,"figures/age/age_gamm_group_compare_full.png"), width=7, height=5, device = "png", dpi = 300)
 
 # younger age range
+maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 35")
 #ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 35"), filename=file.path(project,"figures/age/age_gamm_group_compare_u35.pdf"), width=7, height=5, device = "pdf")
 #ggsave(plot=maturation_young$gamm_compare+ggtitle("Significant Age Effects by Cohort\nAge < 35"), filename=file.path(project,"figures/age/age_gamm_group_compare_u35.png"), width=7, height=5, device = "png", dpi = 300)
-
 ```
 
 plot chosen GAMMS
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # function to plot all age smooths with partial residuals
 plot_gamm_resid <- function(list,name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23), title=""){
   gam_list <- list$gam_list
@@ -1775,10 +1749,9 @@ plot_gamm_resid <- function(list,name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,2
     #ggtitle(paste(gsub("_"," ",gsub(".combat","",name)),"Volume"))
     ggtitle(plot_title)
 }
-
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # function to plot all age smooths with age ranges of significant difference from controls highlighted
 plot_gamm_gdiff <- function(list,name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,23), title=""){
   gam_list <- list$gam_list
@@ -1829,7 +1802,6 @@ plot_gamm_gdiff <- function(list,name,xlab="", ylab="",ylim=c(-1,1),xlim=c(5.9,2
 }
 
 #plot_gamm_gdiff(list=mat_full_gdiff, name="Hip_CA3.combat.norm",xlab="",ylab="", title="CA2/3 Hippocampus")
-
 ```
 
 plot age gamms with partial resids for full sample
@@ -1874,8 +1846,8 @@ plot_age_gd
 #ggsave(plot=plot_age_gd, filename=file.path(project,"figures/age/age_gamms_curves_gdiff_full.png"), width=12, height=7, device = "png", dpi = 300)
 ```
 check some additional ones
-```{r}
-plot_gamm_gdiff(list=mat_full_gdiff, name="Thal_VA_all.combat.norm",xlab="Age",ylab="Normalized\nVolume", title="Ventral Anterior Thalamus")
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+lapply(all_names_normed, function(n) plot_gamm_gdiff(list=mat_full_gdiff, name=n,xlab="Age",ylab="Normalized\nVolume", title=n))
 ```
 
 plot age gamms for young sample
@@ -1887,7 +1859,6 @@ amy_whole_young <- plot_gamm_resid(list=maturation_young, name="Amy_Whole_amygda
 thal_mgn_young <- plot_gamm_resid(list=maturation_young, name="Thal_MGN.combat.norm",xlab="",ylab="", title="Medial Geniculate Thalamus")
 thal_mvre_young <- plot_gamm_resid(list=maturation_young, name="Thal_MV_Re_.combat.norm",xlab="",ylab="", title="Medial Ventral Thalamus")
 hip_ca4_young <- plot_gamm_resid(list=maturation_young, name="Hip_CA4.combat.norm",xlab="",ylab="", title="CA4 Hippocampus")
-
 
 plot_age_young <- (thal_av_young + hip_ca3_young + hip_ca4_young) / (thal_mgn_young + thal_mvre_young + amy_whole_young) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A', title="Developmental Trajectories\nAge < 35") &   theme(plot.tag = element_text(face = 'bold')) + theme(legend.position = "bottom", legend.text=element_text(size=14), plot.title = element_text(size=16, hjust = 0)) 
 
@@ -1917,7 +1888,7 @@ plot_age_young_gd
 
 ## supplemental
 export table of roi sizes
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # get average roi per group
 group_mean_vols <- data.frame(Region=sc_names)
 for(c in sc_names){
@@ -1944,7 +1915,7 @@ group_mean_table <- group_mean_out %>% gt() %>%
   cols_align(align="right", columns=everything()) %>% 
   tab_header("Average volumes (mm^3) by group")%>%
   tab_options(data_row.padding = px(1)) 
-
+group_mean_table
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.pdf"))
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.png"))
 # gtsave(group_mean_table, filename = file.path(project,"figures/atlas/volumes.rtf"))
@@ -1989,8 +1960,6 @@ sum(del_dup_vs_hc_merged$fdr_sig.y)
 # get only effects that are significant in both models
 del_dup_vs_hc_merged_sig <- filter(del_dup_vs_hc_merged,fdr_sig.x==TRUE & fdr_sig.y==TRUE)
 #del_dup_vs_hc_sig <- del_dup_vs_hc_sig[order(del_dup_vs_hc_sig$gene_dosage_beta),]
-
-#del_dup_vs_hc_merged_sig
 ```
 
 export results of individual group comparisons 
@@ -2053,7 +2022,7 @@ group_compare_del_out <- group_compare_del[,c("Structure","Region","beta","p","F
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-
+group_compare_del_out
 # gtsave(group_compare_del_out, filename = file.path(project,"figures/gene_dosage/del_vs_td_volumes.png"))
 # gtsave(group_compare_del_out, filename = file.path(project,"figures/gene_dosage/del_vs_td_volumes.pdf"))
 # gtsave(group_compare_del_out, filename = file.path(project,"figures/gene_dosage/del_vs_td_volumes.rtf"))
@@ -2064,38 +2033,37 @@ group_compare_dup_out <- group_compare_dup[,c("Structure","Region","beta","p","F
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-
+group_compare_dup_out
 # gtsave(group_compare_dup_out, filename = file.path(project,"figures/gene_dosage/dup_vs_td_volumes.png"))
 # gtsave(group_compare_dup_out, filename = file.path(project,"figures/gene_dosage/dup_vs_td_volumes.pdf"))
 # gtsave(group_compare_dup_out, filename = file.path(project,"figures/gene_dosage/dup_vs_td_volumes.rtf"))
-
 ```
 
 age group difference table
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # export table full age range
 age_gdiff_out <- maturation_full$age_group_export_final %>% gt() %>% 
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-
+age_gdiff_out
 # gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.png"))
 # gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.pdf"))
 # gtsave(age_gdiff_out, filename = file.path(project,"figures/age/age_gdiff_full.rtf"))
 
-# export table full age range
+# export table <35
 age_gdiff_u35_out <- maturation_young$age_group_export_final %>% gt() %>% 
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-
+age_gdiff_u35_out
 # gtsave(age_gdiff_u35_out, filename = file.path(project,"figures/age/age_gdiff_u35.png"))
 # gtsave(age_gdiff_u35_out, filename = file.path(project,"figures/age/age_gdiff_u35.pdf"))
 # gtsave(age_gdiff_u35_out, filename = file.path(project,"figures/age/age_gdiff_u35.rtf"))
 ```
 
 sex interactions
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # test random intercept model at each region
 gam_combat_sexint <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage*SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r),data=demo_combat_na_gam, REML=TRUE))
 names(gam_combat_sexint) <- sc_names_normed
@@ -2111,7 +2079,7 @@ sexint$fdr_sig <- sexint$sexint_fdr_q < 0.05
 ```
 
 sex main effects
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # get p-val for gene dosage effect
 sex_main <- lapply(gamm_combat, function(l) summary(l)$p.table["SEX",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
 colnames(sex_main) <- c("sex_beta","sex_p")
@@ -2164,11 +2132,10 @@ save_sex_effect_out <-save_sex_effect_final%>% gt() %>%
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-
+save_sex_effect_out
 # gtsave(save_sex_effect_out, filename = file.path(project,"figures/gene_dosage/sex_main_effect.png"))
 # gtsave(save_sex_effect_out, filename = file.path(project,"figures/gene_dosage/sex_main_effect.pdf"))
 # gtsave(save_sex_effect_out, filename = file.path(project,"figures/gene_dosage/sex_main_effect.rtf"))
-
 ```
 
 antipsychotic drug analysis
@@ -2182,7 +2149,6 @@ demo_normed_apd <- merge(x=demo_combat_na_gam, y=df_demo[,c("MRI_S_ID","APD")], 
 gam_combat_apd <- lapply(sc_names_normed, function(r) gam(formula=reformulate( c("s(AGE,by=SUBJECT_IDENTITY, bs=\"tp\", k=3, fx=TRUE)", "gene_dosage","APD","SEX", "eTIVnormed", "site", "s(SUBJECTID, bs=\"re\", k=3)"), response=r),data=demo_normed_apd, REML=TRUE))
 names(gam_combat_apd) <- sc_names_normed
 
-
 # get p-val for gene dosage effect
 gene_dosage_effect_ap <- lapply(gam_combat_apd, function(l) summary(l)$p.table["gene_dosage",c("Estimate","Pr(>|t|)")]) %>% do.call(rbind,.) %>% as.data.frame 
 colnames(gene_dosage_effect_ap) <- c("gene_dosage_beta","gene_dosage_p")
@@ -2195,7 +2161,6 @@ gene_dosage_effect_ap$fdr_sig <- gene_dosage_effect_ap$gene_dosage_fdr_q < 0.05
 # get only significant effects
 gene_dosage_effect_sig_ap <- filter(gene_dosage_effect_ap,fdr_sig==TRUE)
 gene_dosage_effect_sig_ap <- gene_dosage_effect_sig_ap[order(gene_dosage_effect_sig_ap$gene_dosage_beta),]
-
 
 # create data frame for export
 save_dosage_effect_ap <- gene_dosage_effect_sig_ap[,c("gene_dosage_beta","gene_dosage_p","gene_dosage_fdr_q","Region")]
@@ -2245,7 +2210,6 @@ for(i in 1:length(structure_dup)){
 }
 
 save_dosage_effect_ap_final <- save_dosage_effect_ap[,c("Structure","Region","beta","p","FDR q")]
-save_dosage_effect_ap_final
 #write.csv(save_dosage_effect_ap_final, file=file.path(project,"figures/gene_dosage/gene_dosage_subregions_apd.csv"), row.names = FALSE)
 
 # export table
@@ -2253,7 +2217,7 @@ save_dosage_effect_ap_out <-save_dosage_effect_ap_final%>% gt() %>%
   tab_style(style = cell_text(weight = "bold"),locations = list(cells_column_labels())) %>%
   cols_align(align="right", columns=everything()) %>%
   tab_options(data_row.padding = px(1))
-
+save_dosage_effect_ap_out
 # gtsave(save_dosage_effect_ap_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_antipsychotic.png"))
 # gtsave(save_dosage_effect_ap_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_antipsychotic.pdf"))
 # gtsave(save_dosage_effect_ap_out, filename = file.path(project,"figures/gene_dosage/gene_dosage_antipsychotic.rtf"))
@@ -2267,12 +2231,11 @@ ap_effect$Region <- sc_names_normed
 ap_effect$fdr_q <- p.adjust(ap_effect$p, method="fdr")
 ap_effect$fdr_sig <- ap_effect$fdr_q < 0.05
 # no regions with FDR q < 0.05
-
 ```
 
 verbal IQ comparison with hippocampal tail (Latreche et al 2023)
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10476015/
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 demo_sx_mri <- merge(x=demo_combat_na_gam, y=df_demo[,c("MRI_S_ID","WASI_verbal","WASI_matrix","IQ_full")], by="MRI_S_ID")
 
 # function to test formula on data
@@ -2307,7 +2270,7 @@ hipp_tail_ciq
 ```
 
 plot verbal IQ vs hippocampus tail
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 dat <- demo_sx_mri
 # function to plot lmm on top of data
 scatterplot_lmm <- function(group, x, y, title="", xlab="", ylab="", linecol="black", pval="missing"){
@@ -2336,15 +2299,13 @@ dup_viq_plot <- scatterplot_lmm(group="PATIENT-DUP", x="Hip_Hippocampal_tail.com
 td_viq_plot <- scatterplot_lmm(group="CONTROL", x="Hip_Hippocampal_tail.combat", y="WASI_verbal", title="Control", pval=round(hipp_tail_viq$`CONTROL`["Hip_Hippocampal_tail.combat.norm","Pr(>|t|)"],digits=3))
 
 all_viq_plot <- del_viq_plot + dup_viq_plot + td_viq_plot + plot_annotation(tag_levels = 'A')& theme(plot.tag = element_text(face = 'bold'))
-all_viq_plot
-#all_viq_plot
 
 #ggsave(plot=all_viq_plot, filename=file.path(project,"figures/cognition/hip_tail_verbal_iq.pdf"), width=9, height=5, device = "pdf")
 #ggsave(plot=all_viq_plot, filename=file.path(project,"figures/cognition/hip_tail_verbal_iq.png"), width=9, height=5, device = "png", dpi = 300)
 ```
 
 same for matrix IQ
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 del_miq_plot <- scatterplot_lmm(group="PATIENT-DEL", x="Hip_Hippocampal_tail.combat", y="WASI_matrix", title="", xlab="Hippocampal tail volume", ylab="Matrix IQ", pval=round(hipp_tail_miq$`PATIENT-DEL`["Hip_Hippocampal_tail.combat.norm","Pr(>|t|)"],digits=3))
 
 dup_miq_plot <- scatterplot_lmm(group="PATIENT-DUP", x="Hip_Hippocampal_tail.combat", y="WASI_matrix", title="", pval=round(hipp_tail_miq$`PATIENT-DUP`["Hip_Hippocampal_tail.combat.norm","Pr(>|t|)"],digits=3))
@@ -2356,7 +2317,7 @@ all_miq_plot <- del_miq_plot + dup_miq_plot + td_miq_plot + plot_annotation(tag_
 
 ```
 plot both together
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 all_iq_plot <- all_viq_plot / all_miq_plot + plot_annotation(tag_levels = 'A')& theme(plot.tag = element_text(face = 'bold'))
 all_iq_plot
 #ggsave(plot=all_iq_plot, filename=file.path(project,"figures/cognition/hip_tail_iq.pdf"), width=9, height=7, device = "pdf")
@@ -2387,9 +2348,7 @@ sipspr_effect$Region <- sc_names_normed
 sipspr_effect$fdr_q <- p.adjust(sipspr_effect$p, method="fdr")
 sipspr_effect$fdr_sig <- sipspr_effect$fdr_q < 0.05
 # no significant results
-
 ```
-
 
 ## save workspace
 save package info as package_versions.txt
