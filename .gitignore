@@ -2,4 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+.DS_Store
 git_exclude
+22q_subcort_volumes_revised_files
