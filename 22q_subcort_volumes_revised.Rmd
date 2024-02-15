@@ -1111,6 +1111,8 @@ demo_out <- demo_edit_final %>% gt() %>%
   tab_style(style = cell_text(weight = "bold"), locations = list(cells_body(columns = 1, rows = 1:nrow(demo_edit_final)), cells_column_labels())) %>%
   cols_align(align= "right", columns =everything())
 demo_out
+# gtsave(demo_out, filename = file.path(project, "git_exclude/manuscript/npp_revision_1/22q_subcort_npp_table1_R1.docx"))
+# gtsave(demo_out, filename = file.path(project, "figures/demographics/table1.docx"))
 # gtsave(demo_out, filename = file.path(project, "figures/demographics/table1.pdf"))
 # gtsave(demo_out, filename = file.path(project, "figures/demographics/table1.png"))
 # gtsave(demo_out, filename = file.path(project, "figures/demographics/table1.rtf"))
@@ -1253,6 +1255,8 @@ save_dosage_effect_out <- save_dosage_effect_final %>% gt() %>%
   tab_style(style = cell_text(weight = "bold"), locations = list(cells_column_labels())) %>%
   cols_align(align= "right", columns =everything())
 save_dosage_effect_out
+# gtsave(save_dosage_effect_out, filename = file.path(project, "figures/gene_dosage/gene_dosage_table.docx"))
+# gtsave(save_dosage_effect_out, filename = file.path(project, "git_exclude/manuscript/npp_revision_1/22q_subcort_npp_table2_R1.docx"))
 # gtsave(save_dosage_effect_out, filename = file.path(project, "figures/gene_dosage/gene_dosage_table.png"))
 # gtsave(save_dosage_effect_out, filename = file.path(project, "figures/gene_dosage/gene_dosage_table.pdf"))
 # gtsave(save_dosage_effect_out, filename = file.path(project, "figures/gene_dosage/gene_dosage_table.rtf"))
